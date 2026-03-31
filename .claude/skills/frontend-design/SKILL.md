@@ -1,31 +1,42 @@
 ---
 name: frontend-design
-description: Design and implement production-grade UI components with design contract, component hierarchy, TDD for frontend, accessibility checklist, and performance checklist.
+description: Create distinctive, production-grade frontend interfaces with high design quality. Combines bold aesthetic direction (avoid AI slop) with engineering rigor (TDD, accessibility, hexagonal architecture).
 disable-model-invocation: true
 argument-hint: <component or page>
 ---
 
 # /frontend-design — Frontend Design and Implementation
 
-Create distinctive, production-grade frontend interfaces.
+Create distinctive, production-grade frontend interfaces. Combines creative aesthetic direction with engineering rigor.
 
-## Instructions
+---
 
-When invoked with `/frontend-design [component or page]`, execute this workflow:
+## Phase 1 — Understand Context + Design Thinking
 
-### Phase 1 — Understand Context
-Before designing anything:
-1. Identify the user's goal for this component/page
-2. Understand the data it needs (domain entities involved)
-3. Identify existing design system tokens if any (colors, spacing, typography)
-4. Check for existing components that can be reused or extended
-5. Identify responsive breakpoints relevant to this UI
+Before designing anything, commit to a **bold aesthetic direction**:
 
-### Phase 2 — Design Contract
+1. **Purpose**: What problem does this interface solve? Who uses it?
+2. **Tone**: Pick an extreme and execute it with precision:
+   - Brutally minimal / maximalist chaos / retro-futuristic
+   - Organic/natural / luxury/refined / playful/toy-like
+   - Editorial/magazine / brutalist/raw / art deco/geometric
+   - Soft/pastel / industrial/utilitarian
+   — or any other direction that is true to the context
+3. **Differentiation**: What makes this UNFORGETTABLE? What's the one thing someone will remember?
+4. **Data**: What domain entities does it display or mutate?
+5. **Constraints**: Framework, performance requirements, accessibility requirements.
+
+**CRITICAL**: Choose a clear conceptual direction and execute it with precision. Bold maximalism and refined minimalism both work — the key is **intentionality**, not intensity.
+
+---
+
+## Phase 2 — Design Contract
+
 Before writing any code, define the design contract:
 
 ```
 COMPONENT: [Name]
+Aesthetic direction: [the bold tone chosen — e.g., "brutalist with warm amber accents"]
 Purpose: [what the user achieves with this]
 Variants: [default, loading, error, empty]
 States: [hover, focus, active, disabled if interactive]
@@ -42,7 +53,10 @@ Responsive:
   - Desktop (> 1024px): [layout description]
 ```
 
-### Phase 3 — Component Hierarchy
+---
+
+## Phase 3 — Component Hierarchy
+
 Design from the outside in:
 
 ```
@@ -59,39 +73,52 @@ Page/Container (smart, fetches data)
 - **Smart components** (containers): fetch data, manage state, handle events
 - **Dumb components** (presentational): receive props, render UI, emit events
 
-### Phase 4 — Design Principles to Apply
-Every UI implementation must respect:
+---
 
-**Visual Hierarchy**
-- One primary action per screen
-- F-pattern or Z-pattern content layout
-- Clear visual weight: primary > secondary > tertiary
+## Phase 4 — Aesthetic Guidelines
 
-**Typography**
-- Maximum 2 font families (heading + body)
-- Consistent scale (e.g., 12/14/16/20/24/32/40/48px)
-- Line height: 1.4–1.6 for body text
+Every UI must be visually striking and memorable. Focus on:
 
-**Color**
-- Base: neutral/zinc/slate tones for backgrounds and surfaces
+### Typography
+- Choose fonts that are **beautiful, unique, and interesting**
+- Pair a **distinctive display font** with a **refined body font**
+- Consistent scale (e.g., 12/14/16/20/24/32/40/48px), line height 1.4–1.6 for body
+- **NEVER**: Arial, Inter, Roboto, system fonts, or any generic AI-default font
+
+### Color & Theme
+- Commit to a cohesive aesthetic with CSS variables for consistency
+- **Dominant colors with sharp accents** outperform timid, evenly-distributed palettes
 - One accent color for primary actions
 - Semantic: green (success), red (error), yellow (warning), blue (info)
 - Sufficient contrast (WCAG AA minimum: 4.5:1 for text)
+- **NEVER**: purple gradients on white backgrounds or any clichéd AI color scheme
 
-**Spacing**
-- Consistent spacing scale (4px base unit or equivalent)
-- Generous whitespace — don't crowd elements
-- Align to grid
+### Motion
+- Use animations for effects and micro-interactions
+- One well-orchestrated page load with staggered reveals (`animation-delay`) creates more delight than scattered micro-interactions
+- Scroll-triggering and hover states that **surprise**
+- Prefer CSS-only solutions for HTML; Motion library for React
 
-**States**
-- Every interactive element has: default, hover, focus, active, disabled states
-- Every data-dependent component has: loading, empty, error, populated states
+### Spatial Composition
+- Unexpected layouts, asymmetry, overlap, diagonal flow
+- Grid-breaking elements and generous negative space OR controlled density
+- One primary action per screen; clear visual weight: primary > secondary > tertiary
 
-**Dark Mode**
+### Backgrounds & Visual Details
+- Create **atmosphere and depth** rather than defaulting to solid colors
+- Gradient meshes, noise textures, geometric patterns, layered transparencies
+- Dramatic shadows, decorative borders, grain overlays when fitting the aesthetic
+
+### Dark Mode
 - Default to dark mode for dashboards, developer tools, AI products
 - Light mode for content-first or editorial surfaces
 
-### Phase 5 — TDD for Frontend
+**NEVER converge on generic AI aesthetics**: overused fonts, clichéd color schemes, predictable layouts, cookie-cutter design that lacks context-specific character. Every design should be unique.
+
+---
+
+## Phase 5 — TDD for Frontend
+
 Write component tests before implementing:
 
 ```
@@ -109,18 +136,26 @@ Cypress E2E:
   - Full user flow involving this component
 ```
 
-### Phase 6 — Implementation Order
+---
+
+## Phase 6 — Implementation Order
+
 1. Write failing component tests (RED)
 2. Build the component skeleton (GREEN — tests pass with minimal impl)
 3. Add all states (loading, error, empty, populated)
 4. Add interactivity and event handlers
-5. Apply styling (classes/CSS modules/styled)
+5. Apply the aesthetic direction (typography, color, motion, composition)
 6. Add responsive behavior
 7. Add accessibility attributes (ARIA, keyboard nav)
 8. Refactor for readability (REFACTOR)
 9. Run tests + Cypress
 
-### Phase 7 — Accessibility Checklist
+**Match implementation complexity to the aesthetic vision**: maximalist designs need elaborate animations and effects; minimalist designs need restraint, precision, and careful spacing.
+
+---
+
+## Phase 7 — Accessibility Checklist
+
 Before marking any UI component done:
 - [ ] All interactive elements reachable by keyboard (Tab)
 - [ ] Focus visible (not removed by CSS)
@@ -131,7 +166,10 @@ Before marking any UI component done:
 - [ ] Color is not the only way to convey information
 - [ ] Touch targets ≥ 44×44px on mobile
 
-### Phase 8 — Performance Checklist
+---
+
+## Phase 8 — Performance Checklist
+
 - [ ] Images optimized (WebP/AVIF, lazy loaded, correct sizes)
 - [ ] No layout shift (CLS < 0.1)
 - [ ] Large lists virtualized (> 100 items)
@@ -139,7 +177,10 @@ Before marking any UI component done:
 - [ ] Event listeners cleaned up on unmount
 - [ ] No unnecessary re-renders
 
-### Phase 9 — Code Review Checklist
+---
+
+## Phase 9 — Code Review Checklist
+
 - [ ] Component does one thing (Single Responsibility)
 - [ ] Props interface clearly typed
 - [ ] No hardcoded strings (use constants or i18n keys)
@@ -147,16 +188,25 @@ Before marking any UI component done:
 - [ ] Tests cover all states and main interactions
 - [ ] Accessible (checklist above passed)
 - [ ] Responsive on mobile, tablet, desktop
+- [ ] Aesthetic direction is distinctive and intentional (not generic)
 
 ---
 
 ## Anti-Patterns to Avoid
+
+**Engineering:**
 - Raw `<div>` buttons (use `<button>`)
 - `onClick` without keyboard equivalent
 - Nested conditional renders more than 2 levels deep (extract components)
 - Fetching data inside presentational components
 - State that could be derived from props
 - God components that do everything
-- Repeated magic color/size values instead of design tokens
 - Missing loading/error/empty states
-- Forgetting to handle the case where data is null or undefined
+
+**Aesthetic:**
+- Generic AI font defaults (Inter, Roboto, Space Grotesk, Arial)
+- Purple gradient on white background
+- Evenly-distributed, timid color palettes
+- Predictable, cookie-cutter layouts
+- Scattered micro-interactions with no focal point
+- Solid color backgrounds with no atmosphere or depth
