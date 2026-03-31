@@ -212,29 +212,179 @@ Cada nova feature não quebra as anteriores — os testes garantem regressão ze
 
 ---
 
-## Escala: quando usar múltiplos times em paralelo
+## Modo Turbo: múltiplos times de agentes em paralelo (`/agent-teams`)
 
-Para projetos maiores, use `/agent-teams` em vez de `/feature-dev` isolado:
+Para projetos maiores ou quando você quer velocidade máxima, use `/agent-teams`.
+Em vez de features sequenciais, vários times trabalham **ao mesmo tempo**.
+
+### Quando usar `/agent-teams` vs `/feature-dev`
+
+| Situação | Use |
+|----------|-----|
+| 1 feature de qualquer tamanho | `/feature-dev` |
+| 3+ features independentes simultâneas | `/agent-teams` |
+| Feature tão grande que não cabe num time | `/agent-teams` (divide sozinho) |
+| Sprint completo em paralelo | `/agent-teams` |
+
+---
+
+### Exemplo: Task Manager com 3 times em paralelo
+
+Após o setup e a descoberta (Passos 1–2), em vez de implementar feature por feature, você invoca:
 
 ```
-Pequeno (1 feature):
-  /feature-dev user-auth
-
-Médio (3+ features independentes):
-  /agent-teams
-  → Time Alpha: user-auth (3 agentes, ~35k tokens)
-  → Time Beta:  projects   (4 agentes, ~40k tokens)
-  → Time Gamma: tasks      (4 agentes, ~45k tokens)
-  Todos em paralelo, cada um em worktree própria.
-
-Grande (feature complexa demais para 1 time):
-  /agent-teams
-  → estima budget por workstream (max 85k/time)
-  → divide automaticamente se > 85k
-  → lança N times em paralelo
+/agent-teams construir user-auth + projects + tasks em paralelo para o Task Manager
 ```
 
-O orquestrador garante que cada workstream caiba em 100k tokens antes de despachar. Se não couber, divide.
+#### O que o orquestrador faz antes de lançar qualquer time
+
+Ele **estima o budget de tokens** de cada workstream:
+
+```
+Workstream A — user-auth
+  Arquivos a ler:    ~15 arquivos × 1.500 tokens = 22.500
+  Raciocínio:        20.000 (fixo)
+  Código a gerar:    ~220 linhas × 20 tokens  = 4.400
+  Handoff:           5.000 (fixo)
+  ────────────────────────────────────────────────────
+  Total estimado:    ~52k tokens ✅ (< 85k — pode despachar)
+
+Workstream B — projects
+  Total estimado:    ~48k tokens ✅
+
+Workstream C — tasks
+  Total estimado:    ~55k tokens ✅
+
+Todos cabem → lança os 3 times em paralelo.
+```
+
+Se algum ultrapassasse 85k, o orquestrador dividiria em 2 workstreams menores antes de despachar.
+
+#### Os 3 times rodam simultaneamente
+
+```
+ORQUESTRADOR
+│
+├── Time Alpha — user-auth              ← worktree: task-manager-auth
+│   │   Budget: ~52k tokens
+│   ├── Wave 1: Agente 1 (code-explorer)
+│   │     → entende padrões existentes, mapeia src/
+│   │     → handoff: convenções identificadas
+│   │
+│   ├── Wave 2: Agente 2 (test-writer) + Agente 3 (bdd-writer)  ← paralelo
+│   │     → testes unitários domain: Email.test.ts, Password.test.ts, User.test.ts
+│   │     → BDD: tests/bdd/features/user-auth.feature
+│   │
+│   ├── Wave 3: Agente 4 (implementer)
+│   │     → domínio: Email.ts, Password.ts, User.ts, RegisterUseCase.ts
+│   │     → infra: PostgresUserRepository.ts + integration test
+│   │
+│   └── Wave 4: Agente 5 (code-reviewer)
+│         → revisa arquitetura, SOLID, cobertura
+│         → REVIEW: PASS
+│
+├── Time Beta — projects                ← worktree: task-manager-projects
+│   │   Budget: ~48k tokens
+│   ├── Wave 1: Agente 1 (code-explorer)
+│   ├── Wave 2: Agente 2 (test-writer) + Agente 3 (bdd-writer)
+│   ├── Wave 3: Agente 4 (implementer)
+│   └── Wave 4: Agente 5 (code-reviewer)
+│
+└── Time Gamma — tasks                  ← worktree: task-manager-tasks
+    │   Budget: ~55k tokens
+    ├── Wave 1: Agente 1 (code-explorer)
+    ├── Wave 2: Agente 2 (test-writer) + Agente 3 (bdd-writer)
+    ├── Wave 3: Agente 4 (implementer)
+    └── Wave 4: Agente 5 (code-reviewer)
+```
+
+Os 3 times rodam ao mesmo tempo. Cada wave interna é sequencial dentro do time, mas os times são independentes entre si.
+
+#### O que cada agente recebe (contexto controlado)
+
+```
+Agente 4 (implementer) do Time Alpha recebe exatamente:
+  - Task brief: "Implementar User entity, Email VO, Password VO em src/domain/user/"
+  - Handoff Wave 1: convenções do projeto (2k tokens)
+  - Handoff Wave 2: lista de testes falhos para fazer passar (3k tokens)
+  - Rules.md subset: RULE-ARCH-001, RULE-TEST-001 (2k tokens)
+  - Arquivos para ler: [lista exata de 12 arquivos] (18k tokens)
+  ─────────────────────────────────────────────────────────────────
+  Total de entrada: ~25k tokens
+  Sobra ~70k para raciocínio + código gerado
+  Handoff de saída: ~5k tokens
+  ─────────────────────────────────────────────────────────────────
+  Total consumido: ~100k ✅
+```
+
+#### Resultado ao final dos 3 times
+
+```
+ORQUESTRADOR recebe:
+  Time Alpha — COMPLETO
+    Criados: 12 arquivos (domain + application + infra + tests + BDD)
+    Testes:  15 unit, 3 integration, 4 BDD scenarios
+    Review:  PASS
+
+  Time Beta — COMPLETO
+    Criados: 10 arquivos
+    Testes:  11 unit, 2 integration, 3 BDD scenarios
+    Review:  PASS
+
+  Time Gamma — COMPLETO
+    Criados: 14 arquivos
+    Testes:  18 unit, 4 integration, 6 BDD scenarios
+    Review:  PASS
+
+Orquestrador faz merge das 3 branches:
+  rtk git merge feature/user-auth
+  rtk git merge feature/projects
+  rtk git merge feature/tasks
+
+Roda suite completa: 44 unit + 9 integration + 13 BDD ✅
+```
+
+3 features implementadas, testadas e revisadas — todas em paralelo.
+
+---
+
+### Comparando velocidade: sequencial vs paralelo
+
+```
+Sequencial (/feature-dev × 3):         Paralelo (/agent-teams):
+  Feature 1: auth      → 45 min          Todos os 3 times juntos → ~50 min
+  Feature 2: projects  → 35 min          (o mais lento determina o tempo)
+  Feature 3: tasks     → 40 min
+  ──────────────────────────────
+  Total: ~120 min                         Total: ~50 min
+```
+
+O paralelo não é 3× mais rápido porque o tempo total é o do time mais lento.
+Mas é significativamente mais rápido que o sequencial para projetos grandes.
+
+---
+
+### Casos onde o orquestrador divide um workstream
+
+Se uma feature for grande demais:
+
+```
+/agent-teams implementar sistema de pagamentos completo
+
+Orquestrador estima:
+  Workstream "payments" original:
+    Arquivos a ler: ~40 × 1.5k = 60k
+    Código a gerar: ~600 linhas × 20 = 12k
+    Raciocínio: 20k
+    Total: ~92k tokens ❌ (> 85k — muito grande)
+
+  Divide em 2:
+    Workstream A — payments-domain:    ~44k tokens ✅
+    Workstream B — payments-infra:     ~48k tokens ✅
+
+  Lança A e B em paralelo (se independentes)
+  ou A primeiro, B na wave seguinte (se B depende de A)
+```
 
 ---
 
