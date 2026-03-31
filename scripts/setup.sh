@@ -77,21 +77,24 @@ else
   info "Docker: docker pull grafana/k6"
 fi
 
-# ── 5. Cypress (E2E testing) ─────────────────────────────────────────────────
-if [ -f "package.json" ] && grep -q '"cypress"' package.json 2>/dev/null; then
-  ok "Cypress detected in package.json"
+# ── 5. npm install ───────────────────────────────────────────────────────────
+if [ -f "package.json" ]; then
+  echo ""
+  echo "📦  Installing dependencies..."
+  npm install
+  ok "npm install complete"
 else
-  warn "Cypress not in package.json — add when setting up your project"
-  info "Install: npm install --save-dev cypress"
-  info "Init:    npx cypress open"
+  warn "package.json not found — skipping npm install"
 fi
 
-# ── 6. Cucumber.js (BDD) ─────────────────────────────────────────────────────
+# ── 6. Cypress (E2E testing) ─────────────────────────────────────────────────
+if [ -f "package.json" ] && grep -q '"cypress"' package.json 2>/dev/null; then
+  ok "Cypress included in package.json"
+fi
+
+# ── 7. Cucumber.js (BDD) ─────────────────────────────────────────────────────
 if [ -f "package.json" ] && grep -q '"@cucumber/cucumber"' package.json 2>/dev/null; then
-  ok "Cucumber.js detected in package.json"
-else
-  warn "Cucumber.js not in package.json — add when setting up your project"
-  info "Install: npm install --save-dev @cucumber/cucumber @cucumber/pretty-formatter typescript@5 ts-jest jest @types/jest @types/node"
+  ok "Cucumber.js included in package.json"
 fi
 
 # ── 7. Claude Code hooks (Node.js modules) ───────────────────────────────────
