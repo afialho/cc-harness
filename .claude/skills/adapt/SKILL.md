@@ -172,6 +172,7 @@ Corrigir apenas o que não corresponder. Não sobrescrever o que já estiver cor
 
 ```json
 {
+  "pattern": "hexagonal",
   "layers": {
     "domain": {
       "pattern": "src/domain/**",
@@ -206,21 +207,22 @@ Corrigir apenas o que não corresponder. Não sobrescrever o que já estiver cor
 
 ```json
 {
+  "pattern": "mvc-rails",
   "layers": {
     "models": {
-      "pattern": "app/models/",
+      "path": "app/models/",
       "description": "Domain entities and data models"
     },
     "controllers": {
-      "pattern": "app/controllers/",
+      "path": "app/controllers/",
       "description": "Request handlers"
     },
     "services": {
-      "pattern": "app/services/",
+      "path": "app/services/",
       "description": "Business logic and use cases"
     },
     "views": {
-      "pattern": "app/views/",
+      "path": "app/views/",
       "description": "Presentation layer"
     }
   },
@@ -232,21 +234,22 @@ Corrigir apenas o que não corresponder. Não sobrescrever o que já estiver cor
 
 ```json
 {
+  "pattern": "mvc-express",
   "layers": {
     "routes": {
-      "pattern": "src/routes/",
+      "path": "src/routes/",
       "description": "Route definitions and request entry points"
     },
     "controllers": {
-      "pattern": "src/controllers/",
+      "path": "src/controllers/",
       "description": "Request handlers"
     },
     "services": {
-      "pattern": "src/services/",
+      "path": "src/services/",
       "description": "Business logic and use cases"
     },
     "models": {
-      "pattern": "src/models/",
+      "path": "src/models/",
       "description": "Data models and entities"
     }
   },
@@ -258,21 +261,22 @@ Corrigir apenas o que não corresponder. Não sobrescrever o que já estiver cor
 
 ```json
 {
+  "pattern": "nextjs-app-router",
   "layers": {
     "app": {
-      "pattern": "app/",
+      "path": "app/",
       "description": "Next.js App Router — pages, layouts, route segments"
     },
     "components": {
-      "pattern": "components/",
+      "path": "components/",
       "description": "React components (server and client)"
     },
     "lib": {
-      "pattern": "lib/",
+      "path": "lib/",
       "description": "Business logic, utilities, and server-side helpers"
     },
     "api": {
-      "pattern": "app/api/",
+      "path": "app/api/",
       "description": "API Route Handlers"
     }
   },
@@ -284,13 +288,14 @@ Corrigir apenas o que não corresponder. Não sobrescrever o que já estiver cor
 
 ```json
 {
+  "pattern": "feature-based",
   "layers": {
     "features": {
-      "pattern": "src/features/",
+      "path": "src/features/",
       "description": "Feature modules — each feature is self-contained"
     },
     "shared": {
-      "pattern": "src/shared/",
+      "path": "src/shared/",
       "description": "Shared utilities, components, and cross-cutting concerns"
     }
   },
@@ -302,6 +307,7 @@ Corrigir apenas o que não corresponder. Não sobrescrever o que já estiver cor
 
 ```json
 {
+  "pattern": "flat",
   "layers": {},
   "disabled": true,
   "note": "Architecture pattern not detected — architecture-guard disabled. Update manually if needed."

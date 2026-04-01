@@ -34,10 +34,14 @@ Use the **code-explorer** agent to map the existing codebase.
 Agent: code-explorer
 Task: Map existing architecture layers, identify patterns, trace execution paths
       relevant to this feature. Report:
-      - Current file structure in src/domain/, src/application/, src/ports/, src/infrastructure/
-      - Existing test patterns (unit, integration, BDD)
-      - Conventions used (naming, error handling, dependency injection)
-      - Any existing code this feature will interact with
+      1. Read .claude/architecture.json to determine the architecture pattern (pattern field).
+         If the file does not exist, assume hexagonal.
+      2. Current file structure in the layers defined by architecture.json
+         (e.g., src/domain/ + src/application/ for hexagonal; app/models/ + app/services/ for mvc-rails;
+          app/ + lib/ + components/ for nextjs-app-router; src/features/ for feature-based)
+      3. Existing test patterns (unit, integration, BDD) and their locations
+      4. Conventions used (naming, error handling, dependency injection)
+      5. Any existing code this feature will interact with
 ```
 
 Output: context handoff with architecture map and conventions summary.
@@ -62,12 +66,32 @@ Use the **code-architect** agent to propose implementation approaches.
 
 ```
 Agent: code-architect
-Task: Propose 2–3 implementation approaches for this feature in hexagonal architecture.
-      For each approach document:
+Task: Propose 2–3 implementation approaches for this feature using the architecture
+      pattern from .claude/architecture.json (read it first). For each approach document:
+
+      If hexagonal:
       - Domain model changes (new/modified entities, value objects, domain events)
       - Application layer: use cases needed
       - Ports: new inbound/outbound interfaces
       - Infrastructure: adapters to implement
+
+      If mvc-rails or mvc-express:
+      - Model changes (new/modified models, validations, associations)
+      - Service changes (business logic, use cases)
+      - Controller changes (new actions or modifications)
+      - Route changes
+
+      If nextjs-app-router:
+      - lib/ changes (server-side logic, data fetching, server actions)
+      - Component changes (Server Components and Client Components)
+      - API Route Handlers (if new endpoints needed)
+
+      If feature-based:
+      - Feature module structure (src/features/[name]/)
+      - Business logic (services, hooks, utilities within the feature)
+      - UI components within the feature (if applicable)
+
+      For all patterns also document:
       - Trade-offs and recommended approach
       - BDD scenarios (Gherkin) for the feature
       - Test plan (unit / integration / E2E / load)
@@ -75,11 +99,12 @@ Task: Propose 2–3 implementation approaches for this feature in hexagonal arch
 
 Present the options to the user. Get approval on the chosen approach before implementing.
 
-**Architecture constraints (always apply):**
-- Domain layer: zero external dependencies (enforced by `architecture-guard` hook)
-- Application layer: depends only on domain + port interfaces
-- All external deps behind port interfaces in `src/ports/outbound/`
-- Run `/hexagonal` if guidance needed on any component
+**Architecture constraints (read from `.claude/architecture.json`):**
+- Hexagonal: domain layer zero external deps; application depends only on domain + ports; external deps behind port interfaces
+- MVC: business logic in services (not controllers); controllers are thin; no direct DB calls in controllers
+- Next.js App Router: server-side logic in lib/; keep 'use client' boundary as deep as possible; mutations via Server Actions
+- Feature-based: features are self-contained; shared code only in src/shared/; no cross-feature imports
+- Run `/hexagonal` if guidance needed on hexagonal-specific decisions
 
 ### Phase 5 — Implementation (TDD)
 > **Emit:** `▶ [5/7] Implementation (TDD)`
@@ -103,13 +128,45 @@ GREEN:    Write the minimum code to make it pass
 REFACTOR: Improve readability, remove duplication, apply SOLID
 ```
 
-**Order of implementation (inside-out):**
+**Order of implementation — based on `.claude/architecture.json` pattern:**
+
+*hexagonal (or new project):*
 1. Domain entities and value objects (unit tests)
-2. Port interfaces (`src/ports/`)
+2. Port interfaces (src/ports/)
 3. Application use cases (unit tests with fake adapters)
-4. Infrastructure adapters (integration tests with real/containerized deps)
+4. Infrastructure adapters (integration tests)
 5. Composition root (wire adapters to ports)
 6. Cucumber step definitions
+
+*mvc-rails:*
+1. Model + spec (unit tests — validations, associations, scopes)
+2. Service + spec (unit tests — business logic)
+3. Controller + spec (unit tests — action responses)
+4. Request/integration tests
+5. Cucumber step definitions
+
+*mvc-express / mvc-nestjs:*
+1. DTO/Model + test (unit tests)
+2. Service + test (unit tests — business logic)
+3. Controller + test (unit tests — response contracts)
+4. Route wiring
+5. Integration tests
+6. Cucumber step definitions
+
+*nextjs-app-router:*
+1. lib/ functions + test (server-side logic, data fetching)
+2. Server Actions (if mutations)
+3. API Route Handlers + integration test (if new endpoint)
+4. Server Components
+5. Client Components + test
+6. Cucumber step definitions
+
+*feature-based:*
+1. Business logic + test (services, utilities)
+2. UI components (if applicable)
+3. API integration (if applicable)
+4. Integration tests
+5. Cucumber step definitions
 
 **At each Write/Edit the `architecture-guard` hook fires:**
 - Checks the file's layer

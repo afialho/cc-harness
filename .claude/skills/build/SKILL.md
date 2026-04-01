@@ -210,12 +210,16 @@ não em decisões genéricas do modelo.
 
 Lê `RESEARCH.md` e as respostas de clarificação do usuário para informar cada decisão.
 
-**Hexagonal architecture mapping:**
-- Domain: entidades, value objects, domain services, domain events
-- Application: use cases (um por ação do usuário)
-- Ports: interfaces inbound e outbound
-- Infrastructure: adapters (DB, HTTP, mensageria, etc.)
-- Shared: configuração, logging, utilitários
+**Architecture mapping (baseado em `.claude/architecture.json`):**
+
+Ler `.claude/architecture.json` antes de mapear. Usar o template correspondente ao `pattern` detectado:
+
+- **hexagonal** (ou projeto novo): Domain → Application → Ports → Infrastructure → Shared
+- **mvc-rails**: Models → Services → Controllers → Views/Serializers
+- **mvc-express / mvc-nestjs**: Models/DTOs → Services → Controllers → Routes
+- **nextjs-app-router**: lib/ (server logic) → Server Actions → API Routes → Server Components → Client Components
+- **feature-based**: src/features/[nome]/ (autocontido) → src/shared/ (compartilhado)
+- **flat / disabled**: documentar estrutura existente sem impor padrão
 
 **BDD scenarios (Gherkin):**
 - Happy path
@@ -228,16 +232,13 @@ Lê `RESEARCH.md` e as respostas de clarificação do usuário para informar cad
 - E2E (Cypress) se houver UI
 - Load test (k6) se houver endpoint HTTP
 
-**Implementation sequence (TDD inside-out):**
-1. BDD feature file
-2. Entidades de domínio (test first)
-3. Port interfaces
-4. Application use cases (test first)
-5. Infrastructure adapters (integration tests)
-6. Composition root wiring
-7. Cucumber step definitions
-8. Cypress E2E (se UI)
-9. k6 load test (se endpoint)
+**Implementation sequence (TDD — baseado no padrão detectado):**
+
+*hexagonal:* BDD file → Domain entities → Ports → Use Cases → Adapters → Composition root → Cucumber → Cypress → k6
+*mvc-rails:* BDD file → Model → Service → Controller → Request tests → Cucumber → Cypress
+*mvc-express/nestjs:* BDD file → DTO/Model → Service → Controller → Routes → Integration tests → Cucumber → Cypress → k6
+*nextjs-app-router:* BDD file → lib/ functions → Server Actions → API Routes → Server Components → Client Components → Cucumber → Cypress → k6
+*feature-based:* BDD file → Business logic → UI components → API integration → Integration tests → Cucumber → Cypress
 
 **Agent wave decomposition** (se feature complexa):
 - Quais componentes podem ser implementados em paralelo

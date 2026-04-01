@@ -28,16 +28,23 @@ Extraia e registre internamente:
 Se RESEARCH.md não existir, prossiga com o planejamento baseado na descrição fornecida
 e adicione uma nota no plano: "⚠ Sem RESEARCH.md — considere executar /research antes para embasar decisões."
 
+Adicionalmente, verificar se `.claude/architecture.json` existe:
+- Se existir: ler e registrar internamente o `pattern` e os `layers` definidos
+- Se não existir ou `disabled: true`: assumir arquitetura hexagonal (projeto novo)
+- Os layers detectados serão usados em todas as seções subsequentes (Steps 2, 5 e 6)
+
 ### 1. Understand the Feature
 > **Emit:** `▶ [1/8] Understanding Feature`
 - Restate the requirement in your own words to confirm understanding
 - Identify the user-facing behavior (what the user can do)
 - Identify the business rules (invariants, validations, constraints)
 
-### 2. Hexagonal Architecture Mapping
+### 2. Architecture Mapping
 > **Emit:** `▶ [2/8] Architecture Mapping`
-Map the feature to the hexagonal architecture layers:
 
+Ler `.claude/architecture.json` para determinar o padrão. Usar o template correspondente abaixo:
+
+**Se `pattern: "hexagonal"` (ou arquivo não existe — projeto novo):**
 ```
 Domain Layer (src/domain/):
   - Entities: [list new/modified entities]
@@ -58,6 +65,50 @@ Infrastructure Layer (src/infrastructure/):
 Shared (src/shared/):
   - Config/utils needed
 ```
+
+**Se `pattern: "mvc-rails"` ou `pattern: "mvc-express"`:**
+```
+Models (app/models/ ou src/models/):
+  - [entidades de domínio e modelos de dados]
+
+Services (app/services/ ou src/services/):
+  - [lógica de negócio — um service por use case]
+
+Controllers (app/controllers/ ou src/controllers/):
+  - [handlers de request — delegar para services]
+
+Views/Serializers (app/views/ ou src/serializers/):
+  - [apresentação ou serialização de dados — se aplicável]
+```
+
+**Se `pattern: "nextjs-app-router"`:**
+```
+lib/ (lógica server-side):
+  - [funções de negócio, queries, server actions]
+
+app/ (App Router — pages e layouts):
+  - [route segments, layouts, loading/error states]
+
+app/api/ (Route Handlers):
+  - [endpoints API — se necessário]
+
+components/ (React Components):
+  - [Server Components: busca de dados]
+  - [Client Components: interatividade — 'use client']
+```
+
+**Se `pattern: "feature-based"`:**
+```
+src/features/[nome-da-feature]/:
+  - [módulo autocontido: lógica, components, tests]
+
+src/shared/:
+  - [utilitários e concerns compartilhados]
+```
+
+**Se `pattern: "flat"` ou `disabled: true`:**
+Documentar a estrutura de diretórios existente sem impor um padrão.
+Listar os arquivos e diretórios que serão criados/modificados.
 
 Se RESEARCH.md tiver APIs identificadas:
   → Cada API externa = um outbound port + infrastructure adapter específico
@@ -116,21 +167,97 @@ Load Tests (tests/load/):
 
 ### 5. Implementation Order (TDD sequence)
 > **Emit:** `▶ [5/8] Implementation Order`
+
+Usar a sequência correspondente ao padrão detectado em `architecture.json`:
+
+**hexagonal (ou projeto novo):**
 ```
-Step 1: Write BDD feature file → tests/bdd/features/[feature].feature
-Step 2: Write failing unit tests (RED) for domain entities
-Step 3: Implement domain entities (GREEN)
-Step 4: Refactor domain (REFACTOR)
-Step 5: Write failing unit tests for use cases
-Step 6: Implement use cases
-Step 7: Write failing integration tests for adapters
-Step 8: Implement infrastructure adapters
-Step 9: Wire everything in composition root
+Step 1:  Write BDD feature file → tests/bdd/features/[feature].feature
+Step 2:  Write failing unit tests (RED) for domain entities
+Step 3:  Implement domain entities (GREEN)
+Step 4:  Refactor domain (REFACTOR)
+Step 5:  Write failing unit tests for use cases
+Step 6:  Implement use cases
+Step 7:  Write failing integration tests for adapters
+Step 8:  Implement infrastructure adapters
+Step 9:  Wire everything in composition root
 Step 10: Write Cucumber step definitions
 Step 11: Write Cypress E2E tests (if UI)
 Step 12: Write k6 load test (if endpoint)
 Step 13: Run full test suite → all green
 Step 14: Code review pass
+```
+
+**mvc-rails:**
+```
+Step 1:  Write BDD feature file → features/[feature].feature
+Step 2:  Write failing model spec (RED)
+Step 3:  Implement model (GREEN → REFACTOR)
+Step 4:  Write failing service spec (RED)
+Step 5:  Implement service (GREEN → REFACTOR)
+Step 6:  Write failing controller spec (RED)
+Step 7:  Implement controller (GREEN → REFACTOR)
+Step 8:  Write request/integration tests
+Step 9:  Write Cucumber step definitions
+Step 10: Write Cypress E2E tests (if UI)
+Step 11: Run full test suite → all green
+Step 12: Code review pass
+```
+
+**mvc-express / mvc-nestjs:**
+```
+Step 1:  Write BDD feature file → tests/bdd/features/[feature].feature
+Step 2:  Write failing unit tests for DTO/Model (RED)
+Step 3:  Implement DTO/Model (GREEN → REFACTOR)
+Step 4:  Write failing unit tests for Service (RED)
+Step 5:  Implement Service (GREEN → REFACTOR)
+Step 6:  Write failing unit tests for Controller (RED)
+Step 7:  Implement Controller (GREEN → REFACTOR)
+Step 8:  Wire routes
+Step 9:  Write integration tests
+Step 10: Write Cucumber step definitions
+Step 11: Write Cypress E2E tests (if UI)
+Step 12: Write k6 load test (if endpoint)
+Step 13: Run full test suite → all green
+Step 14: Code review pass
+```
+
+**nextjs-app-router:**
+```
+Step 1:  Write BDD feature file → tests/bdd/features/[feature].feature
+Step 2:  Write failing tests for lib/ functions (RED)
+Step 3:  Implement lib/ functions (GREEN → REFACTOR)
+Step 4:  Implement Server Actions (if mutations)
+Step 5:  Implement API Route Handlers (if API endpoint needed)
+Step 6:  Write integration tests for Route Handlers
+Step 7:  Implement Server Components
+Step 8:  Implement Client Components (with tests)
+Step 9:  Write Cucumber step definitions
+Step 10: Write Cypress E2E tests
+Step 11: Write k6 load test (if new API endpoint)
+Step 12: Run full test suite → all green
+Step 13: Code review pass
+```
+
+**feature-based:**
+```
+Step 1:  Write BDD feature file → tests/bdd/features/[feature].feature
+Step 2:  Create feature directory: src/features/[feature]/
+Step 3:  Write failing unit tests for business logic (RED)
+Step 4:  Implement business logic (GREEN → REFACTOR)
+Step 5:  Implement UI components (if applicable)
+Step 6:  Implement API integration (if applicable)
+Step 7:  Write integration tests
+Step 8:  Write Cucumber step definitions
+Step 9:  Write Cypress E2E tests (if UI)
+Step 10: Run full test suite → all green
+Step 11: Code review pass
+```
+
+**flat / disabled:**
+```
+Sem sequência prescrita. Seguir as convenções existentes do codebase.
+Usar TDD (RED → GREEN → REFACTOR) para cada comportamento identificado.
 ```
 
 ### 6. Agent Wave Decomposition
