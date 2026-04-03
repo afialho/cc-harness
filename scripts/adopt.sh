@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# adopt.sh — Adopt cc-starterkit into an existing project
+# adopt.sh — Adopt cc-harness into an existing project
 #
 # Usage (one-liner, no clone needed):
-#   bash <(curl -s "https://raw.githubusercontent.com/afialho/cc-starterkit/main/scripts/adopt.sh?t=$(date +%s)")
+#   bash <(curl -s "https://raw.githubusercontent.com/afialho/cc-harness/main/scripts/adopt.sh?t=$(date +%s)")
 #
 # Or if the kit is cloned locally:
-#   bash /path/to/cc-starterkit/scripts/adopt.sh
+#   bash /path/to/cc-harness/scripts/adopt.sh
 
 set -euo pipefail
 
@@ -45,7 +45,7 @@ if [ ! -d ".git" ]; then
 fi
 
 echo ""
-echo -e "${BOLD}Adopting cc-starterkit into this project...${NC}"
+echo -e "${BOLD}Adopting cc-harness into this project...${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -53,8 +53,8 @@ echo ""
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
-echo "Downloading cc-starterkit..."
-git clone --depth=1 --quiet https://github.com/afialho/cc-starterkit.git "$TEMP_DIR/kit"
+echo "Downloading cc-harness..."
+git clone --depth=1 --quiet https://github.com/afialho/cc-harness.git "$TEMP_DIR/kit"
 ok "Kit downloaded"
 echo ""
 
@@ -217,7 +217,7 @@ fi
 # ── Step 7 — Final output ─────────────────────────────────────────────────────
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo -e "${GREEN}${BOLD}✅  cc-starterkit adopted successfully!${NC}"
+echo -e "${GREEN}${BOLD}✅  cc-harness adopted successfully!${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 

@@ -1,6 +1,6 @@
 ---
 name: adapt
-description: Auto-configure the ai-dev-starter-kit for an existing project. Detects stack, architecture pattern, and test framework. Updates architecture.json, CLAUDE.md, and hooks to match the real project structure. Run once after adopt.sh.
+description: Auto-configure cc-harness for an existing project. Detects stack, architecture pattern, and test framework. Updates architecture.json, CLAUDE.md, and hooks to match the real project structure. Run once after adopt.sh.
 disable-model-invocation: true
 ---
 

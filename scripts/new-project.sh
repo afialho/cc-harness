@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# new-project.sh — Create a new project from cc-starterkit
+# new-project.sh — Create a new project from cc-harness
 #
 # Usage (one-liner, no clone needed):
-#   bash <(curl -s "https://raw.githubusercontent.com/afialho/cc-starterkit/main/scripts/new-project.sh?t=$(date +%s)") <project-name> [destination]
+#   bash <(curl -s "https://raw.githubusercontent.com/afialho/cc-harness/main/scripts/new-project.sh?t=$(date +%s)") <project-name> [destination]
 #
 # Examples:
 #   bash new-project.sh my-app
@@ -36,8 +36,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # ── Clone ─────────────────────────────────────────────────────────────────────
-echo "📥  Cloning starter kit..."
-git clone https://github.com/afialho/cc-starterkit.git "$DEST"
+echo "📥  Cloning cc-harness..."
+git clone https://github.com/afialho/cc-harness.git "$DEST"
 ok "Cloned to $DEST"
 
 cd "$DEST"
@@ -48,7 +48,7 @@ echo "🔧  Initializing fresh git history..."
 rm -rf .git
 git init --quiet
 git add .
-git commit -m "chore: init $PROJECT_NAME from cc-starterkit" --quiet
+git commit -m "chore: init $PROJECT_NAME from cc-harness" --quiet
 ok "Git initialized (clean history)"
 
 # ── Project name ──────────────────────────────────────────────────────────────

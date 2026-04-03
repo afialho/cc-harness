@@ -1,6 +1,6 @@
-# cc-starterkit
+# cc-harness
 
-Stack-agnostic AI development starter kit for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
+AI development harness for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
 
 Build **any software from zero to production** -- a to-do list, a SaaS platform, a Pipefy clone, a Netflix-scale app. Or start simple with an MVP and evolve. It also works on **existing codebases**: add new features, refactor messy code, redesign the UI, modernize the architecture, or fix bugs -- all with the same toolkit.
 
@@ -55,7 +55,7 @@ It works for a weekend hackathon (`scale=MVP`) or a production launch (`scale=Pr
 **One-liner** (no clone needed):
 
 ```bash
-bash <(curl -s "https://raw.githubusercontent.com/afialho/cc-starterkit/main/scripts/new-project.sh?t=$(date +%s)") my-app
+bash <(curl -s "https://raw.githubusercontent.com/afialho/cc-harness/main/scripts/new-project.sh?t=$(date +%s)") my-app
 ```
 
 This clones the kit, initializes a fresh git history, runs setup, and leaves you ready to go.
@@ -71,7 +71,7 @@ claude
 **Manual setup** (if you prefer):
 
 ```bash
-git clone https://github.com/afialho/cc-starterkit.git my-project
+git clone https://github.com/afialho/cc-harness.git my-project
 cd my-project
 chmod +x scripts/setup.sh && ./scripts/setup.sh
 # Edit CLAUDE.md: replace [Project Name]
@@ -81,7 +81,7 @@ claude
 **For existing codebases** (one-liner, run from your project root):
 
 ```bash
-bash <(curl -s "https://raw.githubusercontent.com/afialho/cc-starterkit/main/scripts/adopt.sh?t=$(date +%s)")
+bash <(curl -s "https://raw.githubusercontent.com/afialho/cc-harness/main/scripts/adopt.sh?t=$(date +%s)")
 ```
 
 This installs skills, hooks, and config into your project without touching your code. Then:

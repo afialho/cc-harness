@@ -1,6 +1,6 @@
 # CLAUDE.md — [Project Name]
 
-> Stack-agnostic AI development starter kit.
+> Stack-agnostic AI development harness for Claude Code.
 > Replace `[Project Name]` with your project name before using.
 
 ---

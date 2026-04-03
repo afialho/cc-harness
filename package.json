@@ -1,7 +1,7 @@
 {
   "name": "my-project",
   "version": "1.0.0",
-  "description": "Project built with ai-dev-starter-kit",
+  "description": "Project built with cc-harness",
   "scripts": {
     "test": "jest",
     "test:unit": "jest tests/unit",

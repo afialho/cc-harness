@@ -1,6 +1,6 @@
 # Usage Guide
 
-> How to use the starter kit to build software from zero to production.
+> How to use cc-harness to build software from zero to production.
 
 ---
 
@@ -8,7 +8,7 @@
 
 ```bash
 # Clone the kit into your new project
-cp -r cc-starterkit/ my-project/
+git clone https://github.com/afialho/cc-harness.git my-project
 cd my-project/
 
 # Check dependencies (RTK, Docker, Cypress, k6, Cucumber)
@@ -331,7 +331,7 @@ Reads `.claude/checkpoint.md` and continues from the exact phase and step where 
 ### Starting a new project
 
 ```
-1. Copy kit           cp -r cc-starterkit/ my-project/
+1. Clone              git clone https://github.com/afialho/cc-harness.git my-project
 2. Setup              ./scripts/setup.sh
 3. Configure          Edit CLAUDE.md (project name) + architecture.json (pattern)
 4. Start              claude

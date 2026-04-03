@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# setup.sh — CC Starter Kit Setup Script
+# setup.sh — CC Harness Setup Script
 # Installs all required tools, plugins and dependencies.
 # Run once when starting a new project from this template.
 
@@ -21,7 +21,7 @@ ERRORS=()
 track_error() { ERRORS+=("$1"); }
 
 echo ""
-echo "🚀  CC Starter Kit — Setup"
+echo "🚀  CC Harness — Setup"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -288,7 +288,7 @@ if [ -d ".git" ]; then
   fi
 else
   echo "    Initializing git repository..."
-  git init --quiet && git add . && git commit -m "chore: init project from cc-starterkit" --quiet 2>/dev/null || true
+  git init --quiet && git add . && git commit -m "chore: init project from cc-harness" --quiet 2>/dev/null || true
   ok "Git repo initialized"
   info "Create remote: rtk gh repo create [name] --private && rtk git push -u origin main"
 fi
