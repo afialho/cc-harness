@@ -231,11 +231,11 @@ rtk git worktree add ../[project]-[feature] -b feature/[feature-name]
 
 ## Efficiency Rules
 
-### RULE-EFF-001 [AUTO]
+### RULE-EFF-001 [ADVISORY]
 **Use RTK CLI for all commands.**
 - Prefix all CLI commands with `rtk`: `rtk git status`, `rtk npm test`, `rtk ls -la`
 - RTK provides 60-90% token savings on dev operations
-- *Enforcement: rtk-rewrite hook adds context on every Bash tool call*
+- *Enforcement: rtk-rewrite hook adds context reminder on every Bash tool call (advisory — does not hard-block)*
 
 ### RULE-EFF-002
 **Prefer CLI over MCP.**
