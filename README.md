@@ -5,7 +5,7 @@ AI development harness for [Claude Code](https://docs.anthropic.com/en/docs/clau
 ## How It Works
 
 ```
-/build a project management app like Pipefy
+/build a SaaS expense tracker with team budgets, recurring transactions, charts and PDF reports
 ```
 
 This triggers a fully autonomous pipeline:
