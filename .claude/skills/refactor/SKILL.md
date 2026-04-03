@@ -2,7 +2,7 @@
 name: refactor
 description: Structured refactoring of existing code. Covers module extraction, layer cleanup, dependency untangling, and incremental architecture improvement. Always test-first: establishes coverage before any change. Supports scopes from a single function to an entire layer.
 disable-model-invocation: true
-argument-hint: [scope: module | layer | clean | extract | inline]
+argument-hint: [scope: simplify | clean | extract | inline | layer | module]
 ---
 
 # /refactor — Structured Code Refactoring
@@ -17,6 +17,7 @@ argument-hint: [scope: module | layer | clean | extract | inline]
 
 | Scope | O que faz | Quando usar |
 |-------|-----------|-------------|
+| `simplify` | **Auto-escopo via git diff** — reuse, eficiência (loops, Promise.all, cache), naming, dead code nos arquivos recém-modificados. Sem coverage gate — opera no diff atual. | Pós-implementação: limpar o que acabou de ser escrito |
 | `clean` | Remove dead code, magic numbers, nomes ruins, funções longas | Código que funciona mas está difícil de ler/manter |
 | `extract` | Extrai lógica de um módulo em módulos menores/mais coesos | Módulo com múltiplas responsabilidades (god class/module) |
 | `inline` | Consolida abstrações desnecessárias que adicionam complexidade sem valor | Over-engineered — muitas camadas para pouca lógica |
@@ -117,6 +118,55 @@ Se o código é tão acoplado que não é possível testar sem mocks extensivos:
 
 Princípio: **uma mudança por vez, testes verdes entre cada mudança**.
 Nunca acumular múltiplas mudanças antes de rodar os testes.
+
+### Scope: simplify
+
+Escopo automático: `rtk git diff HEAD --name-only` para identificar arquivos modificados na sessão atual.
+Sem coverage gate (opera no diff — cobertura dos arquivos do diff é assumida como adequada, pois foram recém-escritos).
+
+Para cada arquivo no diff, verificar e corrigir:
+
+```
+Reuse:
+  □ Código duplicado (3+ repetições) → extrair função/constante
+  □ Função utilitária equivalente já existe no projeto → reutilizar
+  □ Imports não usados → remover
+
+Quality (RULE-CODE-001 a 006):
+  □ SRP: função/classe faz mais de uma coisa? → separar
+  □ Magic numbers/strings → extrair para constantes nomeadas
+  □ Nomes não revelam intenção? → renomear (atualizar todas as referências)
+  □ Dead code (comentado, nunca chamado) → remover
+  □ Depende de implementação concreta onde deveria depender de abstração? → anotar (não mudar sozinho se requer wiring)
+
+Efficiency:
+  □ Loops com queries inside → identificar N+1, propor solução
+  □ Promises sequenciais quando poderiam ser Promise.all → paralelizar
+  □ Cálculo idêntico repetido múltiplas vezes no mesmo request → extrair e cachear na variável
+
+Architecture:
+  □ Arquivo de domain importa algo externo? → violação (reportar, não corrigir se requer restructuring)
+  □ Arquivo de application importa infrastructure diretamente? → violação (reportar)
+```
+
+Após cada mudança: `rtk npm test` (ou equivalente) — verde é pré-requisito para continuar.
+
+Output do scope:
+```
+SIMPLIFY COMPLETE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Arquivos no diff: [N]
+Issues resolvidos:
+  Reuse:        [N] (duplicação, utilitários reutilizados)
+  Quality:      [N] (magic numbers, nomes, dead code)
+  Efficiency:   [N] (loops, promises, cache)
+Issues anotados (requerem decisão):
+  Architecture: [lista — violações encontradas mas que requerem restructuring]
+Cobertura: preservada
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+---
 
 ### Scope: clean
 
@@ -278,3 +328,28 @@ Commits:       [N] commits atômicos
 4. **Commits atômicos** — cada passo lógico separado; nunca "big bang refactor" em um commit
 5. **Mais simples, não mais complexo** — se após a refatoração o código está mais difícil de entender, desfazer
 6. **Não escalar sem evidência** — não extrair abstrações "para o futuro"; extrair quando há necessidade real hoje
+
+---
+
+## Context Budget
+
+Refatorações de escopo `module` ou `layer` podem consumir contexto significativo com análise + cobertura + mudanças.
+
+**Checkpoint triggers:**
+- Após fase de análise completa (antes de iniciar mudanças): checkpoint com diagnóstico
+- Após cada step de refatoração aplicado e verificado: checkpoint com progresso
+- Se contexto estimado atingir ~60k tokens: checkpoint imediato
+
+**Formato do checkpoint:**
+```
+skill: /refactor
+scope: [simplify | clean | extract | inline | layer | module]
+fase: [análise | cobertura | refatoração | verificação]
+arquivos_analisados: [lista]
+mudanças_aplicadas: [lista resumida]
+mudanças_pendentes: [lista]
+testes_status: [passando/falhando + detalhes]
+proximo: [próximo passo exato]
+```
+
+Emitir: `↺ Contexto ~60k — checkpoint escrito. Recomendo /compact. Use /resume para retomar /refactor [scope] na fase [fase].`

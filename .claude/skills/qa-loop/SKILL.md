@@ -28,7 +28,7 @@ Orquestrador de QA multi-dimensional. Lança agentes QA em waves paralelas, agre
 | Após feature com upload, export, ou operações pesadas | dimensões acima + `qa-perf` |
 | Dashboard com muitos dados ou charts (UI heavy) | `qa-design` `qa-ux` `qa-perf` `qa-a11y` |
 | Feature de pagamento ou dados sensíveis | + `qa-security` obrigatório |
-| Após research/plan | `qa-research` `qa-plan` |
+| Após research/build (planning phase) | `qa-research` `qa-plan` |
 | Post-deploy | `qa-smoke` |
 | Final do build | todas as dimensões + `/browser-qa` |
 | Manual: `/qa-loop <scope>` | inferir dimensões do escopo |

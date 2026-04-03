@@ -26,7 +26,7 @@ A skill detecta e recomenda — nunca age sem confirmação do usuário.
 
 ## Fase 1 — Análise do app existente
 
-> **Emitir:** `▶ [1/6] Analisando o app existente`
+> **Emitir:** `▶ [1/7] Analisando o app existente`
 
 ### 1.1 — Identificar o tipo de entrada
 
@@ -102,7 +102,7 @@ Pain points:  [problemas visuais/UX encontrados]
 
 ## Fase 2 — Detecção de modo + Stack decision
 
-> **Emitir:** `▶ [2/6] Detectando modo + definindo stack`
+> **Emitir:** `▶ [2/7] Detectando modo + definindo stack`
 
 Apresentar recomendação com justificativa:
 
@@ -138,7 +138,7 @@ Se o usuário quiser ajustar a stack sugerida → incorporar e confirmar novamen
 
 ## Fase 3 — Proposta de UX
 
-> **Emitir:** `▶ [3/6] Proposta de UX melhorada`
+> **Emitir:** `▶ [3/7] Proposta de UX melhorada`
 
 Esta é a fase de maior valor — não apenas replicar, mas melhorar.
 
@@ -216,11 +216,21 @@ FEATURES FORA DO ESCOPO (sugestão)
 
 **⏸ PAUSA:** Aguarda aprovação ou ajustes. Só avança quando usuário confirmar.
 
+> **Checkpoint:** Escreve `.claude/checkpoint.md`:
+> ```
+> skill: redesign
+> fase: ux-proposal-approved
+> arquivos_modificados: [list]
+> proximo: platform-detection
+> ```
+> Se contexto atingir ~60k tokens → escreve checkpoint e emite:
+> `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+
 ---
 
-## Fase 3.5 — Detecção de plataforma + delegação mobile
+## Fase 4 — Detecção de plataforma + delegação mobile
 
-> **Emitir:** `▶ [3.5/6] Detecção de plataforma`
+> **Emitir:** `▶ [4/7] Detecção de plataforma`
 
 Antes de iniciar a implementação, verificar se o app é mobile-native:
 
@@ -233,26 +243,30 @@ Antes de iniciar a implementação, verificar se o app é mobile-native:
 
 ```
 App mobile detectado (React Native / Expo).
-O redesign mobile tem protocolo específico — delegando para /mobile.
-
-▶ Iniciando /mobile redesign com contexto do inventário (Fase 1) + proposta aprovada (Fase 3)...
+O redesign mobile usa /mobile scaffold + iterative /mobile feature — delegando agora.
 ```
 
-Passa como contexto para `/mobile`:
-- Inventário completo de telas e features (Fase 1)
-- Proposta de navegação + design aprovada (Fase 3)
-- Design system escolhido
+Executar em sequência:
 
-`/mobile` assume o controle e executa seu próprio pipeline (TDD com RNTL, Detox E2E, EAS Build).
+1. **`/mobile scaffold`** — cria o novo projeto RN/Expo com arquitetura hexagonal, design system mobile (NativeWind), navegação, auth scaffold, e requisitos App Store/Play Store. Passar como contexto a proposta de navegação + design system aprovada na Fase 3.
+
+2. **`/mobile feature`** (uma chamada por feature) — para cada feature do inventário (Fase 1), na ordem da mais crítica para secundárias. Cada chamada recebe:
+   - Como a feature funciona no app original (inventário Fase 1)
+   - Como deve ficar no novo app (proposta aprovada Fase 3)
+   - Componentes e design system já criados pelo scaffold
+
+3. **`/mobile qa`** — QA final do app completo após todas as features.
+
+`/mobile` executa seu próprio pipeline por scope (TDD com RNTL, Detox E2E, EAS Build).
 `/redesign` não continua após a delegação.
 
-**Se app web:** continuar para Fase 4.
+**Se app web:** continuar para Fase 5.
 
 ---
 
-## Fase 4 — Implementação
+## Fase 5 — Implementação
 
-> **Emitir:** `▶ [4/6] Implementação`
+> **Emitir:** `▶ [5/7] Implementação`
 
 ### Stack de frontend padrão (aplicada em todo redesign web)
 
@@ -386,9 +400,9 @@ Sequência de substituição:
 
 ---
 
-## Fase 5 — Verificação de paridade
+## Fase 6 — Verificação de paridade
 
-> **Emitir:** `▶ [5/6] Verificação de paridade`
+> **Emitir:** `▶ [6/7] Verificação de paridade`
 
 Comparar sistematicamente o inventário da Fase 1 com o app novo:
 
@@ -408,13 +422,13 @@ Para cada tela do inventário:
 ```
 
 Usar agent-browser no novo app para verificar cada item.
-Issues encontrados → fix automático antes de avançar para Fase 6.
+Issues encontrados → fix automático antes de avançar para Fase 7.
 
 ---
 
-## Fase 6 — QA final + entrega
+## Fase 7 — QA final + entrega
 
-> **Emitir:** `▶ [6/6] QA final`
+> **Emitir:** `▶ [7/7] QA final`
 
 QA completo do app inteiro (não só a última feature):
 
@@ -476,4 +490,4 @@ App legado permanece em [path original] — nenhuma alteração foi feita.
 6. **TDD em toda implementação** — Gherkin → unit test (RED) → implementação (GREEN) → refactor; nenhum componente sem teste
 7. **Gate de qualidade por feature** — `/qa-loop` + `/browser-qa` depois de cada feature; nunca acumular e testar tudo no final
 8. **Rewrite para legacy** — AngularJS, Backbone, Ember, jQuery-as-framework → sempre rewrite; nunca tenta migração incremental sem caminho oficial
-9. **Mobile detectado → /mobile** — apps React Native / Expo delegam para `/mobile` que tem o pipeline nativo correto
+9. **Mobile detectado → /mobile scaffold + feature** — apps React Native / Expo delegam para `/mobile scaffold` (nova foundation) seguido de `/mobile feature` por feature (reimplementação), depois `/mobile qa` (gate final)

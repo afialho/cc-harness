@@ -139,6 +139,7 @@ const ADVISORY_PATTERNS = [
     label: 'Math.random() in security context',
     // Math.random() near security-sensitive identifiers (token, secret, password, crypto, salt, nonce, key)
     pattern: /Math\.random\(\)(?=[\s\S]{0,200}(?:token|secret|password|crypto|salt|nonce|key|session|auth))|(?:token|secret|password|crypto|salt|nonce|key|session|auth)(?=[\s\S]{0,200}Math\.random\(\))/i,
+    multiline: true,
     description: 'Math.random() is not cryptographically secure and must not be used for tokens, passwords, salts, session IDs, or any security-sensitive value.',
     fix: 'Use crypto.randomBytes(32) (Node.js), crypto.getRandomValues() (browser), or crypto.randomUUID() for IDs. Example: const token = crypto.randomBytes(32).toString("hex");',
   },
@@ -147,6 +148,11 @@ const ADVISORY_PATTERNS = [
 // ---------------------------------------------------------------------------
 // File classification helpers
 // ---------------------------------------------------------------------------
+
+/** Returns true if the file path looks like a test/spec/fixture file. */
+function isTestFile(filePath) {
+  return /\.(test|spec|fixture|mock|stub|fake)\.(ts|js|py|rb|go|java)$/i.test(filePath);
+}
 
 /** Returns true for file paths that should be scanned. */
 function shouldScanFile(filePath) {
@@ -162,11 +168,6 @@ function shouldScanFile(filePath) {
   ];
   const lower = filePath.toLowerCase();
   if (SKIP_EXTENSIONS.some((ext) => lower.endsWith(ext))) return false;
-
-  // Skip test fixture files with obviously fake credentials
-  if (/\.(test|spec|fixture|mock|stub|fake)\.(ts|js|py|rb|go|java)$/i.test(filePath)) {
-    return false;
-  }
 
   // Skip .env files themselves — they ARE the right place for secrets
   if (/(?:^|\/)\.env(?:\.[a-z]+)?$/.test(filePath)) return false;
@@ -199,9 +200,16 @@ function extractContent(toolName, toolInput) {
  * Find the first matching line and line number for a pattern in content.
  * Returns { lineNumber, lineText } or null.
  */
-function findMatch(pattern, content) {
+function findMatch(pattern, content, multiline = false) {
+  if (multiline) {
+    const m = pattern.exec(content);
+    if (!m) return null;
+    const lineNumber = content.slice(0, m.index).split('\n').length;
+    return { lineNumber, lineText: content.split('\n')[lineNumber - 1].trim() };
+  }
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
+    pattern.lastIndex = 0;
     if (pattern.test(lines[i])) {
       return { lineNumber: i + 1, lineText: lines[i].trim() };
     }
@@ -248,37 +256,48 @@ async function main() {
     return;
   }
 
-  // --- Check CRITICAL patterns ---
+  // --- Check CRITICAL patterns (collect ALL before blocking) ---
+  // Skip heuristic credential patterns in test files (test files have fake creds)
+  const isTest = isTestFile(filePath);
+  const HEURISTIC_IDS = new Set(['SEC-CRIT-001', 'SEC-CRIT-002', 'SEC-CRIT-003']);
+  const criticalHits = [];
   for (const def of CRITICAL_PATTERNS) {
-    // Reset lastIndex for global regexes (defensive — our patterns aren't /g but good practice)
+    if (isTest && HEURISTIC_IDS.has(def.id)) continue;
     def.pattern.lastIndex = 0;
+    const match = findMatch(def.pattern, content, def.multiline);
+    if (match) criticalHits.push({ def, match });
+  }
 
-    const match = findMatch(def.pattern, content);
-    if (!match) continue;
+  if (criticalHits.length > 0) {
+    const findings = criticalHits
+      .map(({ def, match }) =>
+        [
+          `🚫 ${def.id} [${def.rule}] — ${def.label}`,
+          `   File:  ${filePath}:${match.lineNumber}`,
+          `   Found: ${match.lineText.slice(0, 120)}`,
+          `   Risk:  ${def.description}`,
+          `   Fix:   ${def.fix}`,
+        ].join('\n')
+      )
+      .join('\n\n');
 
     const err = [
-      `🚫 ${def.id} [${def.rule}] — ${def.label}`,
+      `SECURITY BLOCKED — ${criticalHits.length} critical finding(s):`,
       ``,
-      `File:    ${filePath}`,
-      `Line:    ${match.lineNumber}`,
-      `Found:   ${match.lineText.slice(0, 120)}`,
+      findings,
       ``,
-      `Risk:    ${def.description}`,
-      ``,
-      `Fix:     ${def.fix}`,
-      ``,
-      `This change is BLOCKED. Resolve the security issue and retry.`,
+      `Resolve ALL issues above and retry.`,
     ].join('\n');
 
     process.stderr.write(err + '\n');
-    process.exit(2); // Hard block
+    process.exit(2);
   }
 
   // --- Check ADVISORY patterns ---
   const advisoryHits = [];
   for (const def of ADVISORY_PATTERNS) {
     def.pattern.lastIndex = 0;
-    const match = findMatch(def.pattern, content);
+    const match = findMatch(def.pattern, content, def.multiline);
     if (match) {
       advisoryHits.push({ def, match });
     }

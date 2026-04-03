@@ -1,6 +1,6 @@
 ---
 name: research
-description: Topic-agnostic parallel research wave. Launches specialized agents (Business/Market, API/Docs, Architecture, Domain/Rules, Implementations, YouTube) based on topic type. Produces RESEARCH.md consumed by /plan.
+description: Topic-agnostic parallel research wave. Launches specialized agents (Business/Market, API/Docs, Architecture, Domain/Rules, Implementations, YouTube) based on topic type. Produces RESEARCH.md consumed by /build (planning phase).
 disable-model-invocation: true
 argument-hint: <topic or feature to research>
 ---
@@ -33,7 +33,7 @@ Real agents. Real searches. Real output.
     │
     ├─ Resumo de 5–10 linhas dos principais achados
     │
-    └─ 3–5 perguntas de clarificação → aguarda resposta antes de indicar pronto para /plan
+    └─ 3–5 perguntas de clarificação → aguarda resposta antes de indicar pronto para /build (planning phase)
 ```
 
 ---
@@ -434,15 +434,15 @@ Com base no que foi pesquisado, faça **3 a 5 perguntas de clarificação** que:
 - Endereçam gaps identificados na pesquisa (algo que as fontes não cobriram com clareza)
 - Forçam decisões técnicas ou de produto que o usuário precisa tomar (ex: qual API usar? qual estratégia de cache?)
 - Expõem trade-offs encontrados que dependem das prioridades do usuário (ex: consistência vs. performance? simplicidade vs. escalabilidade?)
-- Ajudam a refinar o escopo antes do `/plan` (ex: a feature é um MVP ou precisa estar pronta para produção desde o início?)
+- Ajudam a refinar o escopo antes do `/build` (planning phase) (ex: a feature é um MVP ou precisa estar pronta para produção desde o início?)
 
 Apresente as perguntas numeradas e aguarde a resposta do usuário.
 
 **Após receber as respostas**, emita:
 
 ```
-Pronto para /plan [tópico].
-Use os achados do RESEARCH.md como contexto para o planejamento.
+Pronto para /build [tópico].
+Use os achados do RESEARCH.md como contexto para o planejamento (Phase 2 de /build).
 ```
 
 ---
@@ -453,5 +453,27 @@ Use os achados do RESEARCH.md como contexto para o planejamento.
 - **Cada agente tenta 3-4 buscas por fonte** antes de desistir e passar para a próxima. Persistência é parte do processo.
 - **Resultados não encontrados são reportados honestamente.** Se uma fonte não retornou nada útil, o agente registra isso em vez de inventar conteúdo.
 - **Máximo 4 agentes por wave.** Se 5 ou mais dimensões forem relevantes, o orquestrador prioriza os 4 mais impactantes para o tópico antes de lançar a wave.
-- **O RESEARCH.md é o artefato principal.** Ele deve ser útil como referência durante o `/plan` e o `/feature-dev` — não um dump bruto, mas um documento editado e sintetizado.
-- **As perguntas de clarificação encerram o fluxo.** Não prossiga para `/plan` automaticamente — aguarde o usuário responder antes de indicar que está pronto.
+- **O RESEARCH.md é o artefato principal.** Ele deve ser útil como referência durante o `/build` (planning phase) e o `/feature-dev` — não um dump bruto, mas um documento editado e sintetizado.
+- **As perguntas de clarificação encerram o fluxo.** Não prossiga para `/build` automaticamente — aguarde o usuário responder antes de indicar que está pronto.
+
+---
+
+## Context Budget
+
+Este skill lança múltiplos agentes de pesquisa em paralelo — cada wave consome ~8-12k tokens.
+
+**Checkpoint triggers:**
+- Após Phase 1 (wave completa): escrever `.claude/checkpoint.md` com agentes lançados, resultados parciais, e próximo passo
+- Se contexto estimado atingir ~60k tokens durante agregação: escrever checkpoint com achados parciais e emitir:
+  `↺ Contexto ~60k — checkpoint escrito. Recomendo /compact. Use /resume para continuar a agregação do RESEARCH.md.`
+
+**Formato do checkpoint:**
+```
+skill: /research
+fase: [phase_0 | wave_em_progresso | agregacao | qa_gate]
+topico: [tópico pesquisado]
+agentes_completados: [lista]
+agentes_pendentes: [lista]
+achados_parciais: [resumo dos achados já coletados]
+proximo: [próximo passo exato]
+```

@@ -32,7 +32,7 @@ Detecta a stack real e adapta automaticamente todas as configurações.
 
 ## Phase 1 — Exploração
 
-> **Emit:** `▶ [1/5] Explorando o projeto`
+> **Emit:** `▶ [1/6] Explorando o projeto`
 
 ### Detectar linguagem e runtime
 
@@ -124,7 +124,7 @@ Verificar também se já existe `.claude/architecture.json` com conteúdo person
 
 ## Phase 2 — Diagnóstico
 
-> **Emit:** `▶ [2/5] Diagnosticando compatibilidade`
+> **Emit:** `▶ [2/6] Diagnosticando compatibilidade`
 
 Determinar compatibilidade de cada hook com a stack detectada:
 
@@ -164,7 +164,7 @@ Compatibilidade:
 O que será alterado:
   - .claude/architecture.json → [descrição da mudança]
   - CLAUDE.md (ou CLAUDE.kit.md) → [descrição da mudança]
-  - .claude/session-start.mjs → comandos de teste atualizados
+  - .claude/hooks/session-start.mjs → comandos de teste atualizados
   [outros itens detectados]
 
 ⚠ Personalizações existentes detectadas: [sim/não — se sim, listar arquivos]
@@ -180,7 +180,7 @@ Se o usuário responder "ajustar", perguntar o que deve ser corrigido no diagnó
 
 ## Phase 3 — Atualizar architecture.json
 
-> **Emit:** `▶ [3/5] Configurando arquitetura`
+> **Emit:** `▶ [3/6] Configurando arquitetura`
 
 Gerar e escrever `.claude/architecture.json` baseado no padrão detectado.
 
@@ -333,11 +333,13 @@ Corrigir apenas o que não corresponder. Não sobrescrever o que já estiver cor
 }
 ```
 
+> **Checkpoint:** Se contexto atingir ~60k tokens → escreve `.claude/checkpoint.md` com skill: adapt, fase: 3, padrão detectado, arquivos a alterar, próximo passo. Emite: `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+
 ---
 
 ## Phase 4 — Atualizar CLAUDE.md e hooks
 
-> **Emit:** `▶ [4/5] Atualizando configurações`
+> **Emit:** `▶ [4/6] Atualizando configurações`
 
 ### CLAUDE.md / CLAUDE.kit.md
 
@@ -424,7 +426,7 @@ Atualizar também a seção de testes para refletir o test command correto da st
 
 ### session-start.mjs
 
-Localizar o arquivo `.claude/session-start.mjs`.
+Localizar o arquivo `.claude/hooks/session-start.mjs`.
 Encontrar o bloco que define os comandos de teste (procurar por referências a `npm test`, `jest`, `vitest`, etc.).
 Substituir pelo comando correto detectado na Phase 1.
 
@@ -454,9 +456,51 @@ Se o hook não existir, pular esta etapa e registrar no relatório final.
 
 ---
 
-## Phase 5 — Relatório final
+## Phase 5 — Validação
 
-> **Emit:** `▶ [5/5] Adaptação concluída`
+> **Emit:** `▶ [5/6] Validando configuração`
+
+Verificar que as alterações feitas estão funcionais:
+
+### 5.1 — Validar architecture.json
+
+```bash
+node -e "const c = JSON.parse(require('fs').readFileSync('.claude/architecture.json','utf8')); console.log('pattern:', c.pattern); console.log('layers:', Object.keys(c.layers || {}).join(', ')); console.log('valid: true')"
+```
+
+Se falhar (JSON inválido, erro de parse) → corrigir antes de continuar.
+
+### 5.2 — Validar hooks
+
+Verificar que os hooks essenciais existem e são executáveis:
+
+```bash
+# Verificar que os hooks existem
+ls -la .claude/hooks/session-start.mjs .claude/hooks/architecture-guard.mjs .claude/hooks/tdd-guard.mjs 2>/dev/null
+```
+
+Se `architecture.json` tem `"disabled": true` → verificar que architecture-guard respeita o flag:
+```bash
+echo '{"tool_name":"Write","tool_input":{"file_path":"test.ts","content":"import x from \"prisma\""}}' | node .claude/hooks/architecture-guard.mjs
+# Deve retornar ALLOW (não bloquear) quando disabled
+```
+
+### 5.3 — Testar detecção de stack
+
+```bash
+# Executar session-start e verificar que detecta a stack correta
+echo '{}' | node .claude/hooks/session-start.mjs 2>/dev/null | node -e "process.stdin.on('data',d=>{const o=JSON.parse(d);console.log(o.additionalContext?.substring(0,500))})"
+```
+
+Verificar que o output menciona a stack e framework corretos (detectados na Phase 1).
+
+Se qualquer validação falhar → corrigir o arquivo afetado e re-validar antes de avançar para o relatório.
+
+---
+
+## Phase 6 — Relatório final
+
+> **Emit:** `▶ [6/6] Adaptação concluída`
 
 Apresentar relatório completo:
 
@@ -469,7 +513,7 @@ Padrão:   [padrão arquitetural detectado]
 Alterações feitas:
   ✅ .claude/architecture.json — [descrição do que foi alterado]
   ✅ CLAUDE.md (ou CLAUDE.kit.md) — seção arquitetura atualizada para [padrão]
-  ✅ .claude/session-start.mjs — test command: [comando]
+  ✅ .claude/hooks/session-start.mjs — test command: [comando]
   [listar outros arquivos alterados]
 
 Itens pulados (arquivo não encontrado):

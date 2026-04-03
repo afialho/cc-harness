@@ -30,13 +30,17 @@ async function readStdin() {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+let _rtkInstalledCache = null;
+
 function isRtkInstalled() {
+  if (_rtkInstalledCache !== null) return _rtkInstalledCache;
   try {
     execSync('which rtk', { stdio: 'ignore' });
-    return true;
+    _rtkInstalledCache = true;
   } catch {
-    return false;
+    _rtkInstalledCache = false;
   }
+  return _rtkInstalledCache;
 }
 
 async function main() {
@@ -75,21 +79,15 @@ async function main() {
 
   let context;
   if (!rtkInstalled) {
-    context = [
-      `⚠️  RTK CLI not installed — RULE-EFF-001 requires it for 60-90% token savings.`,
-      `Install: npm install -g rtk  (or see scripts/setup.sh)`,
-      `Once installed, run: rtk ${command}`,
-    ].join('\n');
+    context = `⚠️  RTK not installed. Install: npm install -g rtk — then use \`rtk ${command}\` for 60-90% token savings.`;
   } else {
-    context = [
-      `📌 RULE-EFF-001 (RTK): Use \`rtk ${command}\` instead of \`${command}\`.`,
-      `RTK compresses output and saves tokens. Rewrite the Bash command with the rtk prefix.`,
-    ].join('\n');
+    context = `📌 RULE-EFF-001: Use \`rtk ${command}\` instead of \`${command}\`.`;
   }
 
+  const existing = input.additionalContext || '';
   const output = {
     ...input,
-    additionalContext: context,
+    additionalContext: existing ? `${existing}\n\n${context}` : context,
   };
 
   process.stdout.write(JSON.stringify(output));

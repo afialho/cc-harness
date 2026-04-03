@@ -389,6 +389,8 @@ Adaptar automaticamente conforme a stack detectada:
 - Java (Maven): usar `actions/setup-java`, `mvn test`, `mvn spotbugs:check`, `mvn package`
 - Rust: usar `actions/rust-cache`, `cargo test`, `cargo clippy`, `cargo audit`, `cargo build --release`
 
+> **Checkpoint:** Se contexto atingir ~60k tokens → escreve `.claude/checkpoint.md` com skill, fase, arquivos, próximo passo. Emite: `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+
 ### GitLab CI — `.gitlab-ci.yml`
 
 Gerar equivalente para GitLab com:

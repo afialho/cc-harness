@@ -100,12 +100,15 @@ Task: Propose 2–3 implementation approaches for this feature using the archite
 
 Present the options to the user. Get approval on the chosen approach before implementing.
 
+> **Checkpoint:** Se o contexto estimado atingir ~60k tokens neste ponto, escreva `.claude/checkpoint.md` com: skill=feature-dev, phase=4/7, feature name, approach aprovado, BDD scenarios, arquivos planejados, proximo=Phase 5.
+> Emita: `↺ Contexto ~60k — checkpoint escrito. Recomendo /compact.`
+
 **Architecture constraints (read from `.claude/architecture.json`):**
 - Hexagonal: domain layer zero external deps; application depends only on domain + ports; external deps behind port interfaces
 - MVC: business logic in services (not controllers); controllers are thin; no direct DB calls in controllers
 - Next.js App Router: server-side logic in lib/; keep 'use client' boundary as deep as possible; mutations via Server Actions
 - Feature-based: features are self-contained; shared code only in src/shared/; no cross-feature imports
-- Run `/hexagonal` if guidance needed on hexagonal-specific decisions
+- Consult `.claude/architecture.json` and `Rules.md` for hexagonal-specific decisions
 
 ### Phase 5 — Implementation (TDD)
 > **Emit:** `▶ [5/7] Implementation (TDD)`
@@ -129,45 +132,15 @@ GREEN:    Write the minimum code to make it pass
 REFACTOR: Improve readability, remove duplication, apply SOLID
 ```
 
-**Order of implementation — based on `.claude/architecture.json` pattern:**
+**Leia `.claude/architecture.json` para determinar o padrão. Sequência por padrão:**
 
-*hexagonal (or new project):*
-1. Domain entities and value objects (unit tests)
-2. Port interfaces (src/ports/)
-3. Application use cases (unit tests with fake adapters)
-4. Infrastructure adapters (integration tests)
-5. Composition root (wire adapters to ports)
-6. Cucumber step definitions
+*hexagonal (ou projeto novo):* BDD → Domain entities → Ports → Use Cases → Adapters → Composition root → Cucumber → Cypress → k6
+*mvc-rails:* BDD → Model + spec → Service + spec → Controller + request tests → Cucumber → Cypress
+*mvc-express/nestjs:* BDD → DTO/Model → Service + tests → Controller + tests → Routes → Integration tests → Cucumber → Cypress → k6
+*nextjs-app-router:* BDD → lib/ functions + tests → Server Actions → API Routes → Server Components → Client Components → Cucumber → Cypress → k6
+*feature-based:* BDD → Business logic + tests → UI components → API integration → Integration tests → Cucumber → Cypress
 
-*mvc-rails:*
-1. Model + spec (unit tests — validations, associations, scopes)
-2. Service + spec (unit tests — business logic)
-3. Controller + spec (unit tests — action responses)
-4. Request/integration tests
-5. Cucumber step definitions
-
-*mvc-express / mvc-nestjs:*
-1. DTO/Model + test (unit tests)
-2. Service + test (unit tests — business logic)
-3. Controller + test (unit tests — response contracts)
-4. Route wiring
-5. Integration tests
-6. Cucumber step definitions
-
-*nextjs-app-router:*
-1. lib/ functions + test (server-side logic, data fetching)
-2. Server Actions (if mutations)
-3. API Route Handlers + integration test (if new endpoint)
-4. Server Components
-5. Client Components + test
-6. Cucumber step definitions
-
-*feature-based:*
-1. Business logic + test (services, utilities)
-2. UI components (if applicable)
-3. API integration (if applicable)
-4. Integration tests
-5. Cucumber step definitions
+Se `architecture.json` nao existir, assume hexagonal. Cypress e k6 sao condicionais (ver Phase 6).
 
 **At each Write/Edit the `architecture-guard` hook fires:**
 - Checks the file's layer
@@ -264,6 +237,19 @@ rtk npx cucumber-js                             # BDD
 rtk npx cypress run                             # E2E
 rtk k6 run tests/load/[feature].js             # load test
 ```
+
+---
+
+## Tratamento de falhas
+
+| Situacao | Comportamento |
+|----------|---------------|
+| Requisito impossivel descoberto | Reporta ao usuario com evidencia, aguarda decisao antes de continuar |
+| Contradicao de arquitetura | Corrige a violacao, documenta a decisao no commit |
+| Teste nao passa apos 3 tentativas | Documenta o bloqueio, marca como PARTIAL, continua demais itens |
+| Dependencia faltando | Instala via Docker, documenta no handoff |
+| Pergunta de clarificacao revela mudanca de escopo | Para a implementacao, volta para Phase 1 (Discovery) com o novo escopo |
+| Contexto proximo de 80k tokens | Escreve checkpoint, emite recomendacao de /compact |
 
 ---
 

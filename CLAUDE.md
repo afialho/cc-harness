@@ -15,8 +15,20 @@ O scale é capturado pelo `/ideate` (pergunta obrigatória) ou passado diretamen
 | **Product** | App indo a mercado, early stage | MVP + CI/CD (GitHub Actions), rate limiting, structured logging, testes E2E |
 | **Scale** | Produto com tração, time crescendo | Product + OpenTelemetry → Grafana, multi-tenancy, load tests (k6) |
 
-**Regras em TODOS os scales:** TDD, BDD, auth gate, security-scan, hexagonal (ou pattern do projeto).
-**Só em Product/Scale:** CI/CD, observabilidade, rate limiting, load tests.
+**Regras em TODOS os scales:** auth gate, security-scan, Docker, Conventional Commits.
+**Só em Product/Scale:** CI/CD, rate limiting, structured logging. **Só em Scale:** observabilidade completa (OTel), load tests (k6).
+
+### Metodologia por scale
+
+| Prática | MVP | Product | Scale |
+|---------|-----|---------|-------|
+| TDD | advisory | obrigatório | obrigatório |
+| BDD (Gherkin) | opcional | obrigatório | obrigatório |
+| Hexagonal (camadas) | advisory | obrigatório | obrigatório |
+| E2E (Cypress) | opcional | obrigatório | obrigatório |
+| Load tests (k6) | ❌ | opcional | obrigatório |
+| CI/CD | opcional | obrigatório | obrigatório |
+| Observabilidade | ❌ | structured logging | OTel → Grafana |
 
 ---
 
@@ -31,18 +43,10 @@ rtk docker compose logs -f    # follow logs
 rtk docker compose down       # stop
 ```
 
-**Architecture** — Hexagonal. Layers are sacred:
-```
-src/domain/         Pure business logic. Zero external deps.
-src/application/    Use cases. Depends on Domain + Ports only.
-src/ports/          Interface contracts.
-src/infrastructure/ Adapters implementing ports.
-src/shared/         Cross-cutting (config, logging, utils).
-```
+**Architecture** — Defined in `.claude/architecture.json`. Default: hexagonal. Supported: `hexagonal`, `mvc-rails`, `mvc-express`, `nextjs-app-router`, `feature-based`, `flat`.
+Session-start hook injects the active pattern at runtime. Respect the layer rules for the detected pattern — see `Rules.md` RULE-ARCH-001.
 
-**TDD** — RED → GREEN → REFACTOR. Always. Tests before implementation.
-
-**BDD** — Gherkin scenarios before any code. Cucumber.js at `tests/bdd/features/`
+**TDD / BDD / Hexagonal** — Obrigatoriedade varia por scale (ver tabela acima). Nunca ignorar em Product/Scale.
 
 **Agents** — Max 5 parallel. Each agent = 1 granular activity. 100k token budget per agent.
 
@@ -103,58 +107,17 @@ Before each phase/step: `▶ [N/Total] Phase Name`
 
 ## Skills
 
-### Início de projeto
-| Skill | Purpose |
-|-------|---------|
-| `/ideate` | Entrevista colaborativa → feature map → MVP scope → IDEAS.md → handoff para /build |
-| `/scaffold` | Inicializa projeto do zero: estrutura, Docker, testing, Git, GitHub. Chamado automaticamente pelo /build se projeto vazio |
-| `/build` | Orquestrador completo: research → planning (gera PLAN.md) → implement. Entry point para tudo. Auto-routes: projeto vazio → /scaffold | intenção de transformação → /redesign|/refactor|/modernize | ideia vaga → /ideate |
-| `/adapt` | **Kit config para projeto existente** — detecta stack + padrão arquitetural + test framework → atualiza architecture.json, CLAUDE.md e hooks. Rodar UMA VEZ após adotar o kit em um projeto existente. Não faz refatoração de código (isso é /refactor). |
+Entry point: **`/build`** — auto-routes based on context:
+- Projeto vazio → `/scaffold`
+- Ideia vaga → `/ideate` → retoma `/build` automaticamente
+- Transformação de UI → `/redesign`
+- Refatoração de código → `/refactor`
+- Mudança de arquitetura → `/modernize`
 
-### Transformação de projetos existentes
-| Skill | Purpose |
-|-------|---------|
-| `/redesign` | Moderniza a **interface** de um app: analisa, detecta modo (rewrite nova pasta ou in-place), pesquisa referências visuais, propõe nova UX, implementa com TDD + pipeline /ui completo (shadcn/ui, Lucide, Framer Motion, a11y, browser-qa). Mobile-aware: detecta React Native → delega para /mobile. |
-| `/refactor` | Melhora a **qualidade do código** existente: clean, extract, layer, inline, module. Safety net de testes antes de qualquer mudança. Use para pagar dívida técnica antes de implementar features. |
-| `/modernize` | Transforma a **arquitetura** de um monolito: identifica bounded contexts, define target (hexagonal, modular, microservices), migra com Strangler Fig (zero downtime) |
+QA obrigatório após cada feature: `/qa-loop` + `/browser-qa` (gate final).
 
-### Desenvolvimento de features
-| Skill | Purpose |
-|-------|---------|
-| `/feature-dev` | Implementação TDD + arquitetura, 7 fases |
-| `/auth` | Auth completa: JWT + refresh, OAuth2/social, RBAC, reset, audit. Stack-aware |
-| `/ui` | Full UI pipeline: research → TDD → frontend-design → a11y → browser-qa gate |
-| `/frontend-design` | Plugin oficial de geração de UI — chamado internamente pelo `/ui` |
-| `/mobile` | React Native + Expo: scaffold, TDD (RNTL), Detox E2E, EAS Build |
-| `/dba` | Schema design, modelagem, índices, multi-tenancy, seed data |
-| `/data-migration` | Migrations zero-downtime, CQRS, event sourcing, state machines |
+Full skill catalog: `docs/SKILLS.md`
 
-### Qualidade e revisão
-| Skill | Purpose |
-|-------|---------|
-| `/qa-loop` | QA agentic: design, UX, backend, security, E2E + fix loop automático |
-| `/browser-qa` | Browser QA exaustivo: crawl de toda a UI + fix loop até 0 falhas |
-| `/code-review` | Revisão de arquitetura + TDD + segurança |
-| `/simplify` | Refactor para reuso, qualidade e eficiência |
-| `/perf-audit` | Bundle analysis, N+1 detection, caching, Core Web Vitals |
-| `/security-hardening` | OWASP Top 10, headers, secrets audit, dependency scanning |
+---
 
-### Infra e operações
-| Skill | Purpose |
-|-------|---------|
-| `/deploy` | Pipeline de deploy: infra-as-code, Docker prod, secrets, post-deploy validation |
-| `/ci-cd` | CI/CD: GitHub Actions, GitLab CI, quality gates, security scans |
-| `/observability` | Structured logging + OpenTelemetry → Grafana (Prometheus + Loki + Tempo) |
-
-### Documentação e planejamento
-| Skill | Purpose |
-|-------|---------|
-| `/research` | Parallel research wave → RESEARCH.md (mercado, libs, arquitetura, docs) |
-| `/docs-gen` | OpenAPI, C4 diagrams (Mermaid), CHANGELOG, developer runbook |
-| `/adr` | Architecture Decision Records: template, lifecycle, ADR index |
-| `/agent-teams` | Orquestração multi-time em paralelo |
-| `/resume` | Retoma trabalho a partir do checkpoint após reset de contexto |
-
-
-@Rules.md
-@Agents.md
+Full rules: `Rules.md` | Agent protocol: `Agents.md` | Skills: `docs/SKILLS.md`

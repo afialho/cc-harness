@@ -1,6 +1,6 @@
 # Testing Strategy
 
-Full testing strategy for this project. Run `/tdd` for interactive TDD guidance.
+Full testing strategy for this project. Follow TDD: RED → GREEN → REFACTOR.
 
 ## Testing Stack
 

@@ -175,6 +175,16 @@ Riscos identificados:
 
 **⏸ PAUSA:** Aguarda aprovação antes de qualquer modificação no código.
 
+> **Checkpoint:** Escreve `.claude/checkpoint.md`:
+> ```
+> skill: modernize
+> fase: strategy-approved
+> arquivos_modificados: [list]
+> proximo: safety-net
+> ```
+> Se contexto atingir ~60k tokens → escreve checkpoint e emite:
+> `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+
 ---
 
 ## Fase 3 — Safety net global

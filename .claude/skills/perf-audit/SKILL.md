@@ -202,6 +202,8 @@ Scan route handlers and controllers for blocking patterns:
 
 Flag each as MAJOR if it is in a request handler on a hot path.
 
+> **Checkpoint:** Se contexto atingir ~60k tokens → escreve `.claude/checkpoint.md` com skill, fase, arquivos, próximo passo. Emite: `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+
 ---
 
 ## Fase 4 — Infrastructure & Networking

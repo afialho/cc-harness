@@ -37,7 +37,7 @@ Se IDEAS.md não existir → pergunta ao usuário antes de continuar.
 
 ## Fase 1 — Estrutura de diretórios + dependências base
 
-> **Emit:** `▶ [1/5] Project structure`
+> **Emit:** `▶ [1/6] Project structure`
 
 ### Fullstack (Next.js App Router)
 
@@ -101,7 +101,7 @@ rtk npm install -D typescript tsx vitest @types/node
 
 ## Fase 2 — Docker Compose
 
-> **Emit:** `▶ [2/5] Docker Compose`
+> **Emit:** `▶ [2/6] Docker Compose`
 
 Cria `docker-compose.yml` baseado no tipo. Todos os serviços usam `env_file: [".env"]` — nenhuma credencial inline.
 
@@ -167,7 +167,7 @@ CMD ["npm", "run", "dev"]
 
 ## Fase 3 — TypeScript + Testing config
 
-> **Emit:** `▶ [3/5] TypeScript + Testing config`
+> **Emit:** `▶ [3/6] TypeScript + Testing config`
 
 ### tsconfig.json
 
@@ -235,9 +235,30 @@ module.exports = {
 
 ---
 
-## Fase 4 — Git + GitHub
+## Fase 4 — Validation Gate
 
-> **Emit:** `▶ [4/5] Git + GitHub`
+> **Emit:** `▶ [4/6] Validation gate`
+
+Verifica que o projeto gerado compila, testa e sobe antes de commitar. **CLI projects** pulam o Docker check.
+
+```bash
+# Tests pass
+rtk npm test
+
+# Build compiles
+rtk npm run build
+
+# Docker Compose válido (skip para CLI)
+rtk docker compose config --quiet
+```
+
+Se qualquer check falhar → **diagnosticar e corrigir antes de prosseguir**. Não avançar para Git com projeto quebrado.
+
+---
+
+## Fase 5 — Git + GitHub
+
+> **Emit:** `▶ [5/6] Git + GitHub`
 
 ```bash
 # Init
@@ -267,9 +288,9 @@ rtk git push -u origin main
 
 ---
 
-## Fase 5 — architecture.json + handoff
+## Fase 6 — architecture.json + handoff
 
-> **Emit:** `▶ [5/5] Architecture config`
+> **Emit:** `▶ [6/6] Architecture config`
 
 Cria `.claude/architecture.json` baseado no tipo:
 
@@ -322,7 +343,7 @@ Próximo: /build [feature] para iniciar a implementação.
 1. **Mobile → sempre delegar** para `/mobile scaffold` — nunca reimplementar
 2. **Docker sempre** — todo projeto tem `docker-compose.yml` antes de qualquer código
 3. **GitHub sempre** — repositório criado antes do primeiro commit
-4. **architecture.json sempre** — criado na Fase 5 para que hooks e skills funcionem
+4. **architecture.json sempre** — criado na Fase 6 para que hooks e skills funcionem
 5. **Credenciais em .env** — `.env.example` usa campos vazios sem valores reais; `.env` nunca é commitado
 6. **Sem dependências de negócio** — apenas infra base (framework, testing, build tools)
 7. **Nunca sobrescrever** — se `package.json` já existe, sinaliza ao usuário e aborta

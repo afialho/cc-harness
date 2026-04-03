@@ -4,11 +4,12 @@
  *
  * Triggered: SessionStart / startup | resume
  *
- * Injects key project context at the start of every session:
- *   - Active rules summary
- *   - Available skills
- *   - Token efficiency reminders
- *   - Current project state (if detectable)
+ * Injects dynamic project context at the start of every session:
+ *   - Detected stack and testing frameworks
+ *   - Architecture pattern
+ *   - Checkpoint restoration (for /resume after context reset)
+ *
+ * Static rules, skills, and token budget are in CLAUDE.md (always loaded).
  */
 
 import { existsSync, readFileSync } from 'fs';
@@ -51,7 +52,8 @@ function getArchPattern() {
 function detectStack() {
   const markers = [];
   if (existsSync('package.json')) {
-    const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+    let pkg;
+    try { pkg = JSON.parse(readFileSync('package.json', 'utf8')); } catch { return markers; }
     const deps = { ...pkg.dependencies, ...pkg.devDependencies };
     if (deps['next']) markers.push('Next.js');
     else if (deps['expo']) markers.push('Expo (React Native) 📱');
@@ -138,74 +140,11 @@ async function main() {
     `## Active Stack`,
     stackStr,
     ``,
-    `## Key Rules (Always Active)`,
-    `- RULE-EFF-001 [AUTO]: \`rtk <cmd>\` for ALL CLI ops (60-90% token savings)`,
-    `- RULE-DOCKER-001 [AUTO]: All services in Docker — \`rtk docker compose up -d\``,
-    `- RULE-GIT-002 [AUTO]: Conventional Commits — feat|fix|test|refactor|chore|perf(scope): desc`,
-    `- RULE-GIT-001: Worktrees for parallel features — \`rtk git worktree add ../[proj]-[feat] -b feature/[feat]\``,
-    `- ${archRule}`,
-    `- RULE-TEST-001: Tests BEFORE implementation (TDD) — RED → GREEN → REFACTOR`,
-    `- RULE-TEST-002: BDD Gherkin scenarios before code`,
-    `- RULE-AGENT-001: Max 5 parallel agents | RULE-AGENT-002: 1 granular activity per agent`,
-    ``,
-    `## Main Flow`,
-    `  /ideate → /scaffold (new project) → /build → [/dba if new entities] → /feature-dev | /agent-teams → /deploy`,
-    `  /build auto-routes: empty project → /scaffold | transformation intent → /redesign | /refactor | /modernize | vague idea → /ideate`,
-    ``,
-    `## Skills`,
-    `### Start here`,
-    `- /build           → Entry point for everything. Vague idea? Calls /ideate. Empty project? Calls /scaffold. Clear spec? Straight to build.`,
-    `- /scaffold        → New project init: structure, Docker, testing, Git, GitHub (called automatically by /build)`,
-    `- /deploy          → Production deploy: Docker, IaC, secrets, post-deploy validation`,
-    `- /adapt           → Auto-configure kit for an existing project`,
-    ``,
-    `### Transformação de projetos existentes`,
-    `- /redesign        → Moderniza app existente: analisa, modo auto-detectado (rewrite nova pasta | in-place), propõe nova UX, implementa com paridade`,
-    `- /refactor        → Refatoração estruturada: clean, extract, layer, inline, module — testes primeiro`,
-    `- /modernize       → Monolito → hexagonal | modular | microservices (Strangler Fig, zero downtime)`,
-    ``,
-    `### Feature development`,
-    `- /feature-dev     → TDD + arch impl, 7 phases`,
-    `- /auth            → Auth complete: JWT+refresh, OAuth, RBAC, magic link (stack-aware)`,
-    `- /ui              → Full UI pipeline: research → TDD → frontend-design → a11y → browser-qa`,
-    `- /mobile          → React Native + Expo: scaffold, TDD (RNTL), Detox E2E, EAS Build`,
-    `- /dba             → Schema design, indexing, multi-tenancy, seed data (call before implementing new entities)`,
-    `- /data-migration  → Zero-downtime migrations, CQRS, state machines`,
-    ``,
-    `### Quality & review`,
-    `- /qa-loop         → QA gates: design, UX, backend, security, E2E + auto fix loop`,
-    `- /browser-qa      → Exhaustive browser QA until 0 failures`,
-    `- /code-review     → Architecture + TDD + security review`,
-    `- /simplify        → Refactor for reuse + SOLID`,
-    `- /perf-audit      → Bundle analysis, N+1 detection, Core Web Vitals`,
-    `- /security-hardening → OWASP Top 10, headers, secrets audit, dependency scanning`,
-    ``,
-    `### Infrastructure & ops`,
-    `- /ci-cd           → CI/CD pipeline: GitHub Actions, GitLab CI, quality gates`,
-    `- /observability   → Structured logging + OpenTelemetry → Grafana stack`,
-    ``,
-    `### Docs & planning`,
-    `- /research        → Parallel research wave → RESEARCH.md`,
-    `- /docs-gen        → OpenAPI, C4 diagrams, CHANGELOG, developer runbook`,
-    `- /adr             → Architecture Decision Records`,
-    `- /agent-teams     → Multi-team parallel orchestration`,
-    `- /resume          → Resume from checkpoint`,
-    ``,
-    `## Skill Hierarchy — Important Distinctions`,
-    `- /ui is the PIPELINE (research → TDD → design → a11y → browser-qa). /frontend-design is the PLUGIN ENGINE called internally by /ui. Users: always call /ui, never /frontend-design directly.`,
-    `- /refactor = PROACTIVE cleanup of existing code (before a feature starts). /code-review = REACTIVE validation after implementation. Use /refactor to pay down tech debt; use /code-review as the quality gate.`,
-    `- /adapt = configure the kit for an EXISTING project once (after adopt.sh). /refactor = improve specific code. /modernize = transform the whole architecture.`,
-    ``,
     `## Testing Stack`,
     testingStack,
     ``,
-    `## Context Budget`,
-    `60k tokens  → write .claude/checkpoint.md immediately (capture phase, files, next step, decisions)`,
-    `80k tokens  → strongly recommended: /compact → session-start restores checkpoint → /resume`,
-    `100k tokens → absolute limit — context quality degrades above this; always compact before here`,
-    ``,
-    `Checkpoint format: skill in progress | phase N/N | files modified | exact next step | key decisions.`,
-    `Rules.md and Agents.md are auto-loaded via CLAUDE.md @imports.`,
+    `## Architecture Pattern`,
+    `${archPattern} — ${archRule}`,
   ];
 
   const output = {

@@ -305,7 +305,6 @@ echo "  /feature-dev     → TDD + hexagonal implementation (extends official fe
 echo "  /frontend-design → Production-grade UI (extends official frontend-design plugin)"
 echo "  /browser-qa      → Exhaustive browser QA: crawl all UI, fix all errors"
 echo "  /qa-loop         → Tiered QA gates with automatic fix loop"
-echo "  /plan            → Development plan with BDD + arch mapping"
 echo "  /research        → Parallel research wave"
 echo "  /agent-teams     → Multi-team parallel orchestration"
 echo ""

@@ -649,3 +649,5 @@ Para qualquer app com UI, Foundation antes de qualquer feature:
   Se auth falha → TODO o build para
   Sem exceções.
 ```
+
+> **Checkpoint:** Se contexto atingir ~60k tokens → escreve `.claude/checkpoint.md` com skill, fase, arquivos, próximo passo. Emite: `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`

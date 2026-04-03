@@ -129,6 +129,16 @@ Feature: Authentication
     Then my account should be locked for 15 minutes
 ```
 
+> **Checkpoint:** Escreve `.claude/checkpoint.md`:
+> ```
+> skill: auth
+> fase: bdd-scenarios-written
+> arquivos_modificados: [list]
+> proximo: architecture
+> ```
+> Se contexto atingir ~60k tokens → escreve checkpoint e emite:
+> `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+
 ---
 
 ### Fase 2 — Arquitetura Hexagonal

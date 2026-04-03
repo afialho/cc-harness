@@ -485,3 +485,25 @@ Se o usuário quiser revisar algo antes → aguarda instrução.
 | "marketplace", "multi-tenant", "escalar para muitos usuários" | Grande |
 | Analogia com Spotify, Zendesk, Salesforce, Notion | Grande |
 | Analogia com Todoist, Notion para uso pessoal | Pequeno-Médio |
+
+---
+
+## Context Budget
+
+Ideação envolve múltiplas rodadas de interação com o usuário — contexto cresce com cada resposta.
+
+**Checkpoint triggers:**
+- Após [3/5] Mapeamento de Features aprovado: checkpoint obrigatório (maior consumo de contexto até aqui)
+- Se contexto estimado atingir ~60k tokens em qualquer fase: checkpoint imediato
+
+**Formato do checkpoint:**
+```
+skill: /ideate
+fase: [absorção | entrevista | mapeamento | escopo | entrega]
+ideia: [resumo da ideia]
+respostas_coletadas: [N de N]
+features_mapeadas: [sim/não + resumo]
+proximo: [próximo passo exato]
+```
+
+Emitir: `↺ Contexto ~60k — checkpoint escrito. Recomendo /compact. Use /resume para retomar /ideate na fase [N/5].`

@@ -8,6 +8,8 @@
  *   - RULE-CODE-004: Warn about TODO/FIXME with blockers in commit messages
  *   - RULE-EFF-002: Warn about MCP usage when CLI alternative exists
  *
+ * Architecture file placement (RULE-ARCH-FILES) moved to architecture-guard.mjs.
+ *
  * Triggered: PreToolUse / Bash (for git and test commands)
  *
  * Extend this hook by adding new rule checkers in the RULES array.
@@ -24,23 +26,7 @@ async function readStdin() {
  *   { id, description, check(input) → { violated: bool, message: string } }
  */
 const RULES = [
-  {
-    id: 'RULE-EFF-001',
-    description: 'Use RTK CLI for all commands',
-    check(input) {
-      if (input.tool_name !== 'Bash') return null;
-      const cmd = input.tool_input?.command?.trim() || '';
-      const rtkCommands = ['git', 'npm', 'yarn', 'pnpm', 'ls', 'find', 'grep'];
-      const firstWord = cmd.split(/\s+/)[0];
-      if (rtkCommands.includes(firstWord) && !cmd.startsWith('rtk ')) {
-        return {
-          violated: false, // advisory only — rtk-rewrite.mjs handles this
-          message: null,
-        };
-      }
-      return null;
-    },
-  },
+  // RULE-EFF-001 removed — rtk-rewrite.mjs handles RTK enforcement directly
   {
     id: 'RULE-GIT-001',
     description: 'Use worktrees for parallel feature development',
@@ -75,26 +61,6 @@ const RULES = [
             `🚫 RULE-GIT-003 VIOLATED: --no-verify bypasses test checks.`,
             `Run tests first: rtk npm test (or equivalent)`,
             `All tests must pass before committing.`,
-          ].join('\n'),
-        };
-      }
-      return null;
-    },
-  },
-  {
-    id: 'RULE-ARCH-FILES',
-    description: 'Block test files from being placed in src/ (should be in tests/)',
-    check(input) {
-      if (input.tool_name !== 'Write' && input.tool_name !== 'Edit') return null;
-      const filePath = input.tool_input?.file_path || '';
-      const testExts = ['.test.ts', '.test.js', '.spec.ts', '.spec.js'];
-      if (filePath.includes('src/') && testExts.some(ext => filePath.endsWith(ext))) {
-        return {
-          violated: true,
-          message: [
-            `🚫 Architecture violation: test files must not be placed inside src/.`,
-            `Move to: tests/unit/ or tests/integration/ depending on scope.`,
-            `Current path: ${filePath}`,
           ].join('\n'),
         };
       }

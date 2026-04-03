@@ -214,6 +214,8 @@ Adapt diagrams to actual layers detected from `architecture.json` and `src/` str
 
 **Output:** `docs/architecture/c4-context.md`, `docs/architecture/c4-container.md`, `docs/architecture/c4-component.md`
 
+> **Checkpoint:** Se contexto atingir ~60k tokens → escreve `.claude/checkpoint.md` com skill, fase, arquivos, próximo passo. Emite: `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+
 ---
 
 ### Phase 4 — CHANGELOG Generation

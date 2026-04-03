@@ -123,7 +123,7 @@ async function main() {
     ...expectedTestPaths.slice(0, 3).map(p => `  ${p}`),
     ``,
     `Next step: write the failing test (RED phase) before continuing.`,
-    `Run \`/tdd\` for workflow guidance.`,
+    `Follow TDD: RED → GREEN → REFACTOR.`,
     ``,
     `If the test file should exist elsewhere, update testMapping in .claude/architecture.json.`,
   ].join('\n');

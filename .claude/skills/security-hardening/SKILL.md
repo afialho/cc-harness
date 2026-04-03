@@ -562,6 +562,8 @@ more_clear_headers Server;
 
 **Provide:** the specific implementation for the detected stack with any CSP adjustments needed based on the actual app's external dependencies (CDN, analytics, etc. found in Phase 1).
 
+> **Checkpoint:** Se contexto atingir ~60k tokens → escreve `.claude/checkpoint.md` com skill, fase, arquivos, próximo passo. Emite: `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+
 ---
 
 ## Phase 4 — Secrets Audit

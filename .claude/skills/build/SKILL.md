@@ -36,7 +36,6 @@ Cada fase tem budget próprio de contexto e checkpoints automáticos.
     │         │   ├─ Agente Implementations    (sempre)
     │         │   └─ Agente YouTube            (se tem tutoriais relevantes)
     │         ├─ Agrega em RESEARCH.md
-    │         ├─ Agrega em RESEARCH.md
     │         ├─ /qa-loop (qa-research) → GATE: research tem evidências reais?
     │         └─ ⏸ PAUSA: key insights + 3-5 perguntas de clarificação
     │
@@ -79,9 +78,9 @@ Projeto sem estrutura detectada. Preciso inicializar o ambiente antes de impleme
 ▶ Iniciando /scaffold...
 ```
 
-Após `/scaffold` concluir → continuar para Passo C automaticamente.
+Após `/scaffold` concluir → continuar para Passo B automaticamente.
 
-**Passo C — Intenção de transformação? → delegar completamente**
+**Passo B — Intenção de transformação? → delegar completamente**
 
 Antes de avaliar se a ideia é vaga, verificar se o argumento ou contexto indica **transformação de algo que já existe**.
 
@@ -124,7 +123,7 @@ Sua intenção é:
   (D) Construir uma feature nova → continuar com /build
 ```
 
-**Passo B — Ideia clara? Verificar (em ordem):**
+**Passo C — Ideia clara? Verificar (em ordem):**
 
 1. `IDEAS.md` existe na raiz do projeto? → contexto suficiente, pular para 0.1
 2. Projeto já tem código e o argumento descreve claramente **o que construir** (feature, entidades, comportamento esperado)? → pular para 0.1
@@ -436,6 +435,50 @@ rtk cat package.json | grep -E '"expo"|"react-native"'
 
 ---
 
+### Detecção automática: Library/Package
+
+Se nenhum frontend detectado (sem `src/pages/`, `app/`, `pages/`, nem Expo/React Native) E projeto tem manifesto de pacote (`"main"` ou `"exports"` em package.json, `[build-system]` em pyproject.toml, `Cargo.toml`, `setup.py`/`setup.cfg`):
+
+- **Library detectada** → usar Foundation Protocol Library (abaixo)
+
+---
+
+### Foundation Protocol Library (OBRIGATÓRIO para pacotes/bibliotecas)
+
+Bibliotecas não têm UI, não precisam de Docker, e não têm auth. O foco é: API pública limpa, testes sólidos, build/publish pipeline.
+
+#### [3a-lib] Project Setup
+1. Configurar build toolchain (tsup/esbuild para TS, setuptools/hatch para Python, cargo para Rust)
+2. Configurar exports/entry points no manifesto do pacote
+3. Configurar linting + formatting (eslint/prettier, ruff, clippy)
+
+#### [3b-lib] Public API Design
+1. Definir exports públicos — o que o consumidor importa
+2. Gerar tipos (TypeScript declarations, type stubs para Python)
+3. Criar `src/index.ts` (ou equivalente) com re-exports limpos
+
+#### Phase Gate Library
+
+```
+PHASE GATE — executar após cada módulo público:
+  □ Testes unitários passando (100% da API pública)
+  □ Build produz artefato correto (rtk npm run build / rtk cargo build)
+  □ Types/declarations gerados corretamente
+  □ /qa-loop (escopo: [módulo], dimensões: qa-code + qa-backend)
+  □ PASS obrigatório antes do próximo módulo
+```
+
+#### Scale Gates Library
+
+| Skill | MVP | Product | Scale |
+|-------|-----|---------|-------|
+| `/ci-cd` (build + test + publish) | — | **obrigatório** | **obrigatório** |
+| `/docs-gen` (API docs + README) | — | **obrigatório** | **obrigatório** |
+| `/security-hardening audit` | — | **obrigatório** | **obrigatório** |
+| Benchmarks | — | — | **obrigatório** |
+
+---
+
 ### Foundation Protocol Mobile (OBRIGATÓRIO para projetos React Native)
 
 Delegar integralmente para `/mobile` — não reimplementar aqui.
@@ -543,6 +586,7 @@ PHASE GATE — executar após cada feature mobile:
 | Feature com 3+ componentes independentes | `/agent-teams` (times paralelos) |
 | Feature única ou sequencial | `/feature-dev` (7 fases, agentes por wave) |
 | Feature com UI significativa | Inclui `/frontend-design` dentro da implementação |
+| Library (sem UI, sem API server) | `/feature-dev` (sem Foundation Web/Mobile, sem auth gate) |
 
 A decisão é tomada automaticamente com base no plano da Fase 2.
 
@@ -604,19 +648,66 @@ Após implementação completa:
 
 3. **Loop de correção** (se falhas de testes unitários/BDD): spawna agentes de fix targeted. Repete até tudo verde.
 
-3. **Code review global** (agente code-reviewer):
+4. **Code review global** (agente code-reviewer):
    - Conformidade hexagonal
    - Princípios SOLID
    - Cobertura de testes
    - Segurança
    - Se FAIL → loop de fix até PASS
 
+### Scale Gates — Skills obrigatórios por escala
+
+Antes do commit, verificar o scale declarado na Fase 0 (bloco ENTENDIMENTO) e executar os skills obrigatórios:
+
+| Skill | MVP | Product | Scale |
+|-------|-----|---------|-------|
+| `/ci-cd` | — | **obrigatório** | **obrigatório** |
+| `/security-hardening audit` | — | **obrigatório** | **obrigatório** |
+| `/docs-gen all` | — | **obrigatório** | **obrigatório** |
+| Rate limiting (auth + APIs públicas) | — | **obrigatório** | **obrigatório** |
+| Structured logging (request-id) | — | **obrigatório** | **obrigatório** |
+| `/observability all` | — | — | **obrigatório** |
+| `/perf-audit full` | — | — | **obrigatório** |
+| Load tests (`k6 run tests/load/*.js`) | — | — | **obrigatório** |
+
+**Execução:**
+
+**Se scale = Product:**
+```
+▶ Scale Gate — Product: executando skills obrigatórios
+
+1. /ci-cd                    → GitHub Actions pipeline (build, test, lint, security-scan)
+2. /security-hardening audit → OWASP Top 10, headers, secrets audit, dependency scanning
+3. /docs-gen all             → OpenAPI, C4 diagrams, CHANGELOG, developer runbook
+4. Verificar rate limiting em endpoints de auth e APIs públicas. Se não implementado → adicionar middleware de rate limiting antes do commit.
+5. Verificar structured logging (pino/structlog/slog) está configurado. Se ausente → configurar logging básico com request-id antes do commit.
+
+Se qualquer skill retornar BLOCKER → fix loop antes do commit.
+```
+
+**Se scale = Scale:**
+```
+▶ Scale Gate — Scale: executando skills obrigatórios (Product + extras)
+
+1. /ci-cd                    → GitHub Actions pipeline (build, test, lint, security-scan)
+2. /security-hardening audit → OWASP Top 10, headers, secrets audit, dependency scanning
+3. /docs-gen all             → OpenAPI, C4 diagrams, CHANGELOG, developer runbook
+4. /observability all        → Structured logging + OpenTelemetry → Grafana stack
+5. /perf-audit full          → Bundle analysis, N+1 detection, caching, Core Web Vitals
+6. Verificar rate limiting em endpoints de auth e APIs públicas. Se não implementado → adicionar middleware de rate limiting antes do commit.
+7. Executar suite completa de load tests: `rtk k6 run tests/load/*.js`. Se p95 > threshold → BLOCKER.
+
+Se qualquer skill retornar BLOCKER → fix loop antes do commit.
+```
+
+**Se scale = MVP:** nenhum skill adicional — prosseguir direto para o commit.
+
 4. **Commit:**
    ```bash
    rtk git add [arquivos específicos — nunca git add .]
    rtk git commit -m "feat([scope]): [descrição]
 
-   Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+   Co-Authored-By: Claude <noreply@anthropic.com>"
    ```
 
 5. **Apresenta summary final ao usuário:**

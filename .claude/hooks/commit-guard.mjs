@@ -14,7 +14,7 @@ async function readStdin() {
 }
 
 const CONVENTIONAL_RE =
-  /^(feat|fix|test|refactor|docs|chore|perf|style|ci|build|revert)(\([^)]+\))?(!)?: .{1,100}/;
+  /^(feat|fix|test|refactor|docs|chore|perf|style|ci|build|revert)(\([^)]+\))?(!)?: .{1,200}/;
 
 const VALID_TYPES = 'feat | fix | test | refactor | docs | chore | perf | style | ci | build | revert';
 

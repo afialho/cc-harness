@@ -186,6 +186,8 @@ async function processPayment(orderId: string, amount: number) {
 }
 ```
 
+> **Checkpoint:** Se contexto atingir ~60k tokens → escreve `.claude/checkpoint.md` com skill, fase, arquivos, próximo passo. Emite: `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+
 ### Fase 4 — Key Metrics
 > **Emit:** `▶ [4/6] Key Metrics`
 

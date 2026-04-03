@@ -6,6 +6,7 @@
  * Triggered: PreToolUse / Write | Edit
  *
  * Deterministic checks (hard block via exit 2):
+ *   - RULE-ARCH-FILES: Test files placed inside src/ (must go in tests/)
  *   - Domain files importing known infrastructure packages (ORMs, HTTP clients, etc.)
  *   - Application files importing infrastructure packages directly
  *
@@ -60,7 +61,7 @@ function loadArchConfig() {
 }
 
 function detectLayer(filePath, config) {
-  if (!config) return null;
+  if (!config?.layers) return null;
   for (const [layerName, layerDef] of Object.entries(config.layers)) {
     // Support both 'pattern' (hexagonal) and 'path' (MVC, feature-based) keys
     const rawPattern = layerDef.pattern || layerDef.path || '';
@@ -150,6 +151,18 @@ async function main() {
     return;
   }
 
+  // Block test files placed inside src/ — they belong in tests/
+  const TEST_EXTS = ['.test.ts', '.test.js', '.spec.ts', '.spec.js'];
+  if (filePath.includes('src/') && TEST_EXTS.some(ext => filePath.endsWith(ext))) {
+    const msg = [
+      `🚫 RULE-ARCH-FILES — Test files must not be placed inside src/.`,
+      `Move to: tests/unit/ or tests/integration/ depending on scope.`,
+      `Current path: ${filePath}`,
+    ].join('\n');
+    process.stderr.write(msg + '\n');
+    process.exit(2);
+  }
+
   const config = loadArchConfig();
   const layer = detectLayer(filePath, config);
 
@@ -178,7 +191,7 @@ async function main() {
         `Fix: remove these imports and inject the dependency via a port interface instead.`,
         `Example: inject UserRepository port in the constructor instead of importing Prisma directly.`,
         ``,
-        `See /hexagonal for architecture guidance.`,
+        `See .claude/architecture.json and Rules.md for architecture guidance.`,
       ].join('\n');
 
       process.stderr.write(msg + '\n');
@@ -186,23 +199,22 @@ async function main() {
     }
   }
 
-  // ── ADVISORY: layer reminder as additionalContext ─────────────────────────
+  // ── ADVISORY: layer reminder only for domain and application (high-value layers) ──
+  // Infrastructure and shared layers have no import restrictions worth advising on.
+  // This saves ~1k tokens per Write/Edit on infrastructure/shared files.
+  if (layer.name !== 'domain' && layer.name !== 'application' && layer.name !== 'ports') {
+    process.stdout.write(JSON.stringify(input));
+    return;
+  }
+
   const lines = [
-    `🏛️  ARCHITECTURE GUARD — Layer: \`${layer.name}\``,
-    `${layer.description}`,
-    ``,
+    `🏛️  Layer: \`${layer.name}\` — ${layer.description}`,
   ];
 
   if (layer.allowedImportPrefixes && layer.allowedImportPrefixes.length > 0) {
-    lines.push(`Allowed relative imports (from project src/):`);
-    for (const prefix of layer.allowedImportPrefixes) {
-      lines.push(`  ✅ ${prefix}`);
-    }
-    lines.push(`  ❌ Any infrastructure or framework package`);
+    lines.push(`Allowed imports: ${layer.allowedImportPrefixes.map(p => p.replace(/\/$/, '')).join(', ')}. ❌ No infrastructure/framework packages.`);
   } else if (layer.name === 'domain') {
-    lines.push(`⛔ RULE-ARCH-001: Zero external dependencies — no ORMs, HTTP clients, frameworks.`);
-  } else if (layer.name === 'shared') {
-    lines.push(`⚠️  No business logic — config, logging, utilities only.`);
+    lines.push(`⛔ RULE-ARCH-001: Zero external dependencies.`);
   }
 
   if (!isTestFile(filePath, config) && filePath.includes('src/')) {
@@ -212,8 +224,7 @@ async function main() {
     if (mappedTest) {
       const testDir = mappedTest[1];
       const fileName = filePath.split('/').pop().replace(/\.(ts|js|py|go|java|rb)$/, '');
-      lines.push(``);
-      lines.push(`📋 TDD: Write test first → ${testDir}${fileName}.test.*`);
+      lines.push(`📋 TDD: test first → ${testDir}${fileName}.test.*`);
     }
   }
 

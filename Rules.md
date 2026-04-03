@@ -52,7 +52,7 @@
 ### RULE-TEST-002
 **Every feature has BDD scenarios written before implementation starts.**
 - Gherkin feature files in `tests/bdd/features/` exist before code is written
-- Use `/plan` to generate BDD scenarios as part of planning
+- Use `/build` (planning phase) to generate BDD scenarios as part of planning
 
 ### RULE-TEST-003
 **Every domain and application file has a corresponding unit test.**
@@ -89,7 +89,7 @@
 
 > SOLID completo (RULE-CODE-001 a 008) + Clean Code (RULE-CODE-002, 003, 004, 009).
 > Enforcement: `qa-code` agent no `/qa-loop` verifica todos estes após cada feature.
-> Enforcement proativo: Rules.md é auto-carregado via @import em CLAUDE.md.
+> Key rules are injected at session start via `session-start.mjs` hook. Full rules are enforced by hooks (deterministic) and `/qa-loop` (code review).
 
 ### RULE-CODE-001
 **Single Responsibility Principle (S em SOLID).**
