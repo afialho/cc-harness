@@ -118,7 +118,7 @@ Before each phase/step: `▶ [N/Total] Phase Name`
 | `/ui` | Full UI pipeline: research → TDD → frontend-design → a11y → browser-qa gate |
 | `/frontend-design` | Plugin oficial de geração de UI — chamado internamente pelo `/ui` |
 | `/mobile` | React Native + Expo: scaffold, TDD (RNTL), Detox E2E, EAS Build |
-| `/db` | Schema design, modelagem, índices, multi-tenancy, seed data |
+| `/dba` | Schema design, modelagem, índices, multi-tenancy, seed data |
 | `/data-migration` | Migrations zero-downtime, CQRS, event sourcing, state machines |
 
 ### Qualidade e revisão
@@ -147,8 +147,6 @@ Before each phase/step: `▶ [N/Total] Phase Name`
 | `/agent-teams` | Orquestração multi-time em paralelo |
 | `/resume` | Retoma trabalho a partir do checkpoint após reset de contexto |
 
-### Referência (consultar, não executar como workflow)
-| Skill | Purpose |
-|-------|---------|
-| `/tdd` | Referência Red → Green → Refactor com exemplos |
-| `/hexagonal` | Referência de arquitetura hexagonal: camadas, regras, exemplos |
+
+@Rules.md
+@Agents.md

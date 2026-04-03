@@ -164,7 +164,7 @@ async function main() {
     `- /auth            → Auth complete: JWT+refresh, OAuth, RBAC, magic link (stack-aware)`,
     `- /ui              → Full UI pipeline: research → TDD → frontend-design → a11y → browser-qa`,
     `- /mobile          → React Native + Expo: scaffold, TDD (RNTL), Detox E2E, EAS Build`,
-    `- /db              → Schema design, indexing, multi-tenancy, seed data (call before implementing new entities)`,
+    `- /dba             → Schema design, indexing, multi-tenancy, seed data (call before implementing new entities)`,
     `- /data-migration  → Zero-downtime migrations, CQRS, state machines`,
     ``,
     `### Quality & review`,
@@ -186,9 +186,6 @@ async function main() {
     `- /agent-teams     → Multi-team parallel orchestration`,
     `- /resume          → Resume from checkpoint`,
     ``,
-    `### Reference (read, don't invoke as a workflow)`,
-    `- /tdd             → Red → Green → Refactor reference`,
-    `- /hexagonal       → Hexagonal architecture reference`,
     ``,
     `## Testing Stack`,
     testingStack,
@@ -196,7 +193,7 @@ async function main() {
     `## Context Budget`,
     `Threshold: 60k tokens → write .claude/checkpoint.md → /compact → /resume`,
     ``,
-    `See CLAUDE.md, Rules.md, Agents.md for full documentation.`,
+    `Rules.md and Agents.md are auto-loaded via CLAUDE.md @imports.`,
   ];
 
   const output = {

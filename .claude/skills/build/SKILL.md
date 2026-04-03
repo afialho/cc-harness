@@ -287,8 +287,8 @@ Antes de gerar qualquer planejamento, extrai estruturadamente do RESEARCH.md:
 → Pitfalls identificados = items de atenção no plano
 
 **Entidades de domínio identificadas:**
-→ Se o plano introduz entidades novas (tabelas, models) → chamar `/db design` antes de iniciar a Fase 3
-→ `/db` retorna o schema aprovado que alimenta a implementação
+→ Se o plano introduz entidades novas (tabelas, models) → chamar `/dba design` antes de iniciar a Fase 3
+→ `/dba` retorna o schema aprovado que alimenta a implementação
 
 Este mapeamento explícito garante que o planejamento seja embasado nos achados reais da pesquisa,
 não em decisões genéricas do modelo.
