@@ -37,7 +37,7 @@ echo ""
 
 # ── Clone ─────────────────────────────────────────────────────────────────────
 echo "📥  Cloning starter kit..."
-git clone https://github.com/afialho/ai-dev-starter-kit.git "$DEST"
+git clone https://github.com/afialho/cc-starterkit.git "$DEST"
 ok "Cloned to $DEST"
 
 cd "$DEST"
@@ -48,7 +48,7 @@ echo "🔧  Initializing fresh git history..."
 rm -rf .git
 git init --quiet
 git add .
-git commit -m "chore: init $PROJECT_NAME from ai-dev-starter-kit" --quiet
+git commit -m "chore: init $PROJECT_NAME from cc-starterkit" --quiet
 ok "Git initialized (clean history)"
 
 # ── Project name ──────────────────────────────────────────────────────────────

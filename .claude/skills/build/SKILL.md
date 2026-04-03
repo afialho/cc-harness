@@ -7,6 +7,10 @@ argument-hint: <raw idea>
 
 # /build — Pipeline Completo: Ideia → Implementação
 
+> **Extends:** `claude-code-setup@claude-plugins-official`
+> Adds: research wave, BDD planning, parallel agent orchestration, and quality gates (/qa-loop + /browser-qa) at every phase.
+> The official plugin handles project setup; this skill runs the full development lifecycle on top.
+
 Orquestrador de três fases com research real, planejamento informado e implementação autônoma.
 Cada fase tem budget próprio de contexto e checkpoints automáticos.
 
@@ -15,9 +19,10 @@ Cada fase tem budget próprio de contexto e checkpoints automáticos.
 ## Visão geral do pipeline
 
 ```
-/build <ideia bruta>
+/build <ideia>
     │
-    ├─ [0/3] Fase 0 — Refinamento da ideia
+    ├─ [0/3] Fase 0 — Detecção de contexto
+    │         ├─ Ideia vaga? → chama /ideate → aguarda IDEAS.md → retoma automaticamente
     │         └─ ⏸ PAUSA: confirmação do entendimento
     │
     ├─ [1/3] Fase 1 — Research
@@ -50,24 +55,74 @@ Checkpoints automáticos ao final de cada fase e sempre que o contexto estimado 
 
 ---
 
-## Fase 0 — Refinamento da ideia
+## Fase 0 — Detecção de contexto + Refinamento
 
-> **Emitir:** `▶ [0/3] Refinando a ideia`
+> **Emitir:** `▶ [0/3] Analisando contexto`
 
-Recebe a ideia bruta e:
+### 0.0 — Detectar se o contexto é suficiente para construir
 
-1. Reformula em linguagem técnica clara:
+Antes de qualquer coisa, avaliar o que foi recebido:
+
+**Verificar (em ordem):**
+
+1. `IDEAS.md` existe na raiz do projeto? → contexto suficiente, pular para 0.1
+2. Projeto já tem código (`src/`, `app/`, `lib/`)? → adicionar feature, pular para 0.1
+3. O argumento passado descreve claramente **o que construir** (feature, entidades, comportamento esperado)? → pular para 0.1
+
+**Sinais de ideia vaga — chamar `/ideate` se qualquer um destes for verdade:**
+- Nenhum argumento passado (`/build` sem nada)
+- Argumento com < 15 palavras sem feature concreta ("quero um app", "algo tipo Zendesk", "uma plataforma de tarefas")
+- Analogia sem especificação ("tipo o Pipefy mas diferente", "como o Notion mas para X")
+- Sem usuário definido, sem problema claro, sem comportamento esperado
+- Múltiplas ideias soltas sem escopo definido
+
+**Se ideia vaga detectada:**
+
+```
+Percebi que a ideia ainda está em fase de definição.
+Antes de construir, vou te entrevistar para mapear features, definir o MVP e
+garantir que vamos construir a coisa certa.
+
+▶ Iniciando /ideate...
+```
+
+Chama `/ideate <argumento recebido>` e **aguarda o resultado** (IDEAS.md gerado + aprovação do usuário).
+Após `/ideate` concluir, retoma automaticamente o `/build` com o `IDEAS.md` como input — sem precisar que o usuário chame `/build` de novo.
+
+**Se contexto suficiente:** prosseguir direto para 0.1.
+
+---
+
+### 0.1 — Refinamento da ideia
+
+Recebe a ideia concreta (ou IDEAS.md do /ideate) e:
+
+1. Detectar ou confirmar o **scale** do projeto:
+   - Se IDEAS.md existe e tem campo Scale → usar
+   - Se chamado com argumento `scale=MVP|Product|Scale` → usar
+   - Caso contrário → perguntar: *"Qual o scale? MVP (validar ideia) / Product (vai para mercado) / Scale (produto com tração)?"*
+
+   **O scale determina o que será incluído:**
+   ```
+   MVP:     Auth + features core + testes unitários básicos
+            SEM: CI/CD, observabilidade, rate limiting, load tests
+   Product: MVP + CI/CD (GitHub Actions) + rate limiting em auth + E2E + structured logging
+   Scale:   Product + observabilidade completa + feature flags + load tests
+   ```
+
+2. Reformula em linguagem técnica clara:
    - O que será construído
    - Input e output esperados
    - Entidades envolvidas
    - Tipo de feature: UI-heavy | Backend | Full-stack | Biblioteca
 
-2. Apresenta o entendimento ao usuário neste formato:
+3. Apresenta o entendimento ao usuário neste formato:
 
 ```
 ENTENDIMENTO
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Feature:      [nome curto]
+Scale:        MVP | Product | Scale
 Objetivo:     [uma frase — o que o usuário conquista]
 O que constrói: [2-4 bullets técnicos]
 Input/Output: [o que entra, o que sai]
@@ -75,7 +130,7 @@ Entidades:    [entidades de domínio envolvidas]
 Tipo:         [UI-heavy | Backend | Full-stack | Biblioteca]
 ```
 
-3. Pergunta: **"Esse entendimento está correto? Posso avançar para a pesquisa?"**
+4. Pergunta: **"Esse entendimento está correto? Posso avançar para a pesquisa?"**
 
 Aguarda confirmação antes de iniciar a Fase 1.
 Se o usuário corrigir algo, ajusta o entendimento e confirma novamente.
@@ -303,7 +358,54 @@ Escreve checkpoint com plano parcial e emite:
 
 ---
 
-### Foundation Protocol (OBRIGATÓRIO para qualquer app com UI)
+### Detecção automática: Web vs. Mobile
+
+Antes do Foundation Protocol, detectar o tipo de projeto:
+
+```bash
+# Mobile: se package.json contém "expo" ou "react-native"
+rtk cat package.json | grep -E '"expo"|"react-native"'
+```
+
+- **Mobile detectado** → usar Foundation Protocol Mobile (abaixo)
+- **Web (padrão)** → usar Foundation Protocol Web (abaixo)
+
+---
+
+### Foundation Protocol Mobile (OBRIGATÓRIO para projetos React Native)
+
+Executar em sequência estrita. Usar `/mobile` como referência completa.
+
+#### [M-3a] Design System + Navigation Base
+
+1. Instalar NativeWind v4 + configurar tema (cores, fontes, dark/light mode)
+2. Criar componentes base: `Button`, `Input`, `Screen`, `Typography`, `Card`
+3. Configurar `RootNavigator` + `AuthNavigator` + `AppNavigator`
+4. Verificar renderização em iOS Simulator + Android Emulator
+
+```
+⛔ GATE [M-3a]: /mobile qa
+  □ Componentes sem erro em iOS e Android
+  □ Dark mode funciona
+  □ Navegação entre telas funciona
+  PASS obrigatório — sem este gate, nenhuma feature inicia
+```
+
+#### [M-3b] Auth — Register / Login / Logout
+
+1. Implementar fluxo completo: register, login, logout, refresh token, proteção de rotas
+2. Criar `tests/e2e/auth.e2e.ts` com happy path + caso de erro
+3. `rtk npx detox test tests/e2e/auth.e2e.ts`
+
+```
+⛔ GATE [M-3b]: /mobile qa (escopo: auth)
+  Se auth falha → TODO o build para aqui
+  Sem exceções.
+```
+
+---
+
+### Foundation Protocol Web (OBRIGATÓRIO para qualquer app web com UI)
 
 Antes de implementar qualquer feature de produto, executar em sequência estrita:
 
@@ -339,6 +441,7 @@ Antes de implementar qualquer feature de produto, executar em sequência estrita
 
 Após CADA feature implementada (não apenas ao final do build):
 
+**Web:**
 ```
 PHASE GATE — executar após cada feature:
   □ rtk npx cypress run --spec tests/e2e/[feature].cy.ts
@@ -346,6 +449,15 @@ PHASE GATE — executar após cada feature:
       UI only      → qa-design + qa-ux + qa-e2e
       Backend only → qa-backend + qa-security + qa-code
       Full-stack   → qa-design + qa-ux + qa-backend + qa-security + qa-e2e
+  □ PASS obrigatório antes de iniciar a próxima feature
+  □ Fix loop automático (máx 3 iterações) antes de escalar para usuário
+```
+
+**Mobile:**
+```
+PHASE GATE — executar após cada feature mobile:
+  □ rtk npx detox test tests/e2e/[feature].e2e.ts
+  □ /mobile qa (escopo: [feature])
   □ PASS obrigatório antes de iniciar a próxima feature
   □ Fix loop automático (máx 3 iterações) antes de escalar para usuário
 ```

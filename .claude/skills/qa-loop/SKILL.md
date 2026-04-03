@@ -7,6 +7,10 @@ argument-hint: <scope: o que foi construído>
 
 # /qa-loop — QA Agentic Loop
 
+> **Extends:** `code-review@claude-plugins-official`
+> Adds: multi-dimensional wave orchestration (design, UX, backend, security, a11y, E2E), automatic fix loop (max 3 iterations), and `/browser-qa` integration for exhaustive UI verification.
+> The official plugin handles code review; this skill adds QA gates across all layers with auto-remediation.
+
 Orquestrador de QA multi-dimensional. Lança agentes QA em waves paralelas, agrega findings em um QA Report estruturado, spawna agentes de fix para issues BLOCKER/MAJOR e itera até PASS ou escala para o usuário.
 
 ---
@@ -20,9 +24,27 @@ Orquestrador de QA multi-dimensional. Lança agentes QA em waves paralelas, agre
 | Após feature com UI + backend | `qa-design` `qa-ux` `qa-backend` `qa-security` `qa-e2e` |
 | Após feature backend-only | `qa-backend` `qa-security` `qa-code` |
 | Após feature UI-only | `qa-design` `qa-ux` `qa-a11y` |
+| Após feature com endpoints ou UI heavy | dimensões acima + `qa-perf` |
 | Após research/plan | `qa-research` `qa-plan` |
+| Post-deploy | `qa-smoke` |
 | Final do build | todas as dimensões |
 | Manual: `/qa-loop <scope>` | inferir dimensões do escopo |
+
+---
+
+## Token Budget
+
+| Fase | Agentes | Budget estimado |
+|------|---------|-----------------|
+| Scope Analysis | — | ~2k |
+| Wave 1A (static, até 5) | qa-code, qa-security, qa-backend, qa-plan, qa-research | ~5 × 15k = 75k (paralelo) |
+| Wave 1B (overflow, se >5 estáticos) | qa-perf | ~15k |
+| Wave 2 (visual, até 3) | qa-design, qa-ux, qa-a11y | ~3 × 20k = 60k (paralelo) |
+| Wave 3 (funcional, sequencial) | qa-e2e ou /browser-qa | ~20-40k |
+| Aggregate + Fix Loop | fix agents (até 5/wave) | ~5 × 20k por iteração |
+| **Total máx (todas as dimensões, 1 iteração)** | | **~230k** |
+
+> **Checkpoint do orquestrador:** se o contexto do orquestrador (não dos sub-agentes) atingir **45k tokens** (não 60k — headroom para as waves seguintes), escrever `.claude/checkpoint.md` e emitir `↺ Contexto ~45k no qa-loop — escrevi checkpoint. Continue ou /compact + /resume.`
 
 ---
 
@@ -38,14 +60,40 @@ Orquestrador de QA multi-dimensional. Lança agentes QA em waves paralelas, agre
    - É fase de research? → `qa-research`
    - É fase de plan? → `qa-plan`
    - Há código novo? → `qa-code` (sempre)
+   - Há indicadores de perf ou endpoints heavy? → `qa-perf`
 3. Definir escopo da `qa-e2e`: quais fluxos específicos testar (ex: auth, criar board, criar card)
-4. Emitir: `Escopo: [o que foi construído]. Dimensões: [lista]. Fluxos E2E: [lista].`
+4. Decompor em waves respeitando **máx 5 agentes por wave** (RULE-AGENT-001):
+   - Wave 1A (estática): prioridade → `qa-code`, `qa-security`, `qa-backend`, `qa-plan`, `qa-research` (máx 5)
+   - Wave 1B (overflow estático): `qa-perf` se necessário (somente se Wave 1A atingiu 5)
+   - Wave 2 (visual, usa agent-browser): `qa-design`, `qa-ux`, `qa-a11y` (máx 3 — limitado por agent-browser)
+   - Wave 3 (funcional): `qa-e2e` ou `/browser-qa` (sequencial)
+5. Emitir plan completo antes de iniciar:
+
+```
+SCOPE:      [o que foi construído]
+DIMENSÕES:  [lista]
+FLUXOS E2E: [lista]
+
+WAVE PLAN:
+  Wave 1A (estática): [agentes] — ~[N]k tokens
+  Wave 1B (overflow): [agentes ou "nenhum"] — ~[N]k tokens
+  Wave 2  (visual):   [agentes ou "nenhum"] — ~[N]k tokens
+  Wave 3  (funcional):[agente ou "nenhum"]  — ~[N]k tokens
+  Budget total estimado: ~[N]k tokens
+```
 
 ---
 
 ## Fase 1 — Wave Estática (paralela, sem browser)
 
 > **Emitir:** `▶ [QA 1/6] Static QA Wave`
+
+### Regra de decomposição
+
+Se dimensões estáticas ≤ 5 → lança tudo em Wave 1A de uma vez.
+Se dimensões estáticas > 5 → lança Wave 1A (5 agentes) → aguarda → lança Wave 1B (restantes).
+
+Prioridade de Wave 1A (se houver corte): `qa-security` > `qa-backend` > `qa-code` > `qa-plan` > `qa-research` > `qa-perf`.
 
 Lança em paralelo apenas os agentes aplicáveis ao escopo:
 
@@ -128,6 +176,25 @@ Check:
   □ Test plan cobre unit + integration + E2E + load (se aplicável)
   □ Sem "TBD" ou decisões adiadas em itens críticos
 Output: QA_REPORT com BLOCKER|MAJOR|MINOR|OK
+```
+
+### Agente: qa-perf
+
+```
+Role: Performance auditor — bundle, queries, caching e response times.
+Ler: arquivos modificados no escopo; k6 results em tests/load/ se existirem; Lighthouse CI reports se existirem.
+Check:
+  □ Bundle: chunks > 500kB sem lazy loading? Heavy deps importados inteiros (lodash, moment)?
+  □ N+1: queries dentro de loops? ORM associations lazy-loaded em iteração?
+  □ Missing indexes: FK columns ou colunas usadas em WHERE/ORDER sem index?
+  □ Caching: dados idênticos buscados múltiplas vezes por request sem cache de request?
+  □ API p95: resultados k6 disponíveis? GET > 200ms ou POST > 500ms?
+  □ Blocking ops: email, file processing ou API calls externos inline no request handler?
+  □ Connection pool: DB client configurado com pool explícito (não default)?
+  □ Compression: gzip/brotli habilitado no servidor HTTP?
+  □ Regression guardrails: Lighthouse CI config existe? k6 thresholds definidos?
+Output: QA_REPORT com BLOCKER|HIGH|MEDIUM|OK + arquivo:linha para cada finding
+Nota: para audit completo de performance (todas as 6 fases) → invocar /perf-audit diretamente
 ```
 
 ---
@@ -225,6 +292,10 @@ Evidence: screenshot de cada passo crítico, log de console errors
 Output: QA_REPORT com BLOCKER|MAJOR|MINOR|OK + evidence obrigatória por BLOCKER
 ```
 
+> **Gate final do build (todas as dimensões):** substituir qa-e2e por `/browser-qa <url>`.
+> `/browser-qa` faz navegação exaustiva (todos os componentes, menus, clicáveis) em vez de
+> apenas os fluxos predefinidos. O QA Report do `/browser-qa` substitui o QA_REPORT do qa-e2e.
+
 ---
 
 ## Fase 4 — Aggregate QA Report
@@ -270,30 +341,53 @@ OK — dimensões que passaram:
 
 **Máximo 3 iterações. Se FAIL após iteração 3 → Escalate ao usuário.**
 
+### Priorização de issues
+
+Dentro de cada iteração, priorizar na ordem:
+1. **BLOCKER de qa-security** — risco de vulnerabilidade em produção
+2. **BLOCKER de qa-e2e / qa-backend** — app não funciona
+3. **BLOCKER de qa-design** — UI quebrada
+4. **MAJOR de qa-security**
+5. **MAJOR demais dimensões**
+
+Se BLOCKERs + MAJORs > 5 em uma iteração → resolver os 5 de maior prioridade primeiro; os restantes entram na próxima iteração.
+
 ### Por iteração:
 
-**5.1 — Spawn fix agents** (um por BLOCKER/MAJOR, máx 5 paralelos):
+**5.1 — Selecionar issues** (máx 5, por prioridade acima)
+
+**5.2 — Spawn fix agents** (um por issue selecionado, em paralelo):
 
 ```
 Fix Agent: [id do issue, ex: "qa-e2e/auth-redirect"]
 Task: Corrigir ESPECIFICAMENTE: [descrição exata do BLOCKER/MAJOR do QA Report]
 Arquivo alvo: [arquivo:linha]
 Fix necessário: [ação específica inferida do report]
-Contexto: [handoff com QA Report completo + arquivos relevantes]
-Restrição: máx 100k tokens | corrigir APENAS este issue | não refatorar código adjacente
-Output obrigatório: lista de arquivos modificados + descrição da correção aplicada
+Contexto: [handoff com QA Report completo + arquivos relevantes ao issue]
+Restrição:
+  - Máx 20k tokens (fix cirúrgico — não precisa de todo o contexto do projeto)
+  - Corrigir APENAS este issue específico
+  - Não refatorar código adjacente não relacionado ao issue
+  - Se o fix exigir > 20k tokens → reportar "fix requer redesign" e não tentar
+Output obrigatório: lista de arquivos modificados + descrição da correção + confirmação "FIXED" ou "NEEDS_REDESIGN"
 ```
 
-**5.2 — Aguardar** completion de todos os fix agents
+> **Por que 20k por fix agent (não 100k)?** Fix cirúrgico lê no máximo 3-5 arquivos + o report. 100k seria desperdiçado em contexto desnecessário. Se um fix genuinamente precisa de mais contexto, é sinal de problema estrutural → escalar.
 
-**5.3 — Re-executar apenas agentes QA afetados** (não a wave toda):
-- Issue de `qa-design`? → re-executa apenas `qa-design`
-- Issue de `qa-e2e`? → re-executa apenas `qa-e2e` para o fluxo afetado
-- Issue de `qa-backend`? → re-executa apenas `qa-backend` para o endpoint afetado
+**5.3 — Aguardar** completion de todos os fix agents
 
-**5.4 — Avaliar resultado:**
+**5.4 — Re-executar apenas agentes QA afetados** (não a wave toda):
+- Issue de `qa-design`? → re-executa apenas `qa-design` (budget: 15k)
+- Issue de `qa-e2e`? → re-executa apenas `qa-e2e` para o fluxo afetado (budget: 15k)
+- Issue de `qa-backend`? → re-executa apenas `qa-backend` para o endpoint afetado (budget: 10k)
+- Issue de `qa-security`? → re-executa apenas `qa-security` (budget: 10k)
+
+**5.5 — Checkpoint se necessário:**
+Se contexto do orquestrador atingiu **45k tokens** durante o fix loop → escrever checkpoint antes de iniciar a próxima iteração.
+
+**5.6 — Avaliar resultado:**
 - Sem BLOCKERS/MAJORS → **Fase 6 (PASS)**
-- BLOCKERS/MAJORS restantes e iteração < 3 → próxima iteração
+- BLOCKERS/MAJORS restantes e iteração < 3 → próxima iteração (volta para 5.1 com issues remanescentes)
 - Iteração 3 atingida com issues → **Escalate**
 
 ### Condição de Escalate:
@@ -312,6 +406,56 @@ Possíveis causas:
 
 Ação necessária: revisão manual.
 Sugestão: [recomendação específica baseada no tipo de issue]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+---
+
+## Fase 5b — Post-Deploy Validation (opcional, se /deploy foi executado)
+
+> **Emitir:** `▶ [QA 5b] Post-Deploy Smoke Tests`
+
+Execute apenas quando `qa-smoke` está no conjunto de dimensões do escopo (contexto: post-deploy).
+
+### Agente: qa-smoke
+
+```
+Role: Post-deploy smoke tester — valida que o ambiente de produção está saudável após deploy.
+Actions: HTTP requests diretos à URL de produção (não localhost).
+Requer: URL de produção disponível no contexto (via /deploy handoff ou argumento).
+
+Health check:
+  □ GET /health (ou /api/health, /healthz) → deve retornar 200 em < 2s
+  □ GET / (home/root) → deve retornar 200, sem 5xx
+
+Main routes (testar as rotas primárias do app — inferir do plano ou estrutura de rotas):
+  □ Cada rota pública principal → 200, sem 5xx, sem redirect loop
+  □ Rota protegida sem auth → 401 ou redirect para login (não 500)
+
+Auth flow quick check (se auth existe):
+  □ POST /api/auth/login com credenciais de teste → 200 ou 422 (não 500)
+  □ Resposta contém estrutura esperada (token ou session)
+
+Console / response errors:
+  □ Nenhuma resposta 5xx em nenhum dos checks
+  □ Sem "Cannot connect to database" ou equivalente no body de erro
+
+Output: SMOKE_REPORT com PASS | FAIL por check + URL + status code recebido
+```
+
+**Decisão automática pós-smoke:**
+- Todos os checks PASS → emitir `✅ SMOKE PASS — deploy validado`
+- Qualquer check FAIL → emitir alerta imediato:
+
+```
+⚠️ SMOKE FAIL — DEPLOY ROLLBACK RECOMENDADO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ambiente: [URL de produção]
+Checks com falha:
+  [check] [URL] → esperado: [código] | recebido: [código]
+
+Ação recomendada: rollback imediato via /deploy rollback ou plataforma de deploy.
+Não investigar causa raiz antes do rollback — produção está degradada.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -337,6 +481,8 @@ Dimensões verificadas:
   qa-ux        ✅ PASS ([N] itens)          (se aplicável)
   qa-a11y      ✅ PASS ([N] itens)          (se aplicável)
   qa-e2e       ✅ PASS ([N] fluxos)         (se aplicável)
+  qa-perf      ✅ PASS ([N] itens)          (se aplicável)
+  qa-smoke     ✅ PASS ([N] checks)         (se post-deploy)
 
 Issues resolvidos: [N] BLOCKERs, [N] MAJORs em [N] iterações
 Issues pendentes (MINOR): [lista — registrar como backlog]
@@ -355,8 +501,10 @@ Pipeline: ✅ pode prosseguir para próxima fase.
 4. **MINOR nunca bloqueia** — documentados para backlog, não impedem progressão
 5. **Re-executa apenas o afetado** — não roda a wave toda novamente após fix
 6. **Máx 3 iterações** — problema persistente após 3 é sistêmico → escala para usuário
-7. **Máx 100k tokens por agente** — escopo grande? dividir em sub-escopos sequenciais
-8. **Máx 5 fix agents em paralelo** — seguir regra RULE-AGENT-001
+7. **Máx 5 agentes por wave** — RULE-AGENT-001: dividir em Wave 1A/1B se >5 dimensões estáticas
+8. **Budget por agente**: QA agents: 15k | Fix agents: 20k | qa-e2e/browser-qa: 40k
+9. **Checkpoint do orquestrador em 45k** — não 60k, para ter headroom para as waves seguintes
+10. **Fix com NEEDS_REDESIGN** → escala imediatamente, não aguarda 3 iterações
 
 ---
 
@@ -368,7 +516,9 @@ Pipeline: ✅ pode prosseguir para próxima fase.
 | Plan aprovado | `qa-plan` |
 | Foundation [3a] layout | `qa-design` |
 | Foundation [3b] auth | `qa-backend` `qa-security` `qa-e2e` |
-| Feature UI | `qa-design` `qa-ux` `qa-e2e` |
+| Feature UI | `qa-design` `qa-ux` `qa-e2e` + `/browser-qa` |
 | Feature backend | `qa-backend` `qa-security` `qa-code` |
-| Feature full-stack | todas exceto `qa-research` e `qa-plan` |
-| Final do build | todas |
+| Feature full-stack | todas exceto `qa-research` e `qa-plan` + `/browser-qa` |
+| Feature com endpoints ou UI heavy | dimensões acima + `qa-perf` (ou `/perf-audit` para audit completo) |
+| Post-deploy | `qa-smoke` |
+| Final do build | todas + `/browser-qa` (navegação exaustiva — substitui qa-e2e) |

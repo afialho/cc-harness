@@ -7,8 +7,9 @@ argument-hint: <feature name>
 
 # /feature-dev — Feature Implementation
 
-Extends the official Anthropic feature-dev workflow with project-specific requirements:
-TDD (Red→Green→Refactor), Hexagonal Architecture, BDD (Cucumber), Load Tests (k6), and Git Worktrees.
+> **Extends:** `feature-dev@claude-plugins-official`
+> Adds: TDD (Red→Green→Refactor), Hexagonal Architecture, BDD (Cucumber), Load Tests (k6), Git Worktrees, and `/browser-qa` gate.
+> The official plugin handles base feature scaffolding; this skill adds the project's quality and architecture layers on top.
 
 ---
 

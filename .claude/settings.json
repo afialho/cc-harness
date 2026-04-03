@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "node .claude/hooks/session-start.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/docker-guard.mjs"
           }
         ]
       }
@@ -21,6 +25,10 @@
           },
           {
             "type": "command",
+            "command": "node .claude/hooks/commit-guard.mjs"
+          },
+          {
+            "type": "command",
             "command": "node .claude/hooks/rules-engine.mjs"
           }
         ]
@@ -31,6 +39,10 @@
           {
             "type": "command",
             "command": "node .claude/hooks/architecture-guard.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/security-scan.mjs"
           },
           {
             "type": "command",

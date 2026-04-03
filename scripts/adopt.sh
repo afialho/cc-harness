@@ -45,7 +45,7 @@ if [ ! -d ".git" ]; then
 fi
 
 echo ""
-echo -e "${BOLD}Adopting ai-dev-starter-kit into this project...${NC}"
+echo -e "${BOLD}Adopting cc-starterkit into this project...${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -53,8 +53,8 @@ echo ""
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
-echo "Downloading ai-dev-starter-kit..."
-git clone --depth=1 --quiet https://github.com/afialho/ai-dev-starter-kit.git "$TEMP_DIR/kit"
+echo "Downloading cc-starterkit..."
+git clone --depth=1 --quiet https://github.com/afialho/cc-starterkit.git "$TEMP_DIR/kit"
 ok "Kit downloaded"
 echo ""
 
@@ -217,7 +217,7 @@ fi
 # ── Step 7 — Final output ─────────────────────────────────────────────────────
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo -e "${GREEN}${BOLD}✅  ai-dev-starter-kit adopted successfully!${NC}"
+echo -e "${GREEN}${BOLD}✅  cc-starterkit adopted successfully!${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -235,6 +235,121 @@ if [ ${#SKIPPED[@]} -gt 0 ]; then
     echo "  ~ $item"
   done
   echo ""
+fi
+
+# ── Tools: Claude Code CLI, RTK, k6 ──────────────────────────────────────────
+echo ""
+echo "Installing required tools..."
+
+OS="unknown"
+[[ "$OSTYPE" == "darwin"* ]] && OS="macos"
+[[ "$OSTYPE" == "linux-gnu"* ]] && OS="linux"
+
+# Claude Code CLI
+if command -v claude &>/dev/null; then
+  ok "Claude Code CLI already installed"
+  track_skipped "Claude Code CLI"
+else
+  if npm install -g @anthropic-ai/claude-code 2>/dev/null; then
+    ok "Claude Code CLI installed"
+    track_installed "Claude Code CLI"
+  else
+    warn "Could not auto-install Claude Code CLI"
+    info "Install manually: npm install -g @anthropic-ai/claude-code"
+    track_skipped "Claude Code CLI (manual install needed)"
+  fi
+fi
+
+# RTK CLI
+if command -v rtk &>/dev/null; then
+  ok "RTK CLI already installed"
+  track_skipped "RTK CLI"
+else
+  if npm install -g rtk 2>/dev/null; then
+    ok "RTK CLI installed"
+    track_installed "RTK CLI"
+  else
+    warn "Could not auto-install RTK CLI"
+    info "Install manually: npm install -g rtk"
+    track_skipped "RTK CLI (manual install needed)"
+  fi
+fi
+
+# k6
+if command -v k6 &>/dev/null; then
+  ok "k6 already installed"
+  track_skipped "k6"
+else
+  INSTALLED_K6=false
+  if [ "$OS" = "macos" ] && command -v brew &>/dev/null; then
+    brew install k6 2>/dev/null && INSTALLED_K6=true && ok "k6 installed" && track_installed "k6"
+  elif [ "$OS" = "linux" ] && command -v apt-get &>/dev/null; then
+    sudo gpg --no-default-keyring \
+      --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+      --keyserver hkp://keyserver.ubuntu.com:80 \
+      --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69 2>/dev/null \
+    && echo 'deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main' \
+      | sudo tee /etc/apt/sources.list.d/k6.list &>/dev/null \
+    && sudo apt-get update -qq && sudo apt-get install -y k6 2>/dev/null \
+    && INSTALLED_K6=true && ok "k6 installed" && track_installed "k6"
+  fi
+  if [ "$INSTALLED_K6" = false ]; then
+    warn "Could not auto-install k6"
+    info "macOS: brew install k6  |  Linux: https://k6.io/docs/get-started/installation/"
+    track_skipped "k6 (manual install needed)"
+  fi
+fi
+
+# ── Plugins: Claude Code official + vercel MCP ────────────────────────────────
+echo ""
+echo "Installing Claude Code plugins..."
+
+if command -v claude &>/dev/null; then
+
+  install_plugin() {
+    local name="$1"
+    local pkg="$2"
+    if claude plugin list 2>/dev/null | grep -q "$name"; then
+      ok "Plugin $name already installed"
+      track_skipped "plugin: $name"
+    else
+      if claude plugin install "$pkg" 2>/dev/null; then
+        ok "Plugin $name installed"
+        track_installed "plugin: $name"
+      else
+        warn "Could not auto-install plugin $name"
+        info "Install manually: claude plugin install $pkg"
+        track_skipped "plugin: $name (manual install needed)"
+      fi
+    fi
+  }
+
+  # Official Claude Code plugins (project skills extend these)
+  install_plugin "claude-code-setup" "claude-code-setup@claude-plugins-official"
+  install_plugin "feature-dev"       "feature-dev@claude-plugins-official"
+  install_plugin "frontend-design"   "frontend-design@claude-plugins-official"
+  install_plugin "code-review"       "code-review@claude-plugins-official"
+  install_plugin "code-simplifier"   "code-simplifier@claude-plugins-official"
+
+  # vercel:agent-browser MCP (required for /browser-qa)
+  if claude mcp list 2>/dev/null | grep -q "vercel"; then
+    ok "vercel:agent-browser MCP already installed"
+    track_skipped "vercel:agent-browser MCP"
+  else
+    if claude mcp add vercel npx -y @vercel/mcp-server 2>/dev/null; then
+      ok "vercel:agent-browser MCP installed"
+      track_installed "vercel:agent-browser MCP"
+    else
+      warn "Could not auto-install vercel:agent-browser"
+      info "Install manually: claude mcp add vercel npx -y @vercel/mcp-server"
+      track_skipped "vercel:agent-browser (manual install needed)"
+    fi
+  fi
+
+else
+  warn "claude CLI not found — skipping plugin installation"
+  info "After installing Claude Code, re-run: bash adopt.sh"
+  track_skipped "all Claude Code plugins (claude CLI not found)"
 fi
 
 echo -e "${BOLD}Next steps:${NC}"

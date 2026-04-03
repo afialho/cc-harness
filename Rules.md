@@ -128,33 +128,71 @@
 
 ---
 
+## Docker Rules
+
+### RULE-DOCKER-001 [AUTO]
+**All services run in Docker containers.**
+- Every external dependency (DB, cache, queues, etc.) runs via `docker-compose.yml`
+- Never connect to host machine services — always use container service names
+- `docker-compose.yml` required at project root before any backend implementation
+- *Enforcement: docker-guard hook warns at SessionStart if Docker is not running*
+
+### RULE-DOCKER-002
+**One service per container.**
+- Separate containers for: API, DB, cache, queue, frontend (if SSR)
+- Use named networks — never `--network host` in production config
+- Volumes for persistent data: DB data, uploads, logs
+
+### RULE-DOCKER-003
+**Environment parity: dev = staging = prod shape.**
+- `.env.example` committed, `.env` gitignored
+- All environment variables documented in `.env.example`
+- Docker Compose overrides for dev (`docker-compose.override.yml`): hot reload, debug ports
+- No hardcoded credentials anywhere — always from environment variables
+
+---
+
 ## Git Workflow Rules
 
-### RULE-GIT-001
-**Use worktrees for parallel feature development.**
+### RULE-GIT-001 [AUTO]
+**Use worktrees for every parallel feature.**
 ```bash
 rtk git worktree add ../[project]-[feature] -b feature/[feature-name]
 ```
-- Each independent feature/task: separate worktree
+- Each independent feature/task runs in a separate worktree
 - Never develop two unrelated features in the same working tree
+- List active worktrees: `rtk git worktree list`
+- Remove when merged: `rtk git worktree remove ../[project]-[feature]`
 
-### RULE-GIT-002
-**Atomic commits with descriptive messages.**
-- One logical change per commit
-- Format: `type(scope): short description`
-- Types: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`, `perf`
-- Example: `test(auth): add unit tests for LoginUseCase`
+### RULE-GIT-002 [AUTO]
+**All commits must follow Conventional Commits format.**
+- Format: `type(scope): description` (max 72 chars on first line)
+- Types: `feat` | `fix` | `test` | `refactor` | `docs` | `chore` | `perf` | `style` | `ci` | `build` | `revert`
+- Breaking change: add `!` → `feat(auth)!: remove legacy login endpoint`
+- Examples:
+  - `feat(auth): add JWT refresh token rotation`
+  - `fix(board): correct card drag-drop on mobile`
+  - `test(user): add unit tests for CreateUserUseCase`
+  - `chore(docker): add postgres service to compose`
+- *Enforcement: commit-guard hook hard blocks (exit 2) non-conforming commits*
 
 ### RULE-GIT-003
 **No commits with failing tests.**
-- Run all tests before committing
-- Pre-commit: `rtk npm test` (or equivalent)
+- Run tests before committing: `rtk npm test` (or stack equivalent)
 - Never use `--no-verify`
+- CI must pass before merge
 
 ### RULE-GIT-004
 **Test commits precede implementation commits.**
 - Git history must show: BDD scenario → unit test → implementation → refactor
 - This is the TDD paper trail
+
+### RULE-GIT-005
+**GitHub repository created before first commit.**
+- New projects: `rtk gh repo create [name] --private` before first push
+- Repo name matches folder name
+- Default branch: `main`
+- Push with tracking: `rtk git push -u origin main`
 
 ---
 

@@ -54,17 +54,41 @@ function detectStack() {
     const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
     const deps = { ...pkg.dependencies, ...pkg.devDependencies };
     if (deps['next']) markers.push('Next.js');
+    else if (deps['expo']) markers.push('Expo (React Native) 📱');
+    else if (deps['react-native']) markers.push('React Native 📱');
     else if (deps['react']) markers.push('React');
     else if (deps['vue']) markers.push('Vue');
     if (deps['express']) markers.push('Express');
     if (deps['fastify']) markers.push('Fastify');
     if (deps['@cucumber/cucumber']) markers.push('Cucumber.js ✅');
     if (deps['cypress']) markers.push('Cypress ✅');
+    if (deps['detox']) markers.push('Detox ✅');
   }
   if (existsSync('requirements.txt') || existsSync('pyproject.toml')) markers.push('Python');
   if (existsSync('go.mod')) markers.push('Go');
   if (existsSync('pom.xml') || existsSync('build.gradle')) markers.push('Java');
   return markers;
+}
+
+function detectTestingStack() {
+  const parts = [];
+  if (existsSync('package.json')) {
+    try {
+      const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+      const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+      if (deps['vitest']) parts.push('Unit: Vitest');
+      else if (deps['jest']) parts.push('Unit: Jest');
+      if (deps['@cucumber/cucumber']) parts.push('BDD: Cucumber.js');
+      if (deps['cypress']) parts.push('E2E: Cypress');
+      else if (deps['playwright']) parts.push('E2E: Playwright');
+      if (deps['detox']) parts.push('Mobile E2E: Detox');
+      if (deps['k6']) parts.push('Load: k6');
+    } catch { /* ignore */ }
+  }
+  if (existsSync('pyproject.toml') || existsSync('requirements.txt')) parts.push('Unit: pytest');
+  if (existsSync('go.mod')) parts.push('Unit: go test');
+  if (existsSync('Gemfile')) parts.push('Unit: RSpec');
+  return parts.length > 0 ? parts.join(' | ') : 'Not yet configured';
 }
 
 async function main() {
@@ -80,6 +104,7 @@ async function main() {
   const projectName = getProjectName() || '[Project Name]';
   const stack = detectStack();
   const stackStr = stack.length > 0 ? stack.join(', ') : 'Not yet configured';
+  const testingStack = detectTestingStack();
   const archPattern = getArchPattern();
 
   const archRuleByPattern = {
@@ -114,42 +139,60 @@ async function main() {
     stackStr,
     ``,
     `## Key Rules (Always Active)`,
-    `- RULE-EFF-001: Use \`rtk <cmd>\` for all CLI operations (60-90% token savings)`,
-    `- RULE-EFF-002: Prefer CLI over MCP`,
+    `- RULE-EFF-001 [AUTO]: \`rtk <cmd>\` for ALL CLI ops (60-90% token savings)`,
+    `- RULE-DOCKER-001 [AUTO]: All services in Docker — \`rtk docker compose up -d\``,
+    `- RULE-GIT-002 [AUTO]: Conventional Commits — feat|fix|test|refactor|chore|perf(scope): desc`,
+    `- RULE-GIT-001: Worktrees for parallel features — \`rtk git worktree add ../[proj]-[feat] -b feature/[feat]\``,
     `- ${archRule}`,
-    `- RULE-TEST-001: Write failing tests BEFORE implementation (TDD)`,
-    `- RULE-TEST-002: BDD scenarios (Gherkin) written before code`,
-    `- RULE-AGENT-001: Max 5 parallel agents`,
-    `- RULE-AGENT-002: Each agent = 1 granular activity`,
-    `- RULE-GIT-001: Use worktrees for parallel feature work`,
+    `- RULE-TEST-001: Tests BEFORE implementation (TDD) — RED → GREEN → REFACTOR`,
+    `- RULE-TEST-002: BDD Gherkin scenarios before code`,
+    `- RULE-AGENT-001: Max 5 parallel agents | RULE-AGENT-002: 1 granular activity per agent`,
     ``,
-    `## Available Skills`,
-    `- /build           → Full pipeline: research → plan → implement (entry point recomendado)`,
+    `## Main Flow`,
+    `  /build → (auto-detects vague idea → calls /ideate if needed) → research → plan → implement → /deploy`,
+    ``,
+    `## Skills`,
+    `### Start here`,
+    `- /build           → Entry point for everything. Vague idea? Calls /ideate automatically. Clear spec? Goes straight to build.`,
+    `- /deploy          → Production deploy: Docker, IaC, secrets, post-deploy validation`,
+    ``,
+    `### Feature development`,
+    `- /feature-dev     → TDD + hexagonal impl, 7 phases`,
+    `- /auth            → Auth complete: JWT+refresh, OAuth, RBAC, magic link (stack-aware)`,
+    `- /ui              → Full UI pipeline: research → TDD → frontend-design → a11y → browser-qa`,
+    `- /mobile          → React Native + Expo: scaffold, TDD (RNTL), Detox E2E, EAS Build`,
+    ``,
+    `### Quality & review`,
+    `- /qa-loop         → QA gates: design, UX, backend, security, E2E + auto fix loop`,
+    `- /browser-qa      → Cypress + agent-browser dual loop until 0 failures`,
+    `- /code-review     → Architecture + TDD + security review`,
+    `- /simplify        → Refactor for reuse + SOLID`,
+    `- /perf-audit      → Bundle analysis, N+1 detection, Core Web Vitals`,
+    `- /security-hardening → OWASP Top 10, headers, secrets audit, dependency scanning`,
+    ``,
+    `### Infrastructure & ops`,
+    `- /ci-cd           → CI/CD pipeline: GitHub Actions, GitLab CI, quality gates`,
+    `- /observability   → Structured logging + OpenTelemetry → Grafana stack`,
+    `- /data-migration  → Zero-downtime migrations, CQRS, state machines`,
+    ``,
+    `### Planning & docs`,
     `- /research        → Parallel research wave → RESEARCH.md`,
-    `- /plan            → Development plan with arch mapping, BDD, test plan`,
-    `- /feature-dev     → TDD feature implementation (hexagonal, MVC, Next.js, feature-based)`,
-    `- /agent-teams     → Multi-team parallel orchestration for large features`,
-    `- /qa-loop         → Agentic QA: design, UX, backend, security, E2E + auto-fix loop`,
-    `- /frontend-design → Production-grade UI with modern design`,
-    `- /tdd             → Red-Green-Refactor workflow guidance`,
-    `- /hexagonal       → Hexagonal architecture reference`,
-    `- /adapt           → Auto-configure the kit for an existing project`,
-    `- /resume          → Resume from checkpoint after context reset`,
+    `- /plan            → BDD + arch mapping + test plan`,
+    `- /docs-gen        → OpenAPI, C4 diagrams, CHANGELOG, developer runbook`,
+    `- /adr             → Architecture Decision Records`,
+    ``,
+    `### Utilities`,
+    `- /agent-teams     → Multi-team parallel orchestration`,
+    `- /adapt           → Auto-configure for existing project`,
+    `- /resume          → Resume from checkpoint`,
     ``,
     `## Testing Stack`,
-    `- Unit/Integration: Framework-native (see docs/TESTING.md)`,
-    `- BDD: Cucumber.js (@cucumber/cucumber)`,
-    `- E2E: Cypress`,
-    `- Load/Stress: k6 (run: k6 run tests/load/<script>.js)`,
+    testingStack,
     ``,
-    `## Start a Feature`,
-    `/build <ideia>  ← pipeline completo: research → plan → implement (recomendado)`,
+    `## Context Budget`,
+    `Threshold: 60k tokens → write .claude/checkpoint.md → /compact → /resume`,
     ``,
-    `Para tasks simples sem necessidade de pesquisa:`,
-    `1. /plan [describe what you want to build]`,
-    `2. /feature-dev [feature name]`,
-    ``,
-    `See CLAUDE.md, Agents.md, Rules.md for full documentation.`,
+    `See CLAUDE.md, Rules.md, Agents.md for full documentation.`,
   ];
 
   const output = {
