@@ -158,6 +158,14 @@
 - Application layer validates all inputs before calling domain
 - Infrastructure validates all external inputs
 
+### RULE-CODE-011
+**Zero stubs and placeholders in delivered UI.**
+- No "coming soon", "em breve", "TODO", "Lorem ipsum", "under construction" text in the UI
+- No buttons, links, or menu items that do nothing when clicked
+- No empty pages or sections with placeholder content
+- If a feature is not implemented in the current build, its UI element must not exist
+- PM Validation (completeness check) verifies this before every commit
+
 ---
 
 ## Docker Rules

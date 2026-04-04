@@ -166,7 +166,20 @@ Após `/ideate` concluir, retoma automaticamente o `/build` com o `IDEAS.md` com
 
 ---
 
-### 0.1 — Refinamento da ideia
+### 0.1 — Detectar modo de operação
+
+Inferir do argumento ou usar default:
+
+| Modo | Ativação | Comportamento |
+|------|----------|---------------|
+| **autonomous** (default) | sem flag, ou `autonomous`, `auto` | AI como PM — pesquisa profunda define feature set. Usuario valida macro. |
+| **guided** | `guided`, `guiado`, `me pergunte` | Usuario guia — entrevista detalhada, usuario define features. |
+
+Registrar o modo para uso nas fases seguintes.
+
+---
+
+### 0.2 — Refinamento da ideia
 
 Recebe a ideia concreta (ou IDEAS.md do /ideate) e:
 
@@ -195,12 +208,14 @@ Recebe a ideia concreta (ou IDEAS.md do /ideate) e:
 ENTENDIMENTO
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Feature:      [nome curto]
+Modo:         autonomous | guided
 Scale:        MVP | Product | Scale
 Objetivo:     [uma frase — o que o usuário conquista]
 O que constrói: [2-4 bullets técnicos]
 Input/Output: [o que entra, o que sai]
 Entidades:    [entidades de domínio envolvidas]
 Tipo:         [UI-heavy | Backend | Full-stack | Biblioteca]
+Referências:  [produtos existentes mencionados — "como Jira", "tipo Trello"]
 ```
 
 4. Pergunta: **"Esse entendimento está correto? Posso avançar para a pesquisa?"**
@@ -250,6 +265,16 @@ Lança até 4 agentes simultâneos com base no tipo de feature. A seleção é f
 - Busca: snippets e padrões de código recomendados
 - Busca: trade-offs de implementação documentados
 
+**Agente Product Discovery** — feature audit de produtos referência (usar SEMPRE que ideia menciona produtos existentes: "como X", "tipo Y", "clone de Z", ou quando analogias foram identificadas na Fase 0)
+- Busca: lista completa de features de cada produto referência (docs oficiais, feature pages, pricing pages, help center)
+- Busca: screenshots, demos e reviews no YouTube, walkthroughs de produto
+- Busca: comparativos entre os produtos referência (G2, Capterra, Reddit, versus pages)
+- Busca: o que usuarios amam/odeiam de cada produto (reviews, forums, Twitter/X)
+- Output: tabela de features por produto com categorização (Core / Secondary / Advanced)
+- Output: recomendação autônoma de feature set baseada no objetivo do usuário
+- **Em modo autonomous:** este agente é OBRIGATÓRIO quando há produtos referência. Ele define o feature set, não o usuário.
+- **Em modo guided:** este agente informa, mas o usuário define o feature set final.
+
 Cada agente usa WebSearch e WebFetch para pesquisa real — sem inventar dados.
 
 ### Agregação
@@ -276,6 +301,13 @@ Consolida todos os achados em `RESEARCH.md` com estrutura:
 
 ## Implementation Patterns
 [achados de implementações reais]
+
+## Product Discovery (se produtos referência identificados)
+[features mapeadas de cada produto referência]
+[tabela comparativa: Feature | Produto A | Produto B | Produto C]
+[categorização: Core / Secondary / Advanced]
+[recomendação de feature set para este projeto com justificativa]
+[features incluídas vs excluídas com razão]
 
 ## Pitfalls & Lessons Learned
 [problemas conhecidos e como evitá-los]
@@ -396,6 +428,43 @@ Ler `.claude/architecture.json` antes de mapear. Usar o template correspondente 
 
 **Definition of Done:**
 - Checklist completo com todos os critérios
+
+**Feature mapping vs produtos referência (se Product Discovery existir no RESEARCH.md):**
+
+```
+## Feature Mapping — Produtos Referência
+| Feature Referência | Incluir? | Nossa versão | Justificativa |
+|-------------------|----------|-------------|---------------|
+| [feature do prod A] | SIM/NÃO/PARCIAL | [como implementamos] | [por que sim/não] |
+```
+
+Em modo **autonomous**: AI preenche baseado na pesquisa. Em modo **guided**: AI propõe, usuário ajusta.
+
+---
+
+### Tech Lead — Decomposição técnica + Inventário de UI
+
+Após o PM definir o feature set (acima), o Tech Lead decompõe tecnicamente:
+
+**1. Tarefas técnicas por feature:**
+Para cada feature, listar tarefas granulares: endpoint, componente, hook, migration, teste.
+Cada tarefa = uma unidade implementável por um agente.
+
+**2. Inventário de UI por tela (OBRIGATÓRIO para features com UI):**
+
+```
+Tela: /[rota]
+  Elementos:
+    - [Botão/Link/Form/Filter/Menu] "[label]" → [ação: endpoint, navegação, modal, estado]
+    - ...
+  Estados: loading | empty | error | success
+```
+
+**Regra anti-stub:** se o elemento está no inventário, é OBRIGATÓRIO implementar end-to-end.
+Se não será implementado neste build → NÃO incluir no inventário e NÃO renderizar na UI.
+
+**3. Critérios de aceitação técnicos por feature:**
+Cada feature tem critérios verificáveis que o Tech Lead usará para validar a entrega.
 
 ### QA Gate pós-plano
 
@@ -625,7 +694,12 @@ PHASE GATE — executar após cada feature:
   □ [Scale only] Se feature tem endpoint HTTP → adicionar qa-perf + rtk k6 run tests/load/[feature].js
   □ PASS obrigatório antes de iniciar a próxima feature
   □ Fix loop automático (máx 3 iterações) antes de escalar para usuário
-  □ COMMIT após PASS:
+  □ TECH LEAD VALIDATION — comparar feature implementada com PLAN.md:
+      - Todos os elementos do inventário de UI existem e funcionam?
+      - Todos os endpoints/tarefas técnicas planejados existem?
+      - Todos os BDD scenarios passam?
+      - Se MISSING → implementar antes de commitar. Loop até completo.
+  □ COMMIT após PASS + Tech Lead validation:
       rtk git add [arquivos específicos — nunca git add .]
       rtk git commit -m "feat([feature-scope]): [descrição da feature]"
 ```
@@ -760,6 +834,35 @@ Após implementação completa de TODAS as features:
    - Segurança
    - Se FAIL → loop de fix até PASS
 
+7. **PM Validation — Completeness Check (OBRIGATÓRIO):**
+
+   > **Emitir:** `▶ [3/3] PM Validation — verificando completude`
+
+   Comparar a aplicação entregue com o feature set definido em PLAN.md:
+
+   - Para cada feature no PLAN.md: está implementada end-to-end?
+   - Para cada tela no inventário de UI: todos os elementos existem e funcionam?
+   - Existem stubs, placeholders, "coming soon", "TODO", "Lorem ipsum" na UI?
+   - Existem botões/links que não fazem nada ou levam a páginas vazias?
+
+   Gerar `COMPLETENESS_REPORT.md`:
+   ```
+   COMPLETENESS REPORT
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Feature             | Status   | Notes
+   [feature 1]         | COMPLETE |
+   [feature 2]         | PARTIAL  | [missing: X, Y]
+   [feature 3]         | STUB     | [botão existe mas não funciona]
+
+   Stubs detectados: [N]
+   Features incompletas: [N]
+   ```
+
+   - Se STUBS > 0 ou PARTIAL features → **fix loop obrigatório**: implementar end-to-end ou remover da UI
+   - Feature não implementada neste build → remover elemento da UI completamente (nunca deixar stub)
+   - Loop até COMPLETENESS_REPORT mostrar 100% COMPLETE ou elementos removidos
+   - **Somente após PM Validation PASS → avançar para Scale Gates**
+
 ### Scale Gates — Skills obrigatórios por escala
 
 Antes do commit, verificar o scale declarado na Fase 0 (bloco ENTENDIMENTO) e executar os skills obrigatórios:
@@ -879,6 +982,7 @@ Próximo: rtk git checkout main && rtk git merge feature/[nome]
 10. **Docker sempre rodando antes de QA visual** — toda wave visual (qa-design, qa-ux, qa-a11y, qa-e2e) e todo `/browser-qa` requerem `docker compose up`. Verificar com `docker compose ps` antes de lançar agentes visuais.
 11. **App entregue rodando** — o build SEMPRE termina com a aplicação acessível via Docker em `http://localhost:[porta]`. Docker NÃO é derrubado após o build. O BUILD COMPLETE inclui a URL.
 12. **Browser Audit é obrigatório** — ao final do build, `/browser-qa` roda com navegação exaustiva (todas as telas, todos os componentes). Não é opcional. Fix loop até zero BLOCKER/MAJOR.
+13. **Zero stubs / placeholders** — nenhum elemento de UI pode existir como stub ("coming soon", "em breve", "TODO", "Lorem ipsum", botão sem ação, página vazia). Se a feature não será implementada neste build, o elemento NÃO deve existir na UI. PM Validation verifica completude antes do commit.
 
 ---
 

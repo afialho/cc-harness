@@ -219,6 +219,8 @@ BLOCKER (impede uso):
   - Rota 404 que deveria existir
   - Rota protegida acessível sem autenticação
   - Dados não persistem após reload
+  - Stub / placeholder na UI: "coming soon", "em breve", "TODO", "Lorem ipsum", "under construction", página vazia com texto placeholder
+  - Feature listada no PLAN.md mas não implementada (elemento existe na UI sem funcionalidade real)
 
 MAJOR (degrada significativamente):
   - Elemento interativo sem feedback visual (hover, active, focus)
@@ -281,6 +283,8 @@ BLOCKER:
   - Rota 404 que deveria existir
   - Rota protegida acessível sem autenticação
   - Dados não persistem após reload
+  - Stub / placeholder detectado: "coming soon", "em breve", "TODO", "Lorem ipsum", "under construction", página vazia
+  - Feature no PLAN.md não implementada (UI element exists but has no real functionality)
 
 MAJOR:
   - Elemento interativo sem feedback visual

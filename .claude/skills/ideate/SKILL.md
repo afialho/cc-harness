@@ -100,9 +100,24 @@ Sem pedir confirmação aqui — a entrevista vai validar ou corrigir o entendim
 
 > **Emitir:** `▶ [2/5] Entrevista`
 
+### 2.0 — Adaptar ao modo de operação
+
+O modo é herdado do `/build` (se chamado via build) ou detectado do argumento (se chamado direto):
+
+| Modo | Comportamento na entrevista |
+|------|----------------------------|
+| **autonomous** (default) | 2-3 perguntas macro: scale, must-have absoluto, constraint crítico. AI define feature set a partir da pesquisa. |
+| **guided** | 5-7 perguntas detalhadas (comportamento padrão abaixo). Usuário define features. |
+
+Detecção: argumento contém `guided`, `guiado`, `me pergunte` → guided. Caso contrário → autonomous.
+
+**Se autonomous:** selecionar apenas perguntas de "Escala e ambição" (obrigatória) + 1-2 de "Problema e usuário" ou "Features e diferencial". Máximo 3 perguntas. A pesquisa (Fase 1 do /build) + Product Discovery Agent definirão o feature set.
+
+**Se guided:** seguir o fluxo completo abaixo (5-7 perguntas).
+
 ### 2.1 — Seleciona perguntas
 
-Com base no domínio e tipo identificados, seleciona **5 a 7 perguntas** do banco abaixo.
+Com base no domínio e tipo identificados, seleciona **5 a 7 perguntas** do banco abaixo (modo guided) ou **2 a 3** (modo autonomous).
 Nunca fazer mais de 7 perguntas em uma rodada. Priorizar as mais decisivas para o escopo.
 
 **Banco de perguntas por categoria:**

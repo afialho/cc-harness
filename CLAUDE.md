@@ -113,6 +113,10 @@ Entry point: **`/build`** — auto-routes based on context:
 - Refatoração de código → `/refactor`
 - Mudança de arquitetura → `/modernize`
 
+**Operation modes:** `autonomous` (default — AI as PM, deep research defines feature set) | `guided` (user guides, detailed interview). Pass as argument: `/build guided`.
+
+**Anti-stub:** zero placeholders in delivered UI. If a feature isn't implemented, its UI element must not exist. PM Validation checks completeness before every commit (RULE-CODE-011).
+
 QA obrigatório após cada feature: `/qa-loop` + `/browser-qa` (gate final).
 
 Full skill catalog: `docs/SKILLS.md`
