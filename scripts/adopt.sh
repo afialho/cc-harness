@@ -275,6 +275,22 @@ else
   fi
 fi
 
+# agent-browser CLI
+if command -v agent-browser &>/dev/null; then
+  ok "agent-browser CLI already installed"
+  track_skipped "agent-browser CLI"
+else
+  if npm install -g agent-browser 2>/dev/null; then
+    agent-browser install 2>/dev/null || true
+    ok "agent-browser CLI installed"
+    track_installed "agent-browser CLI"
+  else
+    warn "Could not auto-install agent-browser CLI"
+    info "Install manually: npm install -g agent-browser && agent-browser install"
+    track_skipped "agent-browser CLI (manual install needed)"
+  fi
+fi
+
 # k6
 if command -v k6 &>/dev/null; then
   ok "k6 already installed"

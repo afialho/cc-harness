@@ -206,6 +206,22 @@ try {
   console.log('  claude mcp add vercel -- npx -y @vercel/mcp-adapter@latest');
 }
 
+// --- Ensure agent-browser CLI ---
+try {
+  execSync('which agent-browser', { stdio: 'pipe' });
+  ok('agent-browser CLI available');
+} catch {
+  console.log('  Installing agent-browser CLI...');
+  try {
+    execSync('npm install -g agent-browser', { stdio: 'pipe', timeout: 60000 });
+    execSync('agent-browser install', { stdio: 'pipe', timeout: 120000 });
+    ok('agent-browser CLI installed');
+  } catch {
+    warn('Could not auto-install agent-browser CLI');
+    console.log('  Install manually: npm install -g agent-browser && agent-browser install');
+  }
+}
+
 // --- Launch claude (YOLO mode — auto-accept all permissions) ---
 var claudeArgs = ['--dangerously-skip-permissions'];
 if (mode !== 'init') claudeArgs.push('/adapt');

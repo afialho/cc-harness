@@ -34,7 +34,7 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
 fi
 
 # ── 1. Node.js ────────────────────────────────────────────────────────────────
-section "1/10  Node.js"
+section "1/11  Node.js"
 if command -v node &>/dev/null; then
   NODE_VERSION=$(node --version | tr -d 'v')
   MAJOR=$(echo "$NODE_VERSION" | cut -d. -f1)
@@ -52,7 +52,7 @@ else
 fi
 
 # ── 2. Git ────────────────────────────────────────────────────────────────────
-section "2/10  Git"
+section "2/11  Git"
 if command -v git &>/dev/null; then
   GIT_VERSION=$(git --version | awk '{print $3}')
   GIT_MAJOR=$(echo "$GIT_VERSION" | cut -d. -f1)
@@ -71,7 +71,7 @@ else
 fi
 
 # ── 3. Claude Code CLI ────────────────────────────────────────────────────────
-section "3/10  Claude Code CLI"
+section "3/11  Claude Code CLI"
 if command -v claude &>/dev/null; then
   CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "unknown")
   ok "Claude Code CLI $CLAUDE_VERSION"
@@ -87,7 +87,7 @@ else
 fi
 
 # ── 4. RTK CLI ────────────────────────────────────────────────────────────────
-section "4/10  RTK CLI (token-efficient proxy)"
+section "4/11  RTK CLI (token-efficient proxy)"
 if command -v rtk &>/dev/null; then
   RTK_VERSION=$(rtk --version 2>/dev/null || echo "unknown")
   ok "RTK CLI $RTK_VERSION — 60-90% token savings on all CLI ops"
@@ -103,8 +103,27 @@ else
   fi
 fi
 
-# ── 5. k6 (load testing) ──────────────────────────────────────────────────────
-section "5/10  Docker"
+# ── 5. agent-browser CLI (deterministic browser QA) ──────────────────────────
+section "5/11  agent-browser CLI (browser QA)"
+if command -v agent-browser &>/dev/null; then
+  AB_VERSION=$(agent-browser --version 2>/dev/null || echo "unknown")
+  ok "agent-browser $AB_VERSION"
+else
+  echo "    Installing agent-browser CLI..."
+  if npm install -g agent-browser 2>/dev/null; then
+    ok "agent-browser CLI installed"
+    echo "    Running agent-browser install (Chrome for Testing)..."
+    agent-browser install 2>/dev/null || true
+    ok "agent-browser setup complete"
+  else
+    fail "Could not auto-install agent-browser CLI"
+    info "Install manually: npm install -g agent-browser && agent-browser install"
+    track_error "agent-browser CLI not installed (required for /browser-qa)"
+  fi
+fi
+
+# ── 6. Docker ────────────────────────────────────────────────────────────────
+section "6/11  Docker"
 
 if command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
   DOCKER_VERSION=$(docker --version | awk '{print $3}' | tr -d ',')
@@ -135,7 +154,7 @@ else
   fi
 fi
 
-section "6/10  k6 (load & stress testing)"
+section "6/11  k6 (load & stress testing)"
 if command -v k6 &>/dev/null; then
   K6_VERSION=$(k6 version 2>/dev/null | awk '{print $3}' || echo "unknown")
   ok "k6 $K6_VERSION"
@@ -170,7 +189,7 @@ else
 fi
 
 # ── 6. npm install (Cypress + Cucumber + Jest) ───────────────────────────────
-section "7/10  npm dependencies (Cypress, Cucumber, Jest)"
+section "7/11  npm dependencies (Cypress, Cucumber, Jest)"
 if [ -f "package.json" ]; then
   echo "    Running npm install..."
   if npm install 2>/dev/null; then
@@ -187,7 +206,7 @@ else
 fi
 
 # ── 7. Claude Code hooks ──────────────────────────────────────────────────────
-section "8/10  Claude Code hooks"
+section "8/11  Claude Code hooks"
 HOOKS_DIR=".claude/hooks"
 if [ -d "$HOOKS_DIR" ]; then
   chmod +x "$HOOKS_DIR"/*.mjs 2>/dev/null || true
@@ -202,7 +221,7 @@ else
 fi
 
 # ── 8. Claude Code plugins ────────────────────────────────────────────────────
-section "9/10  Claude Code plugins"
+section "9/11  Claude Code plugins"
 if command -v claude &>/dev/null; then
 
   install_plugin() {
@@ -278,7 +297,7 @@ else
 fi
 
 echo ""
-section "10/10  Git repository"
+section "11/11  Git repository"
 if [ -d ".git" ]; then
   REMOTE=$(git remote get-url origin 2>/dev/null || echo "")
   if [ -n "$REMOTE" ]; then
