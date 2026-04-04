@@ -5,998 +5,231 @@ disable-model-invocation: true
 argument-hint: <raw idea>
 ---
 
-# /build — Pipeline Completo: Ideia → Implementação
+# /build — Full Pipeline: Idea → Implementation
 
 > **Extends:** `claude-code-setup@claude-plugins-official`
 > Adds: research wave, BDD planning, parallel agent orchestration, and quality gates (/qa-loop + /browser-qa) at every phase.
 > The official plugin handles project setup; this skill runs the full development lifecycle on top.
 
-Orquestrador de três fases com research real, planejamento informado e implementação autônoma.
-Cada fase tem budget próprio de contexto e checkpoints automáticos.
+Three-phase orchestrator with real research, informed planning and autonomous implementation.
+Each phase has its own context budget and automatic checkpoints.
 
 ---
 
-## Visão geral do pipeline
+## Pipeline Overview
 
 ```
-/build <ideia>
+/build <idea>
     │
-    ├─ [0/3] Fase 0 — Detecção de contexto
-    │         ├─ Projeto vazio? → /scaffold → continua
-    │         ├─ Transformação detectada? → /redesign | /refactor | /modernize (handoff completo)
-    │         ├─ Ideia vaga? → /ideate → aguarda IDEAS.md → retoma automaticamente
-    │         └─ ⏸ PAUSA: confirmação do entendimento
+    ├─ [0/3] Phase 0 — Context Detection
+    │         ├─ Empty project? → /scaffold → continue
+    │         ├─ Transformation detected? → /redesign | /refactor | /modernize (full handoff)
+    │         ├─ Vague idea? → /ideate → wait for IDEAS.md → resume automatically
+    │         └─ ⏸ PAUSE: confirm understanding
     │
-    ├─ [1/3] Fase 1 — Research
-    │         ├─ Wave de agentes paralelos:
-    │         │   ├─ Agente Business/Market    (sempre que feature tem usuários)
-    │         │   ├─ Agente API/Docs           (se integra com terceiros)
-    │         │   ├─ Agente Architecture       (se tem backend/infra)
-    │         │   ├─ Agente Domain/Rules       (se domínio especializado)
-    │         │   ├─ Agente Implementations    (sempre)
-    │         │   └─ Agente YouTube            (se tem tutoriais relevantes)
-    │         ├─ Agrega em RESEARCH.md
-    │         ├─ /qa-loop (qa-research) → GATE: research tem evidências reais?
-    │         └─ ⏸ PAUSA: key insights + 3-5 perguntas de clarificação
+    ├─ [1/3] Phase 1 — Research
+    │         ├─ Parallel agent wave:
+    │         │   ├─ Business/Market Agent    (whenever feature has users)
+    │         │   ├─ API/Docs Agent           (if integrating with third parties)
+    │         │   ├─ Architecture Agent       (if has backend/infra)
+    │         │   ├─ Domain/Rules Agent       (if specialized domain)
+    │         │   ├─ Implementations Agent    (always)
+    │         │   └─ YouTube Agent            (if relevant tutorials exist)
+    │         ├─ Aggregate into RESEARCH.md
+    │         ├─ /qa-loop (qa-research) → GATE: does research have real evidence?
+    │         └─ ⏸ PAUSE: key insights + 3-5 clarification questions
     │
-    ├─ [2/3] Fase 2 — Planning
-    │         ├─ Extrai estruturadamente do RESEARCH.md → arquitetura hexagonal, BDD, test plan
-    │         ├─ Gera PLAN.md
-    │         ├─ /qa-loop (qa-plan) → GATE: BDD completo? arquitetura mapeada?
-    │         └─ ⏸ PAUSA: apresenta plano → aguarda aprovação
+    ├─ [2/3] Phase 2 — Planning
+    │         ├─ Extract structured data from RESEARCH.md → hexagonal architecture, BDD, test plan
+    │         ├─ Generate PLAN.md
+    │         ├─ /qa-loop (qa-plan) → GATE: BDD complete? architecture mapped?
+    │         └─ ⏸ PAUSE: present plan → wait for approval
     │
-    └─ [3/3] Fase 3 — Implementation
-              ├─ git checkout -b feature/[nome]
+    └─ [3/3] Phase 3 — Implementation
+              ├─ git checkout -b feature/[name]
               ├─ [3a] Foundation (design system + layout) → GATE → COMMIT
               ├─ [3b] Auth (register/login/logout) → GATE → COMMIT
-              ├─ Feature simples → /feature-dev + phase gate → COMMIT por feature
-              ├─ Feature complexa (3+ componentes) → /agent-teams + phase gate → COMMIT por wave
+              ├─ Simple feature → /feature-dev + phase gate → COMMIT per feature
+              ├─ Complex feature (3+ components) → /agent-teams + phase gate → COMMIT per wave
               │
-              ├─ [CONCLUSÃO] Launch + Browser Audit
-              │   ├─ Test suite completa (unit + BDD + Cypress + k6)
-              │   ├─ docker compose up -d → health check → URL local
-              │   ├─ /browser-qa <url> → navega TODAS as telas, testa TODOS os elementos
-              │   │   └─ Fix loop (max 3 iter) até 0 BLOCKER/MAJOR
+              ├─ [CONCLUSION] Launch + Browser Audit
+              │   ├─ Complete test suite (unit + BDD + Cypress + k6)
+              │   ├─ docker compose up -d → health check → local URL
+              │   ├─ /browser-qa <url> → navigate ALL screens, test ALL elements
+              │   │   └─ Fix loop (max 3 iter) until 0 BLOCKER/MAJOR
               │   ├─ /qa-loop (qa-code + qa-security + qa-backend + qa-perf)
               │   ├─ Code review → PASS
-              │   ├─ Scale gates (se Product/Scale)
-              │   ├─ Commit final (apenas fixes restantes)
-              │   └─ BUILD COMPLETE — app rodando em http://localhost:[porta]
+              │   ├─ Scale gates (if Product/Scale)
+              │   ├─ Final commit (only remaining fixes)
+              │   └─ BUILD COMPLETE — app running at http://localhost:[port]
               │
-              └─ Docker NÃO é derrubado — app permanece acessível
+              └─ Docker is NOT shut down — app remains accessible
 ```
 
-Checkpoints automáticos ao final de cada fase e sempre que o contexto estimado atingir ~60k tokens (write checkpoint) / ~80k (compact recommended).
+Automatic checkpoints at the end of each phase and whenever estimated context reaches ~60k tokens (write checkpoint) / ~80k (compact recommended).
 
 ---
 
-## Fase 0 — Detecção de contexto + Refinamento
+## Phase 0 — Context Detection + Refinement
 
-> **Emitir:** `▶ [0/3] Analisando contexto`
+> **Emit:** `▶ [0/3] Analyzing context`
 
-### 0.0 — Detectar se o contexto é suficiente para construir
+### 0.0 — Detect if context is sufficient to build
 
-Antes de qualquer coisa, avaliar o que foi recebido **em ordem**:
+Before anything, evaluate what was received **in order**:
 
-**Passo A — Projeto vazio? → chamar `/scaffold` primeiro**
+**Step A — Empty project? → call `/scaffold` first**
 
-Verificar se o projeto tem estrutura mínima:
-- Existe `package.json`, `pyproject.toml`, `go.mod`, ou `Gemfile`? OU
-- Existe `src/`, `app/`, `lib/`, `app.py`, ou `main.go`?
+Check if the project has minimal structure:
+- Does `package.json`, `pyproject.toml`, `go.mod`, or `Gemfile` exist? OR
+- Does `src/`, `app/`, `lib/`, `app.py`, or `main.go` exist?
 
-Se **nenhum** desses existir → projeto está vazio. Chamar `/scaffold` antes de continuar:
-
-```
-Projeto sem estrutura detectada. Preciso inicializar o ambiente antes de implementar.
-
-▶ Iniciando /scaffold...
-```
-
-Após `/scaffold` concluir → continuar para Passo B automaticamente.
-
-**Passo B — Intenção de transformação? → delegar completamente**
-
-Antes de avaliar se a ideia é vaga, verificar se o argumento ou contexto indica **transformação de algo que já existe**.
-
-Estes são **handoffs completos**: quando detectado, `/build` delega inteiramente para a skill correspondente e **não continua seu próprio pipeline** (não faz research, plan, implement por conta própria).
-
-**Sinais para `/redesign`** (UI/UX transformation):
-- Palavras-chave explícitas: "redesign", "nova interface", "nova UI", "moderniza interface", "novo visual", "refaz o frontend", "novo layout"
-- Framework legacy detectado no codebase (`angular.js v1`, `backbone`, `ember`, `jquery` como framework principal) + intenção de criar novo app
-- "criar um novo app a partir de um existente", "nova aplicação com as mesmas features"
-
-**Sinais para `/refactor`** (code quality improvement):
-- Palavras-chave explícitas: "refactor", "refatorar", "limpar código", "dívida técnica", "technical debt", "código legado", "melhorar qualidade"
-- Contexto: codebase existente + linguagem de qualidade de código sem menção a features novas
-- "extrair módulo", "separar responsabilidades", "desacoplar", "remover dead code"
-
-**Sinais para `/modernize`** (architecture transformation):
-- Palavras-chave explícitas: "modernize", "modernizar", "hexagonal", "microservices", "microsserviços", "modular", "monolito", "strangler fig"
-- Contexto: codebase existente + intenção de mudar a arquitetura como um todo
-- "extrair serviços", "dividir o monolito", "refatorar para hexagonal", "criar módulos independentes"
-
-**Ao detectar qualquer sinal acima:**
+If **none** of these exist → project is empty. Call `/scaffold` before continuing:
 
 ```
-Detectei que a intenção é [redesign de interface / refatoração de código / modernização de arquitetura].
+No project structure detected. Need to initialize the environment before implementing.
 
-Vou delegar para /[redesign|refactor|modernize] que tem o pipeline completo para isso.
-
-▶ Iniciando /[redesign|refactor|modernize]...
+▶ Starting /scaffold...
 ```
 
-Chama a skill correspondente com o argumento recebido como contexto. Não retoma o pipeline do `/build` após a skill concluir.
+After `/scaffold` completes → continue to Step B automatically.
 
-Se os sinais forem ambíguos (ex: "quero melhorar o app" sem indicar se é UI, código ou arquitetura), perguntar antes de delegar:
+**Step B — Transformation intent? → delegate completely**
+
+Before evaluating if the idea is vague, check if the argument or context indicates **transformation of something that already exists**.
+
+These are **full handoffs**: when detected, `/build` delegates entirely to the corresponding skill and **does not continue its own pipeline** (does not do research, plan, implement on its own).
+
+**Signals for `/redesign`** (UI/UX transformation):
+- Explicit keywords: "redesign", "new interface", "new UI", "modernize interface", "new visual", "redo the frontend", "new layout"
+- Legacy framework detected in codebase (`angular.js v1`, `backbone`, `ember`, `jquery` as main framework) + intention to create new app
+- "create a new app from an existing one", "new application with the same features"
+
+**Signals for `/refactor`** (code quality improvement):
+- Explicit keywords: "refactor", "clean code", "technical debt", "legacy code", "improve quality"
+- Context: existing codebase + code quality language without mention of new features
+- "extract module", "separate responsibilities", "decouple", "remove dead code"
+
+**Signals for `/modernize`** (architecture transformation):
+- Explicit keywords: "modernize", "hexagonal", "microservices", "modular", "monolith", "strangler fig"
+- Context: existing codebase + intention to change the architecture as a whole
+- "extract services", "split the monolith", "refactor to hexagonal", "create independent modules"
+
+**When any signal above is detected:**
 
 ```
-Sua intenção é:
-  (A) Modernizar a interface/UX do app → /redesign
-  (B) Melhorar a qualidade do código existente → /refactor
-  (C) Mudar a arquitetura (hexagonal, modular, microservices) → /modernize
-  (D) Construir uma feature nova → continuar com /build
+Detected that the intent is [interface redesign / code refactoring / architecture modernization].
+
+Delegating to /[redesign|refactor|modernize] which has the complete pipeline for this.
+
+▶ Starting /[redesign|refactor|modernize]...
 ```
 
-**Passo C — Ideia clara? Verificar (em ordem):**
+Call the corresponding skill with the received argument as context. Do not resume the `/build` pipeline after the skill completes.
 
-1. `IDEAS.md` existe na raiz do projeto? → contexto suficiente, pular para 0.1
-2. Projeto já tem código e o argumento descreve claramente **o que construir** (feature, entidades, comportamento esperado)? → pular para 0.1
-
-**Sinais de ideia vaga — chamar `/ideate` se qualquer um destes for verdade:**
-- Nenhum argumento passado (`/build` sem nada)
-- Argumento com < 15 palavras sem feature concreta ("quero um app", "algo tipo Zendesk", "uma plataforma de tarefas")
-- Analogia sem especificação ("tipo o Pipefy mas diferente", "como o Notion mas para X")
-- Sem usuário definido, sem problema claro, sem comportamento esperado
-- Múltiplas ideias soltas sem escopo definido
-
-**Se ideia vaga detectada:**
+If the signals are ambiguous (e.g., "I want to improve the app" without indicating if it's UI, code or architecture), ask before delegating:
 
 ```
-Percebi que a ideia ainda está em fase de definição.
-Antes de construir, vou te entrevistar para mapear features, definir o MVP e
-garantir que vamos construir a coisa certa.
-
-▶ Iniciando /ideate...
+What is your intent?
+  (A) Modernize the app's interface/UX → /redesign
+  (B) Improve the quality of existing code → /refactor
+  (C) Change the architecture (hexagonal, modular, microservices) → /modernize
+  (D) Build a new feature → continue with /build
 ```
 
-Chama `/ideate <argumento recebido>` e **aguarda o resultado** (IDEAS.md gerado + aprovação do usuário).
-Após `/ideate` concluir, retoma automaticamente o `/build` com o `IDEAS.md` como input — sem precisar que o usuário chame `/build` de novo.
+**Step C — Clear idea? Check (in order):**
 
-**Se contexto suficiente:** prosseguir direto para 0.1.
+1. Does `IDEAS.md` exist at the project root? → sufficient context, skip to 0.1
+2. Does the project already have code and the argument clearly describes **what to build** (feature, entities, expected behavior)? → skip to 0.1
+
+**Signals of a vague idea — call `/ideate` if any of these are true:**
+- No argument passed (`/build` with nothing)
+- Argument with < 15 words without a concrete feature ("I want an app", "something like Zendesk", "a task platform")
+- Analogy without specification ("like Pipefy but different", "like Notion but for X")
+- No defined user, no clear problem, no expected behavior
+- Multiple loose ideas without defined scope
+
+**If vague idea detected:**
+
+```
+I noticed the idea is still in the definition phase.
+Before building, I'll interview you to map features, define the MVP and
+ensure we build the right thing.
+
+▶ Starting /ideate...
+```
+
+Call `/ideate <received argument>` and **wait for the result** (IDEAS.md generated + user approval).
+After `/ideate` completes, automatically resume `/build` with `IDEAS.md` as input — without needing the user to call `/build` again.
+
+**If sufficient context:** proceed directly to 0.1.
 
 ---
 
-### 0.1 — Detectar modo de operação
+### 0.1 — Detect operation mode
 
-Inferir do argumento ou usar default:
+Infer from argument or use default:
 
-| Modo | Ativação | Comportamento |
-|------|----------|---------------|
-| **autonomous** (default) | sem flag, ou `autonomous`, `auto` | AI como PM — pesquisa profunda define feature set. Usuario valida macro. |
-| **guided** | `guided`, `guiado`, `me pergunte` | Usuario guia — entrevista detalhada, usuario define features. |
+| Mode | Activation | Behavior |
+|------|------------|----------|
+| **autonomous** (default) | no flag, or `autonomous`, `auto` | AI as PM — deep research defines feature set. User validates at macro level. |
+| **guided** | `guided`, `guide me`, `ask me` | User guides — detailed interview, user defines features. |
 
-Registrar o modo para uso nas fases seguintes.
+Record the mode for use in subsequent phases.
 
 ---
 
-### 0.2 — Refinamento da ideia
+### 0.2 — Idea Refinement
 
-Recebe a ideia concreta (ou IDEAS.md do /ideate) e:
+Receive the concrete idea (or IDEAS.md from /ideate) and:
 
-1. Detectar ou confirmar o **scale** do projeto:
-   - Se IDEAS.md existe e tem campo Scale → usar
-   - Se chamado com argumento `scale=MVP|Product|Scale` → usar
-   - Caso contrário → perguntar: *"Qual o scale? MVP (validar ideia) / Product (vai para mercado) / Scale (produto com tração)?"*
+1. Detect or confirm the project's **scale**:
+   - If IDEAS.md exists and has a Scale field → use it
+   - If called with argument `scale=MVP|Product|Scale` → use it
+   - Otherwise → ask: *"What's the scale? MVP (validate idea) / Product (going to market) / Scale (product with traction)?"*
 
-   **O scale determina o que será incluído:**
+   **The scale determines what will be included:**
    ```
-   MVP:     Auth + features core + testes unitários básicos
-            SEM: CI/CD, observabilidade, rate limiting, load tests
-   Product: MVP + CI/CD (GitHub Actions) + rate limiting em auth + E2E + structured logging
-   Scale:   Product + observabilidade completa + multi-tenancy + load tests (k6 por endpoint)
+   MVP:     Auth + core features + basic unit tests
+            WITHOUT: CI/CD, observability, rate limiting, load tests
+   Product: MVP + CI/CD (GitHub Actions) + rate limiting on auth + E2E + structured logging
+   Scale:   Product + full observability + multi-tenancy + load tests (k6 per endpoint)
    ```
 
-2. Reformula em linguagem técnica clara:
-   - O que será construído
-   - Input e output esperados
-   - Entidades envolvidas
-   - Tipo de feature: UI-heavy | Backend | Full-stack | Biblioteca
+2. Reformulate in clear technical language:
+   - What will be built
+   - Expected input and output
+   - Entities involved
+   - Feature type: UI-heavy | Backend | Full-stack | Library
 
-3. Apresenta o entendimento ao usuário neste formato:
+3. Present the understanding to the user in this format:
 
 ```
-ENTENDIMENTO
+UNDERSTANDING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Feature:      [nome curto]
-Modo:         autonomous | guided
+Feature:      [short name]
+Mode:         autonomous | guided
 Scale:        MVP | Product | Scale
-Objetivo:     [uma frase — o que o usuário conquista]
-O que constrói: [2-4 bullets técnicos]
-Input/Output: [o que entra, o que sai]
-Entidades:    [entidades de domínio envolvidas]
-Tipo:         [UI-heavy | Backend | Full-stack | Biblioteca]
-Referências:  [produtos existentes mencionados — "como Jira", "tipo Trello"]
+Objective:    [one sentence — what the user achieves]
+What it builds: [2-4 technical bullets]
+Input/Output: [what goes in, what comes out]
+Entities:     [domain entities involved]
+Type:         [UI-heavy | Backend | Full-stack | Library]
+References:   [existing products mentioned — "like Jira", "similar to Trello"]
 ```
 
-4. Pergunta: **"Esse entendimento está correto? Posso avançar para a pesquisa?"**
+4. Ask: **"Is this understanding correct? Can I proceed to research?"**
 
-Aguarda confirmação antes de iniciar a Fase 1.
-Se o usuário corrigir algo, ajusta o entendimento e confirma novamente.
+Wait for confirmation before starting Phase 1.
+If the user corrects something, adjust the understanding and confirm again.
 
 ---
 
-## Fase 1 — Research
+## Phase Loading
 
-> **Emitir:** `▶ [1/3] Research — lançando agentes paralelos`
+Before starting each phase, read the corresponding phase file for detailed instructions:
+- Phase 1 (Research): Read `.claude/skills/build/PHASE-1-RESEARCH.md`
+- Phase 2 (Planning): Read `.claude/skills/build/PHASE-2-PLANNING.md`
+- Phase 3 (Implementation): Read `.claude/skills/build/PHASE-3-IMPLEMENTATION.md`
 
-Executa o protocolo da skill `/research` para o tópico confirmado.
-
-### Wave de pesquisa (agentes paralelos)
-
-Lança até 4 agentes simultâneos com base no tipo de feature. A seleção é feita pelo orquestrador conforme o contexto da ideia confirmada na Fase 0.
-
-**Agente Business/Market** — pesquisa mercado e concorrência (usar sempre que a feature tem usuários finais)
-- Busca: concorrentes e como resolvem o mesmo problema (Product Hunt, G2, Capterra)
-- Busca: reviews de usuários — o que elogiam, o que reclamam
-- Busca: blogs do setor e posts de referência sobre o problema
-
-**Agente API/Docs** — pesquisa integrações com terceiros (usar se a feature integra com APIs externas)
-- Busca: documentação oficial de cada serviço externo mencionado
-- Busca: endpoints relevantes, rate limits, autenticação e SDKs disponíveis
-- Busca: changelogs e versões suportadas
-
-**Agente Architecture/Backend** — pesquisa padrões de design e infraestrutura (usar se tem backend ou infra)
-- Busca: padrões de design aplicáveis (Martin Fowler, AWS/GCP blogs, RFC relevantes)
-- Busca: decisões de schema, modelagem de dados e estratégias de persistência
-- Busca: trade-offs de arquitetura documentados por praticantes
-
-**Agente Domain/Rules** — pesquisa domínio especializado (usar se o domínio tem terminologia ou regras específicas)
-- Busca: regras do setor, regulamentações e compliance relevantes
-- Busca: terminologia canônica do domínio (para naming de entidades)
-- Busca: RFCs, standards ou especificações formais aplicáveis
-
-**Agente YouTube/Tutorials** — pesquisa implementações em vídeo
-- Busca: tutoriais e walkthroughs para o padrão/feature
-- Busca: pitfalls comuns e lições aprendidas
-- Busca: abordagens alternativas demonstradas
-
-**Agente Implementations** — pesquisa implementações reais (sempre incluído)
-- Busca: repositórios open source de referência
-- Busca: snippets e padrões de código recomendados
-- Busca: trade-offs de implementação documentados
-
-**Agente Product Discovery** — feature audit de produtos referência (usar SEMPRE que ideia menciona produtos existentes: "como X", "tipo Y", "clone de Z", ou quando analogias foram identificadas na Fase 0)
-- Busca: lista completa de features de cada produto referência (docs oficiais, feature pages, pricing pages, help center)
-- Busca: screenshots, demos e reviews no YouTube, walkthroughs de produto
-- Busca: comparativos entre os produtos referência (G2, Capterra, Reddit, versus pages)
-- Busca: o que usuarios amam/odeiam de cada produto (reviews, forums, Twitter/X)
-- Output: tabela de features por produto com categorização (Core / Secondary / Advanced)
-- Output: recomendação autônoma de feature set baseada no objetivo do usuário
-- **Em modo autonomous:** este agente é OBRIGATÓRIO quando há produtos referência. Ele define o feature set, não o usuário.
-- **Em modo guided:** este agente informa, mas o usuário define o feature set final.
-
-Cada agente usa WebSearch e WebFetch para pesquisa real — sem inventar dados.
-
-### Agregação
-
-Consolida todos os achados em `RESEARCH.md` com estrutura:
-
-```markdown
-# Research: [Feature Name]
-
-## Key Insights
-[5-10 bullets com os achados mais relevantes]
-
-## Business & Market Analysis
-[achados do agente Business/Market]
-
-## API & Integration Docs
-[achados do agente API/Docs: endpoints, rate limits, SDKs]
-
-## Architecture & Backend Patterns
-[achados do agente Architecture/Backend]
-
-## Domain Rules & Terminology
-[achados do agente Domain/Rules: regras, terminologia canônica]
-
-## Implementation Patterns
-[achados de implementações reais]
-
-## Product Discovery (se produtos referência identificados)
-[features mapeadas de cada produto referência]
-[tabela comparativa: Feature | Produto A | Produto B | Produto C]
-[categorização: Core / Secondary / Advanced]
-[recomendação de feature set para este projeto com justificativa]
-[features incluídas vs excluídas com razão]
-
-## Pitfalls & Lessons Learned
-[problemas conhecidos e como evitá-los]
-
-## References
-[links com descrição]
-```
-
-### QA Gate pós-pesquisa
-
-Antes da pausa, executa:
-```
-/qa-loop (escopo: RESEARCH.md, dimensões: qa-research)
-```
-Se `qa-research` retornar BLOCKER → corrige gaps na pesquisa (spawna agente de research adicional) antes de apresentar ao usuário.
-
-### Pausa obrigatória após pesquisa
-
-Após gerar `RESEARCH.md` e passar o gate, apresenta ao usuário:
-
-1. **Key Insights** (extraídos do RESEARCH.md, 5-10 linhas)
-2. **3-5 perguntas de clarificação** baseadas nos achados — focadas em gaps, trade-offs ou decisões que a pesquisa revelou e que precisam de input humano
-
-Exemplo de perguntas relevantes:
-- "A pesquisa encontrou duas abordagens: X (mais simples) e Y (mais escalável). Qual prefere?"
-- "As APIs A e B cobrem o mesmo caso de uso. A tem melhor DX, B tem melhor rate limit. Alguma preferência?"
-- "A feature toca autenticação — a pesquisa revelou que o padrão do projeto usa JWT. Confirma que devemos seguir esse padrão?"
-
-Aguarda resposta do usuário antes de iniciar a Fase 2.
-
-> **Checkpoint após Fase 1:**
-> Escreve `.claude/checkpoint.md`:
-> ```
-> fase: research_completa
-> research_md: gerado
-> respostas_usuario: [respostas registradas]
-> proximo: fase_2_planning
-> ```
-
-Se o contexto atingir ~60k tokens (write checkpoint) / ~80k (compact recommended) antes de concluir a Fase 1:
-Escreve checkpoint com o estado parcial e emite:
-`↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar na Fase 1 (pesquisa parcial registrada).`
-
----
-
-## Fase 2 — Planning
-
-> **Emitir:** `▶ [2/3] Planning`
-
-Antes de gerar qualquer planejamento, extrai estruturadamente do RESEARCH.md:
-
-**APIs identificadas:**
-→ Cada API externa encontrada = outbound port + infrastructure adapter nomeado especificamente
-→ Cada endpoint relevante = uma task granular na wave decomposition (não "integrar API", mas "implementar POST /charges no StripeAdapter")
-
-**Regras de negócio encontradas:**
-→ Cada regra = um BDD Scenario concreto com Given/When/Then específicos
-→ Edge cases do domínio = Scenarios adicionais
-→ Usar terminologia exata do domínio encontrada na pesquisa para nomear entidades
-
-**Concorrentes e referências de arquitetura:**
-→ Padrões que se repetiram em múltiplas referências = padrão preferido para este projeto
-→ Trade-offs documentados nos achados = decisões de design informadas e documentadas
-
-**Achados de implementação:**
-→ Abordagens técnicas encontradas no RESEARCH.md informam a sequência de implementação
-→ Pitfalls identificados = items de atenção no plano
-
-**Entidades de domínio identificadas:**
-→ Se o plano introduz entidades novas (tabelas, models) → chamar `/dba design` antes de iniciar a Fase 3
-→ `/dba` retorna o schema aprovado que alimenta a implementação
-
-Este mapeamento explícito garante que o planejamento seja embasado nos achados reais da pesquisa,
-não em decisões genéricas do modelo.
-
-### O que gerar
-
-Lê `RESEARCH.md` e as respostas de clarificação do usuário para informar cada decisão.
-
-**Architecture mapping (baseado em `.claude/architecture.json`):**
-
-Ler `.claude/architecture.json` antes de mapear. Usar o template correspondente ao `pattern` detectado:
-
-- **hexagonal** (ou projeto novo): Domain → Application → Ports → Infrastructure → Shared
-- **mvc-rails**: Models → Services → Controllers → Views/Serializers
-- **mvc-express / mvc-nestjs**: Models/DTOs → Services → Controllers → Routes
-- **nextjs-app-router**: lib/ (server logic) → Server Actions → API Routes → Server Components → Client Components
-- **feature-based**: src/features/[nome]/ (autocontido) → src/shared/ (compartilhado)
-- **flat / disabled**: documentar estrutura existente sem impor padrão
-
-**BDD scenarios (Gherkin):**
-- Happy path
-- Casos de erro
-- Edge cases
-
-**Test plan:**
-- Unit tests por entidade de domínio e use case
-- Integration tests por adapter
-- E2E (Cypress) se houver UI
-- Load test (k6) se houver endpoint HTTP
-
-**Implementation sequence (TDD — baseado no padrão detectado):**
-
-*hexagonal:* BDD file → Domain entities → Ports → Use Cases → Adapters → Composition root → Cucumber → Cypress → k6
-*mvc-rails:* BDD file → Model → Service → Controller → Request tests → Cucumber → Cypress
-*mvc-express/nestjs:* BDD file → DTO/Model → Service → Controller → Routes → Integration tests → Cucumber → Cypress → k6
-*nextjs-app-router:* BDD file → lib/ functions → Server Actions → API Routes → Server Components → Client Components → Cucumber → Cypress → k6
-*feature-based:* BDD file → Business logic → UI components → API integration → Integration tests → Cucumber → Cypress
-
-**Agent wave decomposition** (se feature complexa):
-- Quais componentes podem ser implementados em paralelo
-- Quais têm dependência sequencial
-- Estimativa de waves necessárias
-
-**Git strategy:**
-- Nome da branch: `feature/[nome-kebab-case]`
-- Commits atômicos: sequência sugerida
-
-**Definition of Done:**
-- Checklist completo com todos os critérios
-
-**Feature mapping vs produtos referência (se Product Discovery existir no RESEARCH.md):**
-
-```
-## Feature Mapping — Produtos Referência
-| Feature Referência | Incluir? | Nossa versão | Justificativa |
-|-------------------|----------|-------------|---------------|
-| [feature do prod A] | SIM/NÃO/PARCIAL | [como implementamos] | [por que sim/não] |
-```
-
-Em modo **autonomous**: AI preenche baseado na pesquisa. Em modo **guided**: AI propõe, usuário ajusta.
-
----
-
-### Tech Lead — Decomposição técnica + Inventário de UI
-
-Após o PM definir o feature set (acima), o Tech Lead decompõe tecnicamente:
-
-**1. Tarefas técnicas por feature:**
-Para cada feature, listar tarefas granulares: endpoint, componente, hook, migration, teste.
-Cada tarefa = uma unidade implementável por um agente.
-
-**2. Inventário de UI por tela (OBRIGATÓRIO para features com UI):**
-
-```
-Tela: /[rota]
-  Elementos:
-    - [Botão/Link/Form/Filter/Menu] "[label]" → [ação: endpoint, navegação, modal, estado]
-    - ...
-  Estados: loading | empty | error | success
-```
-
-**Regra anti-stub:** se o elemento está no inventário, é OBRIGATÓRIO implementar end-to-end.
-Se não será implementado neste build → NÃO incluir no inventário e NÃO renderizar na UI.
-
-**3. Critérios de aceitação técnicos por feature:**
-Cada feature tem critérios verificáveis que o Tech Lead usará para validar a entrega.
-
-### QA Gate pós-plano
-
-Antes de apresentar ao usuário, executa:
-```
-/qa-loop (escopo: PLAN.md, dimensões: qa-plan)
-```
-Se `qa-plan` retornar BLOCKER (ex: user story sem scenario, decision critical sem justificativa) → corrige o plano antes de apresentar.
-
-### Apresentação ao usuário
-
-Apresenta o plano completo (pode ser inline ou referencia `PLAN.md` se gerado).
-
-Em seguida pergunta: **"Plano aprovado? Posso iniciar a implementação?"**
-
-Aceita: "sim", "vai", "aprovado", "implementa", "go" ou equivalente.
-Se o usuário pedir ajustes: incorpora e apresenta novamente.
-
-> **Checkpoint após Fase 2:**
-> Escreve `.claude/checkpoint.md`:
-> ```
-> fase: planning_completo
-> plan_md: gerado
-> aprovacao_usuario: confirmada
-> proximo: fase_3_implementation
-> ```
-
-Se o contexto atingir ~60k tokens (write checkpoint) / ~80k (compact recommended) antes de concluir a Fase 2:
-Escreve checkpoint com plano parcial e emite:
-`↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar na Fase 2 (planejamento parcial registrado).`
-
----
-
-## Fase 3 — Implementation
-
-> **Emitir:** `▶ [3/3] Implementation`
-
----
-
-### Git Setup — Branch de feature (OBRIGATÓRIO)
-
-Antes de qualquer implementação, criar branch dedicada:
-
-```bash
-rtk git checkout -b feature/[nome-kebab-case]
-```
-
-**Todo o trabalho da Fase 3 acontece nesta branch.** Commits incrementais ao longo da implementação (ver regras de commit abaixo). Merge em `main` somente após BUILD COMPLETE.
-
----
-
-### Detecção automática: Web vs. Mobile
-
-Antes do Foundation Protocol, detectar o tipo de projeto:
-
-```bash
-# Mobile: se package.json contém "expo" ou "react-native"
-rtk cat package.json | grep -E '"expo"|"react-native"'
-```
-
-- **Mobile detectado** → usar Foundation Protocol Mobile (abaixo)
-- **Web (padrão)** → usar Foundation Protocol Web (abaixo)
-
----
-
-### Detecção automática: Library/Package
-
-Se nenhum frontend detectado (sem `src/pages/`, `app/`, `pages/`, nem Expo/React Native) E projeto tem manifesto de pacote (`"main"` ou `"exports"` em package.json, `[build-system]` em pyproject.toml, `Cargo.toml`, `setup.py`/`setup.cfg`):
-
-- **Library detectada** → usar Foundation Protocol Library (abaixo)
-
----
-
-### Foundation Protocol Library (OBRIGATÓRIO para pacotes/bibliotecas)
-
-Bibliotecas não têm UI, não precisam de Docker, e não têm auth. O foco é: API pública limpa, testes sólidos, build/publish pipeline.
-
-#### [3a-lib] Project Setup
-1. Configurar build toolchain (tsup/esbuild para TS, setuptools/hatch para Python, cargo para Rust)
-2. Configurar exports/entry points no manifesto do pacote
-3. Configurar linting + formatting (eslint/prettier, ruff, clippy)
-
-#### [3b-lib] Public API Design
-1. Definir exports públicos — o que o consumidor importa
-2. Gerar tipos (TypeScript declarations, type stubs para Python)
-3. Criar `src/index.ts` (ou equivalente) com re-exports limpos
-
-#### Phase Gate Library
-
-```
-PHASE GATE — executar após cada módulo público:
-  □ Testes unitários passando (100% da API pública)
-  □ Build produz artefato correto (rtk npm run build / rtk cargo build)
-  □ Types/declarations gerados corretamente
-  □ /qa-loop (escopo: [módulo], dimensões: qa-code + qa-backend)
-  □ PASS obrigatório antes do próximo módulo
-```
-
-#### Scale Gates Library
-
-| Skill | MVP | Product | Scale |
-|-------|-----|---------|-------|
-| `/ci-cd` (build + test + publish) | — | **obrigatório** | **obrigatório** |
-| `/docs-gen` (API docs + README) | — | **obrigatório** | **obrigatório** |
-| `/security-hardening audit` | — | **obrigatório** | **obrigatório** |
-| Benchmarks | — | — | **obrigatório** |
-
----
-
-### Foundation Protocol Mobile (OBRIGATÓRIO para projetos React Native)
-
-Delegar integralmente para `/mobile` — não reimplementar aqui.
-
-```
-▶ Executando Foundation Protocol Mobile via /mobile...
-
-Fases obrigatórias:
-  [M-3a] /mobile scaffold → design system + navigation base → GATE (/mobile qa)
-  [M-3b] /auth scaffold   → register/login/logout/refresh → GATE (/mobile qa escopo: auth)
-
-Se GATE [M-3b] falhar → TODO o build para aqui. Sem exceções.
-```
-
-Consulte a skill `/mobile` para o protocolo completo de cada fase.
-
----
-
-### Foundation Protocol Web (OBRIGATÓRIO para qualquer app web com UI)
-
-Antes de implementar qualquer feature de produto, executar em sequência estrita:
-
-#### [PRE] Garantir agent-browser + Docker
-
-Antes de [3a], verificar que as ferramentas de QA visual estão disponíveis:
-
-**agent-browser:**
-```bash
-rtk claude mcp list
-```
-Se "vercel" não estiver na lista → instalar:
-```bash
-rtk claude mcp add vercel -- npx -y @vercel/mcp-adapter@latest
-```
-Verificar novamente. Se falhar após 2 tentativas → parar e informar o usuário.
-**Sem agent-browser, os gates visuais [3a] e [3b] não podem funcionar.**
-
-**Docker:**
-```bash
-rtk docker compose up -d
-rtk docker compose ps
-```
-A aplicação deve estar acessível antes dos gates visuais. Determinar URL (`http://localhost:[porta]`).
-
----
-
-#### [3a] Design System + Layout Base
-
-1. Instalar e configurar shadcn/ui + tema (cores, fontes, dark/light mode conforme tipo de app)
-2. Construir layout base: estrutura navegacional (header, sidebar ou nav, main content area)
-3. Executar QA:
-
-```
-⛔ GATE [3a]: /qa-loop (escopo: layout base, dimensões: qa-design)
-             PASS obrigatório — sem este gate, nenhuma feature inicia
-             Fix loop automático até PASS ou escalate para usuário
-```
-
-**Commit após [3a] PASS:**
-```bash
-rtk git add [arquivos específicos — nunca git add .]
-rtk git commit -m "chore(scaffold): add design system and base layout"
-```
-
-#### [3b] Auth — Register / Login / Logout
-
-1. Implementar fluxo completo: register, login, logout, redirect pós-login, proteção de rotas
-2. Criar `tests/e2e/auth.cy.ts` com happy path + caso de erro
-3. `rtk npx cypress run --spec tests/e2e/auth.cy.ts`
-4. Executar QA:
-
-```
-⛔ GATE [3b]: /qa-loop (escopo: auth, dimensões: qa-backend + qa-security + qa-e2e)
-             PASS obrigatório
-             Se auth retorna BLOCKER → parar completamente. Apresentar ao usuário:
-```
-
-**Se QA retornar BLOCKER em auth:**
-
-```
-⛔ AUTH GATE BLOCKER — Build pausado
-
-Issues encontrados:
-  [lista de BLOCKERs do QA Report com arquivo:linha]
-
-Auth com BLOCKER = build não avança. Sem exceções.
-
-Opções:
-  1. Corrigir os issues acima e confirmar "pode continuar"
-  2. Substituir auth por /auth completo (recomendado se > 2 BLOCKERs)
-
-Aguardando confirmação para retomar.
-```
-
-Aguardar resposta explícita do usuário antes de continuar qualquer implementação.
-
-**Commit após [3b] PASS:**
-```bash
-rtk git add [arquivos específicos — nunca git add .]
-rtk git commit -m "feat(auth): add register, login, logout with route protection"
-```
-
----
-
-### Phase Gate Protocol
-
-Após CADA feature implementada (não apenas ao final do build):
-
-**Web:**
-```
-PHASE GATE — executar após cada feature:
-  □ Docker rodando: rtk docker compose ps (se não → rtk docker compose up -d)
-  □ rtk npx cypress run --spec tests/e2e/[feature].cy.ts
-  □ /qa-loop (escopo: [feature], dimensões: conforme tipo)
-      UI only      → qa-design + qa-ux + qa-e2e
-      Backend only → qa-backend + qa-security + qa-code
-      Full-stack   → qa-design + qa-ux + qa-backend + qa-security + qa-e2e
-  □ [Scale only] Se feature tem endpoint HTTP → adicionar qa-perf + rtk k6 run tests/load/[feature].js
-  □ PASS obrigatório antes de iniciar a próxima feature
-  □ Fix loop automático (máx 3 iterações) antes de escalar para usuário
-  □ TECH LEAD VALIDATION — comparar feature implementada com PLAN.md:
-      - Todos os elementos do inventário de UI existem e funcionam?
-      - Todos os endpoints/tarefas técnicas planejados existem?
-      - Todos os BDD scenarios passam?
-      - Se MISSING → implementar antes de commitar. Loop até completo.
-  □ COMMIT após PASS + Tech Lead validation:
-      rtk git add [arquivos específicos — nunca git add .]
-      rtk git commit -m "feat([feature-scope]): [descrição da feature]"
-```
-
-**Mobile:**
-```
-PHASE GATE — executar após cada feature mobile:
-  □ rtk npx detox test tests/e2e/[feature].e2e.ts
-  □ /mobile qa (escopo: [feature])
-  □ PASS obrigatório antes de iniciar a próxima feature
-  □ Fix loop automático (máx 3 iterações) antes de escalar para usuário
-```
-
-**Regra de dependência**: features que dependem de outra só iniciam se o gate da dependência passou.
-
-**Regra de prioridade de fix**: o QA Loop spawna fix agents automaticamente — o orquestrador do /build aguarda PASS antes de avançar, sem intervenção manual.
-
----
-
-### Decisão automática de protocolo
-
-| Critério | Protocolo |
-|----------|-----------|
-| Feature com 3+ componentes independentes | `/agent-teams` (times paralelos) |
-| Feature única ou sequencial | `/feature-dev` (7 fases, agentes por wave) |
-| Feature com UI significativa | Inclui `/frontend-design` dentro da implementação |
-| Library (sem UI, sem API server) | `/feature-dev` (sem Foundation Web/Mobile, sem auth gate) |
-
-A decisão é tomada automaticamente com base no plano da Fase 2.
-
-### Contexto para implementação
-
-Todos os agentes de implementação recebem como contexto:
-- `RESEARCH.md` — decisões de biblioteca e padrões visuais
-- Plano aprovado da Fase 2 — arquitetura, sequência, test plan
-- Respostas de clarificação do usuário da Fase 1
-
-### Se protocolo for /feature-dev
-
-Executa as 7 fases do `/feature-dev` com agentes por wave:
-- Fase 1: BDD scenarios
-- Fase 2: Domain (RED — testes failing)
-- Fase 3: Domain (GREEN — implementação)
-- Fase 4: Ports + Application (RED → GREEN)
-- Fase 5: Infrastructure adapters (integration tests)
-- Fase 6: Wiring + E2E
-- Fase 7: Review + Load test
-
-Checkpoint ao final de cada fase.
-
-### Se protocolo for /agent-teams
-
-Executa o `/agent-teams` com times paralelos:
-- Decompõe em workstreams independentes (max 85k tokens por time)
-- Lança waves de times simultâneos (max 5 agentes por wave)
-- Cada time retorna TEAM REPORT com status, arquivos e decisões
-- Orquestrador agrega handoffs entre waves
-
-Checkpoint ao final de cada wave.
-
-### Checkpoints durante implementação
-
-A cada phase completa (se /feature-dev) ou a cada wave (se /agent-teams):
-Atualiza `.claude/checkpoint.md` com progresso exato.
-
-Se contexto atingir ~60k em qualquer ponto:
-`↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar na [phase/wave exata].`
-
-### Conclusão da implementação
-
-Após implementação completa de TODAS as features:
-
-1. **Roda suite de testes completa:**
-   ```bash
-   rtk npm test
-   rtk npx cucumber-js
-   rtk npx cypress run          # se UI foi construída
-   rtk k6 run tests/load/[f].js # se endpoint foi adicionado
-   ```
-
-2. **Launch — Subir a aplicação (OBRIGATÓRIO):**
-
-   > **Emitir:** `▶ [3/3] Launch — subindo aplicação`
-
-   Antes de qualquer QA visual ou browser audit, a aplicação **DEVE** estar rodando em Docker:
-
-   ```bash
-   rtk docker compose up -d
-   rtk docker compose ps        # verificar que todos os serviços estão healthy/running
-   ```
-
-   - Aguardar health check de todos os serviços (tentar até 60s com polling)
-   - Se algum serviço falhar → `rtk docker compose logs [serviço]` → corrigir → re-launch
-   - Determinar URL: ler `docker-compose.yml` → porta exposta do serviço web → `http://localhost:[porta]`
-   - Emitir: `Aplicação rodando em http://localhost:[porta]`
-
-   **Se Docker não subir após 3 tentativas de fix → escalar para o usuário. Build não avança sem app rodando.**
-
-3. **Browser Audit exaustivo (OBRIGATÓRIO para apps com UI):**
-
-   > **Emitir:** `▶ [3/3] Browser Audit — navegação exaustiva`
-
-   Com a aplicação rodando, executar auditoria completa de TODAS as telas e TODOS os componentes:
-
-   ```
-   /browser-qa http://localhost:[porta]
-   ```
-
-   Este é o **gate final de qualidade visual e funcional**:
-   - Navega por TODAS as páginas (públicas + protegidas)
-   - Testa TODOS os elementos interativos (botões, links, forms, menus, modais)
-   - Classifica TODOS os erros encontrados (BLOCKER / MAJOR / MINOR)
-   - Fix loop automático (max 3 iterações) até zero BLOCKER/MAJOR
-   - Se escalar → apresentar ao usuário antes do commit
-   - **A aplicação DEVE permanecer rodando** durante todo o audit e após o build
-
-4. **QA Final — dimensões estáticas** (complementar ao browser audit):
-   ```
-   /qa-loop (escopo: build completo, dimensões: qa-code + qa-security + qa-backend + qa-perf)
-   ```
-   Apenas dimensões que analisam código/arquitetura — as dimensões visuais (qa-design, qa-ux, qa-a11y, qa-e2e)
-   já foram cobertas pelo `/browser-qa` no passo anterior.
-   Fix loop automático até PASS.
-
-5. **Loop de correção** (se falhas de testes unitários/BDD): spawna agentes de fix targeted. Repete até tudo verde.
-   Após cada rodada de fixes, verificar se Docker ainda está healthy: `rtk docker compose ps`
-
-6. **Code review global** (agente code-reviewer):
-   - Conformidade hexagonal
-   - Princípios SOLID
-   - Cobertura de testes
-   - Segurança
-   - Se FAIL → loop de fix até PASS
-
-7. **PM Validation — Completeness Check (OBRIGATÓRIO):**
-
-   > **Emitir:** `▶ [3/3] PM Validation — verificando completude`
-
-   Comparar a aplicação entregue com o feature set definido em PLAN.md:
-
-   - Para cada feature no PLAN.md: está implementada end-to-end?
-   - Para cada tela no inventário de UI: todos os elementos existem e funcionam?
-   - Existem stubs, placeholders, "coming soon", "TODO", "Lorem ipsum" na UI?
-   - Existem botões/links que não fazem nada ou levam a páginas vazias?
-
-   Gerar `COMPLETENESS_REPORT.md`:
-   ```
-   COMPLETENESS REPORT
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Feature             | Status   | Notes
-   [feature 1]         | COMPLETE |
-   [feature 2]         | PARTIAL  | [missing: X, Y]
-   [feature 3]         | STUB     | [botão existe mas não funciona]
-
-   Stubs detectados: [N]
-   Features incompletas: [N]
-   ```
-
-   - Se STUBS > 0 ou PARTIAL features → **fix loop obrigatório**: implementar end-to-end ou remover da UI
-   - Feature não implementada neste build → remover elemento da UI completamente (nunca deixar stub)
-   - Loop até COMPLETENESS_REPORT mostrar 100% COMPLETE ou elementos removidos
-   - **Somente após PM Validation PASS → avançar para Scale Gates**
-
-### Scale Gates — Skills obrigatórios por escala
-
-Antes do commit, verificar o scale declarado na Fase 0 (bloco ENTENDIMENTO) e executar os skills obrigatórios:
-
-| Skill | MVP | Product | Scale |
-|-------|-----|---------|-------|
-| `/ci-cd` | — | **obrigatório** | **obrigatório** |
-| `/security-hardening audit` | — | **obrigatório** | **obrigatório** |
-| `/docs-gen all` | — | **obrigatório** | **obrigatório** |
-| Rate limiting (auth + APIs públicas) | — | **obrigatório** | **obrigatório** |
-| Structured logging (request-id) | — | **obrigatório** | **obrigatório** |
-| `/observability all` | — | — | **obrigatório** |
-| `/perf-audit full` | — | — | **obrigatório** |
-| Load tests (`k6 run tests/load/*.js`) | — | — | **obrigatório** |
-
-**Execução:**
-
-**Se scale = Product:**
-```
-▶ Scale Gate — Product: executando skills obrigatórios
-
-1. /ci-cd                    → GitHub Actions pipeline (build, test, lint, security-scan)
-2. /security-hardening audit → OWASP Top 10, headers, secrets audit, dependency scanning
-3. /docs-gen all             → OpenAPI, C4 diagrams, CHANGELOG, developer runbook
-4. Verificar rate limiting em endpoints de auth e APIs públicas. Se não implementado → adicionar middleware de rate limiting antes do commit.
-5. Verificar structured logging (pino/structlog/slog) está configurado. Se ausente → configurar logging básico com request-id antes do commit.
-
-Se qualquer skill retornar BLOCKER → fix loop antes do commit.
-```
-
-**Se scale = Scale:**
-```
-▶ Scale Gate — Scale: executando skills obrigatórios (Product + extras)
-
-1. /ci-cd                    → GitHub Actions pipeline (build, test, lint, security-scan)
-2. /security-hardening audit → OWASP Top 10, headers, secrets audit, dependency scanning
-3. /docs-gen all             → OpenAPI, C4 diagrams, CHANGELOG, developer runbook
-4. /observability all        → Structured logging + OpenTelemetry → Grafana stack
-5. /perf-audit full          → Bundle analysis, N+1 detection, caching, Core Web Vitals
-6. Verificar rate limiting em endpoints de auth e APIs públicas. Se não implementado → adicionar middleware de rate limiting antes do commit.
-7. Executar suite completa de load tests: `rtk k6 run tests/load/*.js`. Se p95 > threshold → BLOCKER.
-
-Se qualquer skill retornar BLOCKER → fix loop antes do commit.
-```
-
-**Se scale = MVP:** nenhum skill adicional — prosseguir direto para o commit.
-
-4. **Commit final** (apenas alterações dos scale gates, review fixes e browser audit fixes — features já foram commitadas incrementalmente):
-   ```bash
-   rtk git add [arquivos específicos — nunca git add .]
-   rtk git commit -m "chore(build): add scale gates, review fixes, and final QA adjustments
-
-   Co-Authored-By: Claude <noreply@anthropic.com>"
-   ```
-   Se não houver alterações pendentes (tudo já commitado nos phase gates) → pular este commit.
-
-5. **Verificar que Docker continua rodando:**
-   ```bash
-   rtk docker compose ps   # confirmar todos os serviços healthy
-   ```
-   Se algum serviço caiu durante os fixes → `rtk docker compose up -d` novamente.
-
-6. **Apresenta summary final ao usuário:**
-
-```
-BUILD COMPLETE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Feature:        [nome da feature]
-Branch:         feature/[nome]
-Commits:        [N] (incremental — foundation, auth, per-feature, final)
-URL:            http://localhost:[porta]
-Docker:         running (docker compose up)
-
-O que foi construído:
-  [2-4 bullets descrevendo o que foi implementado]
-
-Arquivos:
-  Criados:    [N]
-  Modificados:[N]
-
-Testes:
-  Unit:        [N] passando
-  Integration: [N] passando
-  BDD:         [N] cenários passando
-  E2E:         [N] passando     (se aplicável)
-  Load:        p95 Xms @ Y rps  (se aplicável)
-
-Gates de qualidade:
-  Foundation:    ✅ Design system + layout verificado (agent-browser)
-  Auth:          ✅ Register/login/logout verificado (agent-browser + Cypress)
-  Per-feature:   ✅ Phase gate passou em cada feature
-  Browser Audit: ✅ Todas as telas navegadas, todos os componentes testados (agent-browser)
-  Static QA:     ✅ Code + Security + Backend + Perf verificados
-
-Protocolo:    [feature-dev | agent-teams]
-Review:       PASS
-
-A aplicação está rodando em http://localhost:[porta].
-Docker NÃO foi derrubado — a app permanece acessível para testes manuais.
-
-Próximo: rtk git checkout main && rtk git merge feature/[nome]
-```
-
----
-
-## Regras gerais
-
-1. **Nunca pule a pesquisa** — features de UI sem `RESEARCH.md` resultam em soluções genéricas sem embasamento real.
-2. **Pausas obrigatórias** após Fase 1 (clarificação) e Fase 2 (aprovação do plano). Fora dessas pausas, execução é totalmente autônoma.
-3. **Checkpoints** ao final de cada fase e sempre que estimar ~60k tokens (write checkpoint) / ~80k (compact recommended) consumidos.
-4. **Progress markers** em todos os pontos (`▶ [N/3] Phase Name`).
-5. **Autonomia máxima dentro de cada fase** — decisões de arquitetura, naming, padrões e dependências são feitas pelos agentes sem perguntar ao usuário.
-6. **Decisões documentadas** — toda escolha não-óbvia é registrada no handoff do agente que a tomou.
-7. **TDD não é negociável** — teste failing antes de qualquer implementação, sem exceções.
-8. **Commits incrementais** — commitar após cada milestone: foundation [3a], auth [3b], cada feature (phase gate PASS), e final (scale gates/review). Nunca acumular todo o trabalho em um unico commit no final. Cada commit deve ser atomico e funcional (testes passando).
-9. **Branch obrigatória** — toda implementação acontece em `feature/[nome]`, nunca em `main`. Merge em `main` somente após BUILD COMPLETE.
-10. **Docker sempre rodando antes de QA visual** — toda wave visual (qa-design, qa-ux, qa-a11y, qa-e2e) e todo `/browser-qa` requerem `docker compose up`. Verificar com `docker compose ps` antes de lançar agentes visuais.
-11. **App entregue rodando** — o build SEMPRE termina com a aplicação acessível via Docker em `http://localhost:[porta]`. Docker NÃO é derrubado após o build. O BUILD COMPLETE inclui a URL.
-12. **Browser Audit é obrigatório** — ao final do build, `/browser-qa` roda com navegação exaustiva (todas as telas, todos os componentes). Não é opcional. Fix loop até zero BLOCKER/MAJOR.
-13. **Zero stubs / placeholders** — nenhum elemento de UI pode existir como stub ("coming soon", "em breve", "TODO", "Lorem ipsum", botão sem ação, página vazia). Se a feature não será implementada neste build, o elemento NÃO deve existir na UI. PM Validation verifica completude antes do commit.
-
----
-
-## Tratamento de falhas
-
-| Situação | Comportamento |
-|----------|---------------|
-| Pesquisa retorna poucos resultados | Documenta o gap no RESEARCH.md, avança com o que foi encontrado |
-| Teste não passa após 3 tentativas | Documenta no handoff, marca workstream PARTIAL, continua os demais |
-| Violação de arquitetura detectada | Corrige a violação, documenta a decisão |
-| Dependência faltando | Instala, documenta no handoff |
-| Requisito ambíguo | Escolhe a interpretação mais simples, documenta a premissa |
-| Workstream BLOQUEADO (impossível) | Reporta no handoff, orquestrador decide se pula ou adapta |
-| Docker não sobe | Ler logs, corrigir config/código, re-launch. Max 3 tentativas → escalar para usuário |
-| App não responde na URL | Verificar porta, health check, logs do serviço web. Corrigir e re-launch |
-
-Agentes nunca pedem ajuda ao usuário durante a execução. Decidem, documentam e continuam.
+This progressive loading saves ~8k tokens at skill invocation.

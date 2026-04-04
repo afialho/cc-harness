@@ -15,108 +15,108 @@ argument-hint: <file, PR, or scope — omit for git diff>
 
 ## Scope
 
-Se argumento é um PR → `rtk gh pr diff <number>`
-Se argumento é arquivo(s) → ler os arquivos especificados
-Se não → `rtk git diff main...HEAD`
+If argument is a PR → `rtk gh pr diff <number>`
+If argument is file(s) → read the specified files
+If none → `rtk git diff main...HEAD`
 
 ---
 
-## Fase 1 — Architecture Review
+## Phase 1 — Architecture Review
 
 > **Emit:** `▶ [1/4] Architecture`
 
-Validar as regras do `Rules.md` (RULE-ARCH-001 a 005) para cada arquivo modificado:
+Validate the rules from `Rules.md` (RULE-ARCH-001 to 005) for each modified file:
 
 ```
-□ RULE-ARCH-001: Domain layer — zero imports externos (só stdlib e tipos internos)?
-□ RULE-ARCH-002: Application layer — importa só Domain + Ports, nunca Infrastructure?
-□ RULE-ARCH-003: Infrastructure — implementa Port definido em src/ports/?
-□ RULE-ARCH-004: DI em composition root — nunca `new ConcreteClass()` em Application/Domain?
-□ RULE-ARCH-005: Sem dependências circulares entre módulos?
+□ RULE-ARCH-001: Domain layer — zero external imports (only stdlib and internal types)?
+□ RULE-ARCH-002: Application layer — imports only Domain + Ports, never Infrastructure?
+□ RULE-ARCH-003: Infrastructure — implements Port defined in src/ports/?
+□ RULE-ARCH-004: DI in composition root — never `new ConcreteClass()` in Application/Domain?
+□ RULE-ARCH-005: No circular dependencies between modules?
 ```
 
-Para cada violação: arquivo:linha + regra violada + como corrigir.
+For each violation: file:line + violated rule + how to fix.
 
 ---
 
-## Fase 2 — Code Quality Review
+## Phase 2 — Code Quality Review
 
 > **Emit:** `▶ [2/4] Code Quality`
 
-Validar RULE-CODE-001 a 006:
+Validate RULE-CODE-001 to 006:
 
 ```
-□ RULE-CODE-001: SRP — cada função/classe tem uma única razão para mudar?
-□ RULE-CODE-002: Sem magic numbers/strings — constantes nomeadas?
-□ RULE-CODE-003: Nomes revelam intenção — sem `data`, `temp`, `obj`, `x`?
-□ RULE-CODE-004: Sem dead code — sem funções não chamadas, imports não usados, código comentado?
-□ RULE-CODE-005: DIP — depende de abstrações, não de implementações?
-□ RULE-CODE-006: Sem defensive programming em Domain — sem null checks defensivos, trusting internal code?
+□ RULE-CODE-001: SRP — each function/class has a single reason to change?
+□ RULE-CODE-002: No magic numbers/strings — named constants?
+□ RULE-CODE-003: Names reveal intent — no `data`, `temp`, `obj`, `x`?
+□ RULE-CODE-004: No dead code — no uncalled functions, unused imports, commented-out code?
+□ RULE-CODE-005: DIP — depends on abstractions, not implementations?
+□ RULE-CODE-006: No defensive programming in Domain — no defensive null checks, trusting internal code?
 ```
 
-Adicionais:
+Additional:
 ```
-□ Sem TODO antigo (> 1 semana sem resolução)
-□ Error handling consistente com padrão do projeto
-□ Sem console.log/print de debug esquecido
+□ No stale TODOs (> 1 week without resolution)
+□ Error handling consistent with project patterns
+□ No leftover debug console.log/print
 ```
 
 ---
 
-## Fase 3 — Testing Review
+## Phase 3 — Testing Review
 
 > **Emit:** `▶ [3/4] Testing`
 
-Validar RULE-TEST-001 a 007:
+Validate RULE-TEST-001 to 007:
 
 ```
-□ RULE-TEST-001: TDD — testes foram escritos antes da implementação? (verificar git log ordem)
-□ RULE-TEST-002: BDD — há scenarios Gherkin para cada user story afetada?
-□ RULE-TEST-003: Domain + Application têm 100% unit test coverage?
-□ RULE-TEST-004: Infrastructure tem integration tests com deps reais (não mocks)?
-□ RULE-TEST-005: Endpoints de API têm load test k6?
-□ RULE-TEST-006: Fluxos de usuário têm Cypress E2E?
-□ RULE-TEST-007: Testes testam comportamento, não implementação?
+□ RULE-TEST-001: TDD — tests were written before implementation? (verify via git log order)
+□ RULE-TEST-002: BDD — are there Gherkin scenarios for each affected user story?
+□ RULE-TEST-003: Domain + Application have 100% unit test coverage?
+□ RULE-TEST-004: Infrastructure has integration tests with real deps (not mocks)?
+□ RULE-TEST-005: API endpoints have k6 load tests?
+□ RULE-TEST-006: User flows have Cypress E2E?
+□ RULE-TEST-007: Tests test behavior, not implementation?
 ```
 
-Se há código novo sem teste correspondente → BLOCKER.
+If there is new code without a corresponding test → BLOCKER.
 
 ---
 
-## Fase 4 — Security Review
+## Phase 4 — Security Review
 
 > **Emit:** `▶ [4/4] Security`
 
 ```
-□ Input validation em todos os endpoints públicos?
-□ Sem SQL injection (queries parametrizadas ou ORM)?
-□ Sem XSS (sem dangerouslySetInnerHTML sem sanitize)?
-□ Auth guards em rotas protegidas?
-□ Sem secrets hardcoded (API keys, passwords, tokens)?
-□ CORS policy explícita?
-□ Sem exposição de dados sensíveis nas respostas?
+□ Input validation on all public endpoints?
+□ No SQL injection (parameterized queries or ORM)?
+□ No XSS (no dangerouslySetInnerHTML without sanitize)?
+□ Auth guards on protected routes?
+□ No hardcoded secrets (API keys, passwords, tokens)?
+□ Explicit CORS policy?
+□ No sensitive data exposure in responses?
 ```
 
 ---
 
-## Report Final
+## Final Report
 
 ```
-CODE REVIEW: [escopo]
+CODE REVIEW: [scope]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Status: PASS | FAIL
 
-BLOCKERS (devem ser corrigidos antes de merge):
-  [RULE-X] arquivo:linha — descrição + como corrigir
+BLOCKERS (must be fixed before merge):
+  [RULE-X] file:line — description + how to fix
 
-MAJORS (corrigir antes de finalizar):
-  [categoria] arquivo:linha — descrição
+MAJORS (fix before finalizing):
+  [category] file:line — description
 
-MINORS (recomendações):
-  [categoria] arquivo:linha — sugestão
+MINORS (recommendations):
+  [category] file:line — suggestion
 
-Dimensões:
-  Architecture  ✅/❌  ([N] arquivos, [N] violações)
+Dimensions:
+  Architecture  ✅/❌  ([N] files, [N] violations)
   Code Quality  ✅/❌  ([N] issues)
   Testing       ✅/❌  ([N] issues)
   Security      ✅/❌  ([N] issues)
@@ -125,10 +125,10 @@ Dimensões:
 
 ---
 
-## Regras
+## Rules
 
-1. **Evidência obrigatória** — todo BLOCKER/MAJOR tem arquivo:linha
-2. **Referência à regra** — citar o RULE-X correspondente quando aplicável
-3. **Acionável** — cada issue descreve o que fazer, não só o problema
-4. **Sem false positives** — só reportar o que é objetivamente errado, não style preference
-5. **RTK em todos os comandos** — `rtk git diff`, `rtk gh pr diff`, etc.
+1. **Mandatory evidence** — every BLOCKER/MAJOR has file:line
+2. **Rule reference** — cite the corresponding RULE-X when applicable
+3. **Actionable** — each issue describes what to do, not just the problem
+4. **No false positives** — only report what is objectively wrong, not style preference
+5. **RTK in all commands** — `rtk git diff`, `rtk gh pr diff`, etc.

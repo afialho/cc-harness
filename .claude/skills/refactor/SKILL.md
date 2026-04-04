@@ -7,162 +7,162 @@ argument-hint: [scope: simplify | clean | extract | inline | layer | module]
 
 # /refactor — Structured Code Refactoring
 
-> Refatoração com segurança: cobertura de testes primeiro, depois a mudança.
-> "Make it work, make it right, make it fast" — esta skill cuida do "make it right".
-> Nunca quebra comportamento existente. Cada passo é verificável e reversível.
+> Safe refactoring: test coverage first, then the change.
+> "Make it work, make it right, make it fast" — this skill handles the "make it right".
+> Never breaks existing behavior. Every step is verifiable and reversible.
 
 ---
 
-## Escopos disponíveis
+## Available Scopes
 
-| Scope | O que faz | Quando usar |
+| Scope | What it does | When to use |
 |-------|-----------|-------------|
-| `simplify` | **Auto-escopo via git diff** — reuse, eficiência (loops, Promise.all, cache), naming, dead code nos arquivos recém-modificados. Sem coverage gate — opera no diff atual. | Pós-implementação: limpar o que acabou de ser escrito |
-| `clean` | Remove dead code, magic numbers, nomes ruins, funções longas | Código que funciona mas está difícil de ler/manter |
-| `extract` | Extrai lógica de um módulo em módulos menores/mais coesos | Módulo com múltiplas responsabilidades (god class/module) |
-| `inline` | Consolida abstrações desnecessárias que adicionam complexidade sem valor | Over-engineered — muitas camadas para pouca lógica |
-| `layer` | Reorganiza código entre camadas arquiteturais (ex: lógica de negócio no controller → service) | Violações de arquitetura acumuladas |
-| `module` | Refatoração completa de um módulo: análise + clean + extract + test coverage | Módulo crítico com dívida técnica alta |
+| `simplify` | **Auto-scope via git diff** — reuse, efficiency (loops, Promise.all, cache), naming, dead code in recently modified files. No coverage gate — operates on current diff. | Post-implementation: clean up what was just written |
+| `clean` | Removes dead code, magic numbers, bad names, long functions | Code that works but is hard to read/maintain |
+| `extract` | Extracts logic from a module into smaller/more cohesive modules | Module with multiple responsibilities (god class/module) |
+| `inline` | Consolidates unnecessary abstractions that add complexity without value | Over-engineered — too many layers for too little logic |
+| `layer` | Reorganizes code between architectural layers (e.g.: business logic in controller → service) | Accumulated architecture violations |
+| `module` | Full module refactoring: analysis + clean + extract + test coverage | Critical module with high technical debt |
 
-Se nenhum scope informado → faz análise e recomenda qual aplicar.
+If no scope provided → runs analysis and recommends which to apply.
 
 ---
 
-## Fase 1 — Análise e safety net
+## Phase 1 — Analysis and safety net
 
-> **Emit:** `▶ [1/5] Análise e cobertura de testes`
+> **Emit:** `▶ [1/5] Analysis and test coverage`
 
-### 1.1 — Mapear o alvo
+### 1.1 — Map the target
 
-Ler os arquivos do escopo declarado (ou inferido do argumento):
+Read the files in the declared scope (or inferred from the argument):
 
 ```
-Para cada arquivo no escopo:
-  □ Quantas responsabilidades tem? (SRP check)
-  □ Quais funções têm > 20 linhas?
-  □ Quais classes têm > 200 linhas?
-  □ Há importações que violam as camadas definidas em architecture.json?
-  □ Há lógica duplicada (DRY violations)?
-  □ Há magic numbers ou strings?
-  □ Os nomes revelam intenção?
-  □ Há dead code (imports não usados, funções não chamadas)?
+For each file in scope:
+  □ How many responsibilities does it have? (SRP check)
+  □ Which functions have > 20 lines?
+  □ Which classes have > 200 lines?
+  □ Are there imports that violate layers defined in architecture.json?
+  □ Is there duplicated logic (DRY violations)?
+  □ Are there magic numbers or strings?
+  □ Do names reveal intent?
+  □ Is there dead code (unused imports, uncalled functions)?
 ```
 
-### 1.2 — Verificar cobertura de testes existente
+### 1.2 — Check existing test coverage
 
 ```bash
 rtk npm test -- --coverage 2>/dev/null || rtk npx vitest run --coverage 2>/dev/null
 ```
 
-Registrar a cobertura atual dos arquivos no escopo:
-- Se cobertura > 80% → pode prosseguir para refatoração
-- Se cobertura < 80% → **Fase 2 obrigatória: escrever testes primeiro**
-- Se zero testes → **Fase 2 obrigatória sempre**
+Record the current coverage for files in scope:
+- If coverage > 80% → can proceed to refactoring
+- If coverage < 80% → **Phase 2 mandatory: write tests first**
+- If zero tests → **Phase 2 always mandatory**
 
-### 1.3 — Gerar relatório de diagnóstico
+### 1.3 — Generate diagnostic report
 
 ```
-DIAGNÓSTICO DE REFATORAÇÃO — [módulo/arquivo]
+REFACTORING DIAGNOSTIC — [module/file]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Arquivos no escopo: [N]
-Cobertura atual:    [X]% → [suficiente | insuficiente — testes necessários antes]
+Files in scope:     [N]
+Current coverage:   [X]% → [sufficient | insufficient — tests needed first]
 
-Problemas encontrados:
-  CRÍTICO (bloqueia manutenção):
-    [arquivo:linha] — [descrição do problema]
+Issues found:
+  CRITICAL (blocks maintenance):
+    [file:line] — [problem description]
 
-  IMPORTANTE (impacta qualidade):
-    [arquivo:linha] — [descrição]
+  IMPORTANT (impacts quality):
+    [file:line] — [description]
 
-  MENOR (oportunidade de melhoria):
-    [arquivo:linha] — [descrição]
+  MINOR (improvement opportunity):
+    [file:line] — [description]
 
-Scope recomendado: [clean | extract | layer | module]
-Estratégia:        [descrição em 1-2 frases do que vai ser feito]
-Estimativa:        [N] arquivos afetados, [N] testes a escrever
+Recommended scope: [clean | extract | layer | module]
+Strategy:          [1-2 sentence description of what will be done]
+Estimate:          [N] files affected, [N] tests to write
 ```
 
-**⏸ PAUSA:** Apresenta diagnóstico → aguarda confirmação antes de qualquer mudança.
+**PAUSE:** Presents diagnostic → awaits confirmation before any change.
 
 ---
 
-## Fase 2 — Safety net (testes antes de refatorar)
+## Phase 2 — Safety net (tests before refactoring)
 
-> **Emit:** `▶ [2/5] Estabelecendo safety net de testes`
+> **Emit:** `▶ [2/5] Establishing test safety net`
 
-**Só executada se cobertura < 80% nos arquivos do escopo.**
+**Only executed if coverage < 80% in scope files.**
 
-Princípio: testes escritos aqui capturam o *comportamento atual* — não o desejado.
-O objetivo é ter uma rede de segurança que detecte se a refatoração quebrar algo.
+Principle: tests written here capture the *current behavior* — not the desired one.
+The goal is to have a safety net that detects if the refactoring breaks something.
 
-Para cada arquivo sem cobertura suficiente:
-1. Identificar os comportamentos existentes (inputs → outputs observáveis)
-2. Escrever testes que documentam o comportamento atual — sem julgamento sobre se está correto
-3. Verificar que todos passam antes de qualquer mudança
+For each file without sufficient coverage:
+1. Identify existing behaviors (inputs → observable outputs)
+2. Write tests that document current behavior — without judgment on whether it is correct
+3. Verify that all pass before any change
 
 ```bash
 rtk npm test -- --coverage
-# Meta: coverage dos arquivos no escopo ≥ 80% antes de prosseguir
+# Goal: coverage of files in scope ≥ 80% before proceeding
 ```
 
-Se o código é tão acoplado que não é possível testar sem mocks extensivos:
-- Registrar no diagnóstico como "requires seam introduction"
-- Introduzir uma seam mínima (interface ou injeção) para viabilizar o teste
-- Nunca mudar comportamento nessa etapa — só tornar o código testável
+If the code is so coupled that it cannot be tested without extensive mocks:
+- Record in the diagnostic as "requires seam introduction"
+- Introduce a minimal seam (interface or injection) to make the code testable
+- Never change behavior at this stage — only make the code testable
 
 ---
 
-## Fase 3 — Refatoração incremental
+## Phase 3 — Incremental refactoring
 
-> **Emit:** `▶ [3/5] Refatorando`
+> **Emit:** `▶ [3/5] Refactoring`
 
-Princípio: **uma mudança por vez, testes verdes entre cada mudança**.
-Nunca acumular múltiplas mudanças antes de rodar os testes.
+Principle: **one change at a time, green tests between each change**.
+Never accumulate multiple changes before running the tests.
 
 ### Scope: simplify
 
-Escopo automático: `rtk git diff HEAD --name-only` para identificar arquivos modificados na sessão atual.
-Sem coverage gate (opera no diff — cobertura dos arquivos do diff é assumida como adequada, pois foram recém-escritos).
+Automatic scope: `rtk git diff HEAD --name-only` to identify files modified in the current session.
+No coverage gate (operates on the diff — coverage of diff files is assumed adequate since they were recently written).
 
-Para cada arquivo no diff, verificar e corrigir:
+For each file in the diff, check and fix:
 
 ```
 Reuse:
-  □ Código duplicado (3+ repetições) → extrair função/constante
-  □ Função utilitária equivalente já existe no projeto → reutilizar
-  □ Imports não usados → remover
+  □ Duplicated code (3+ repetitions) → extract function/constant
+  □ Equivalent utility function already exists in the project → reuse
+  □ Unused imports → remove
 
-Quality (RULE-CODE-001 a 006):
-  □ SRP: função/classe faz mais de uma coisa? → separar
-  □ Magic numbers/strings → extrair para constantes nomeadas
-  □ Nomes não revelam intenção? → renomear (atualizar todas as referências)
-  □ Dead code (comentado, nunca chamado) → remover
-  □ Depende de implementação concreta onde deveria depender de abstração? → anotar (não mudar sozinho se requer wiring)
+Quality (RULE-CODE-001 to 006):
+  □ SRP: function/class does more than one thing? → separate
+  □ Magic numbers/strings → extract to named constants
+  □ Names don't reveal intent? → rename (update all references)
+  □ Dead code (commented out, never called) → remove
+  □ Depends on concrete implementation where it should depend on abstraction? → annotate (don't change alone if it requires wiring)
 
 Efficiency:
-  □ Loops com queries inside → identificar N+1, propor solução
-  □ Promises sequenciais quando poderiam ser Promise.all → paralelizar
-  □ Cálculo idêntico repetido múltiplas vezes no mesmo request → extrair e cachear na variável
+  □ Loops with queries inside → identify N+1, propose solution
+  □ Sequential promises when they could be Promise.all → parallelize
+  □ Identical computation repeated multiple times in the same request → extract and cache in variable
 
 Architecture:
-  □ Arquivo de domain importa algo externo? → violação (reportar, não corrigir se requer restructuring)
-  □ Arquivo de application importa infrastructure diretamente? → violação (reportar)
+  □ Domain file imports something external? → violation (report, don't fix if it requires restructuring)
+  □ Application file imports infrastructure directly? → violation (report)
 ```
 
-Após cada mudança: `rtk npm test` (ou equivalente) — verde é pré-requisito para continuar.
+After each change: `rtk npm test` (or equivalent) — green is a prerequisite to continue.
 
-Output do scope:
+Scope output:
 ```
 SIMPLIFY COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Arquivos no diff: [N]
-Issues resolvidos:
-  Reuse:        [N] (duplicação, utilitários reutilizados)
-  Quality:      [N] (magic numbers, nomes, dead code)
+Files in diff: [N]
+Issues resolved:
+  Reuse:        [N] (duplication, utilities reused)
+  Quality:      [N] (magic numbers, names, dead code)
   Efficiency:   [N] (loops, promises, cache)
-Issues anotados (requerem decisão):
-  Architecture: [lista — violações encontradas mas que requerem restructuring]
-Cobertura: preservada
+Issues annotated (require decision):
+  Architecture: [list — violations found but requiring restructuring]
+Coverage: preserved
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -170,186 +170,186 @@ Cobertura: preservada
 
 ### Scope: clean
 
-Executar nesta ordem (cada item = um commit separado):
+Execute in this order (each item = a separate commit):
 
 ```
-1. Remover imports não usados
-2. Remover variáveis e funções não usadas (dead code)
-3. Renomear identificadores que não revelam intenção
-4. Extrair magic numbers/strings para constantes nomeadas
-5. Quebrar funções > 20 linhas em subfunções com nomes descritivos
-6. Quebrar classes > 200 linhas se tiverem múltiplas responsabilidades
+1. Remove unused imports
+2. Remove unused variables and functions (dead code)
+3. Rename identifiers that don't reveal intent
+4. Extract magic numbers/strings to named constants
+5. Break functions > 20 lines into sub-functions with descriptive names
+6. Break classes > 200 lines if they have multiple responsibilities
 ```
 
-Após cada item: `rtk npm test` → deve continuar verde.
+After each item: `rtk npm test` → must stay green.
 
 ### Scope: extract
 
 ```
-1. Identificar a segunda responsabilidade (a que deve ser extraída)
-2. Criar novo módulo/arquivo com nome que revela a responsabilidade
-3. Mover código para o novo módulo (sem alterar lógica)
-4. Ajustar imports no módulo original
-5. Verificar testes verdes
-6. Mover testes correspondentes para o novo módulo
+1. Identify the second responsibility (the one to be extracted)
+2. Create new module/file with a name that reveals the responsibility
+3. Move code to the new module (without changing logic)
+4. Adjust imports in the original module
+5. Verify tests are green
+6. Move corresponding tests to the new module
 ```
 
-Após extração: verificar que o módulo original ficou mais coeso.
+After extraction: verify that the original module became more cohesive.
 
 ### Scope: layer
 
-Ler `.claude/architecture.json` para determinar onde cada peça deve estar.
+Read `.claude/architecture.json` to determine where each piece should be.
 
 ```
-Para cada violação de camada identificada na Fase 1:
-  1. Identificar onde o código DEVERIA estar (camada correta)
-  2. Criar interface/port se necessário (para não criar dependência direta)
-  3. Mover o código para a camada correta
-  4. Ajustar wiring no composition root
-  5. Verificar testes verdes
+For each layer violation identified in Phase 1:
+  1. Identify where the code SHOULD be (correct layer)
+  2. Create interface/port if needed (to avoid direct dependency)
+  3. Move the code to the correct layer
+  4. Adjust wiring in the composition root
+  5. Verify tests are green
 ```
 
-**Exemplo prático — lógica de negócio no controller:**
+**Practical example — business logic in controller:**
 
 ```
-Violação identificada: PaymentController.ts:45 — calcula desconto diretamente no handler
-  → deveria estar em: src/domain/pricing/DiscountCalculator.ts
+Violation identified: PaymentController.ts:45 — calculates discount directly in handler
+  → should be in: src/domain/pricing/DiscountCalculator.ts
 
-Passo 1: Criar src/domain/pricing/DiscountCalculator.ts (com unit test primeiro)
-Passo 2: Criar src/ports/outbound/DiscountCalculator.ts (interface)
-Passo 3: Mover lógica do controller para o domain
-Passo 4: Controller injeta DiscountCalculator via construtor (composition root)
-Passo 5: rtk npm test → verde
+Step 1: Create src/domain/pricing/DiscountCalculator.ts (with unit test first)
+Step 2: Create src/ports/outbound/DiscountCalculator.ts (interface)
+Step 3: Move logic from controller to domain
+Step 4: Controller injects DiscountCalculator via constructor (composition root)
+Step 5: rtk npm test → green
 ```
 
-Outros exemplos comuns:
-- DB query diretamente em use case → mover para infrastructure adapter + criar port
-- HTTP call em domain entity → mover para infrastructure + injetar via port
-- Config/secrets lidos em domain → mover para shared/config + injetar
+Other common examples:
+- DB query directly in use case → move to infrastructure adapter + create port
+- HTTP call in domain entity → move to infrastructure + inject via port
+- Config/secrets read in domain → move to shared/config + inject
 
 ### Scope: inline
 
 ```
-Para cada abstração desnecessária:
-  1. Verificar: essa abstração tem mais de 1 uso real? Tem probabilidade real de variação?
-  2. Se não → inline: mover o código de volta para o chamador
-  3. Remover a abstração
-  4. Verificar testes verdes
+For each unnecessary abstraction:
+  1. Check: does this abstraction have more than 1 real use? Does it have a real probability of variation?
+  2. If not → inline: move the code back to the caller
+  3. Remove the abstraction
+  4. Verify tests are green
 ```
 
-Critério: uma abstração com 1 uso e sem variação futura justificada é complexidade, não design.
+Criterion: an abstraction with 1 use and no justified future variation is complexity, not design.
 
 ### Scope: module
 
-Combina clean + extract + layer em sequência para um módulo completo.
-Divide em waves se o módulo for grande (> 5 arquivos):
+Combines clean + extract + layer in sequence for a complete module.
+Splits into waves if the module is large (> 5 files):
 
 ```
-Wave 1: clean (sem mudança estrutural)
-Wave 2: extract (separar responsabilidades)
-Wave 3: layer (corrigir violações arquiteturais)
-Wave 4: review + testes adicionais
+Wave 1: clean (no structural changes)
+Wave 2: extract (separate responsibilities)
+Wave 3: layer (fix architectural violations)
+Wave 4: review + additional tests
 ```
 
 ---
 
-## Fase 4 — Verificação e code review
+## Phase 4 — Verification and code review
 
-> **Emit:** `▶ [4/5] Verificação`
+> **Emit:** `▶ [4/5] Verification`
 
 ```bash
-# Testes devem estar todos verdes
+# Tests must all be green
 rtk npm test
 
-# Coverage não deve ter regredido
+# Coverage must not have regressed
 rtk npm test -- --coverage
 ```
 
-Executar `/qa-loop (escopo: arquivos modificados, dimensões: qa-code)`:
-- Verificar que SOLID foi respeitado no resultado
-- Verificar que Clean Code foi respeitado
-- Verificar que arquitetura foi respeitada
+Run `/qa-loop (scope: modified files, dimensions: qa-code)`:
+- Verify that SOLID was respected in the result
+- Verify that Clean Code was respected
+- Verify that architecture was respected
 
-Executar code-reviewer agent nos arquivos modificados:
-- Confirmar que nenhum comportamento foi alterado inadvertidamente
-- Confirmar que o código ficou mais simples (não mais complexo) após refatoração
+Run code-reviewer agent on modified files:
+- Confirm that no behavior was inadvertently changed
+- Confirm that the code became simpler (not more complex) after refactoring
 
-Se qa-code retornar BLOCKER → corrigir antes de avançar.
+If qa-code returns BLOCKER → fix before advancing.
 
 ---
 
-## Fase 5 — Commit estruturado
+## Phase 5 — Structured commit
 
 > **Emit:** `▶ [5/5] Commit`
 
-Cada mudança logicamente separada = commit separado.
-Nunca um commit gigante com toda a refatoração.
+Each logically separate change = separate commit.
+Never a giant commit with the entire refactoring.
 
 ```bash
-# Exemplo de sequência de commits para scope: module
+# Example commit sequence for scope: module
 rtk git commit -m "test(auth): add coverage for AuthService before refactor"
 rtk git commit -m "refactor(auth): extract TokenValidator from AuthService"
 rtk git commit -m "refactor(auth): move token storage to infrastructure layer"
 rtk git commit -m "refactor(auth): rename ambiguous variables to reveal intent"
 ```
 
-### Output final
+### Final output
 
 ```
-REFACTOR COMPLETE — [módulo/escopo]
+REFACTOR COMPLETE — [module/scope]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Scope:          [clean | extract | layer | inline | module]
-Arquivos:       [N] modificados, [N] criados, [N] removidos
+Files:          [N] modified, [N] created, [N] removed
 
-Antes:
-  Cobertura:    [X]%
-  Problemas:    [N] críticos, [N] importantes
+Before:
+  Coverage:     [X]%
+  Issues:       [N] critical, [N] important
 
-Depois:
-  Cobertura:    [Y]% (+[Z]%)
-  Problemas:    0 críticos, 0 importantes
+After:
+  Coverage:     [Y]% (+[Z]%)
+  Issues:       0 critical, 0 important
 
-Comportamento: ✅ Nenhum teste que passava antes deixou de passar
-Arquitetura:   ✅ Camadas respeitadas
+Behavior:      ✅ No test that passed before stopped passing
+Architecture:  ✅ Layers respected
 SOLID:         ✅ PASS
 Clean Code:    ✅ PASS
 
-Commits:       [N] commits atômicos
+Commits:       [N] atomic commits
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 ---
 
-## Regras
+## Rules
 
-1. **Testes primeiro** — nunca refatorar código sem cobertura de testes adequada
-2. **Uma mudança por vez** — cada transformação é seguida de `npm test` antes da próxima
-3. **Comportamento preservado** — refatoração não muda o que o código faz, só como faz
-4. **Commits atômicos** — cada passo lógico separado; nunca "big bang refactor" em um commit
-5. **Mais simples, não mais complexo** — se após a refatoração o código está mais difícil de entender, desfazer
-6. **Não escalar sem evidência** — não extrair abstrações "para o futuro"; extrair quando há necessidade real hoje
+1. **Tests first** — never refactor code without adequate test coverage
+2. **One change at a time** — each transformation is followed by `npm test` before the next
+3. **Behavior preserved** — refactoring doesn't change what the code does, only how it does it
+4. **Atomic commits** — each logical step separated; never a "big bang refactor" in one commit
+5. **Simpler, not more complex** — if after refactoring the code is harder to understand, undo
+6. **Don't scale without evidence** — don't extract abstractions "for the future"; extract when there is real need today
 
 ---
 
 ## Context Budget
 
-Refatorações de escopo `module` ou `layer` podem consumir contexto significativo com análise + cobertura + mudanças.
+Refactorings with `module` or `layer` scope can consume significant context with analysis + coverage + changes.
 
 **Checkpoint triggers:**
-- Após fase de análise completa (antes de iniciar mudanças): checkpoint com diagnóstico
-- Após cada step de refatoração aplicado e verificado: checkpoint com progresso
-- Se contexto estimado atingir ~60k tokens: checkpoint imediato
+- After complete analysis phase (before starting changes): checkpoint with diagnostic
+- After each refactoring step applied and verified: checkpoint with progress
+- If estimated context reaches ~60k tokens: immediate checkpoint
 
-**Formato do checkpoint:**
+**Checkpoint format:**
 ```
 skill: /refactor
 scope: [simplify | clean | extract | inline | layer | module]
-fase: [análise | cobertura | refatoração | verificação]
-arquivos_analisados: [lista]
-mudanças_aplicadas: [lista resumida]
-mudanças_pendentes: [lista]
-testes_status: [passando/falhando + detalhes]
-proximo: [próximo passo exato]
+phase: [analysis | coverage | refactoring | verification]
+files_analyzed: [list]
+changes_applied: [summarized list]
+changes_pending: [list]
+tests_status: [passing/failing + details]
+next: [exact next step]
 ```
 
-Emitir: `↺ Contexto ~60k — checkpoint escrito. Recomendo /compact. Use /resume para retomar /refactor [scope] na fase [fase].`
+Emit: `↺ Context ~60k — checkpoint written. Recommend /compact. Use /resume to continue /refactor [scope] at phase [phase].`

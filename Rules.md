@@ -87,12 +87,12 @@
 
 ## Code Quality Rules
 
-> SOLID completo (RULE-CODE-001 a 008) + Clean Code (RULE-CODE-002, 003, 004, 009).
-> Enforcement: `qa-code` agent no `/qa-loop` verifica todos estes após cada feature.
+> Full SOLID (RULE-CODE-001 through 008) + Clean Code (RULE-CODE-002, 003, 004, 009).
+> Enforcement: the `qa-code` agent in `/qa-loop` verifies all of these after each feature.
 > Key rules are injected at session start via `session-start.mjs` hook. Full rules are enforced by hooks (deterministic) and `/qa-loop` (code review).
 
 ### RULE-CODE-001
-**Single Responsibility Principle (S em SOLID).**
+**Single Responsibility Principle (S in SOLID).**
 - Each class: one reason to change
 - Each function: one responsibility
 - Functions < 20 lines (prefer < 10)
@@ -160,7 +160,7 @@
 
 ### RULE-CODE-011
 **Zero stubs and placeholders in delivered UI.**
-- No "coming soon", "em breve", "TODO", "Lorem ipsum", "under construction" text in the UI
+- No "coming soon", "TODO", "Lorem ipsum", "under construction" text in the UI
 - No buttons, links, or menu items that do nothing when clicked
 - No empty pages or sections with placeholder content
 - If a feature is not implemented in the current build, its UI element must not exist

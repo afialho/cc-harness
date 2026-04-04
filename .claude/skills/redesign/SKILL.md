@@ -7,153 +7,153 @@ argument-hint: <url or path of existing app>
 
 # /redesign — Application Modernization & UI Transformation
 
-> Transforma um app existente em um moderno.
-> Analisa o que existe → detecta o modo correto → propõe UX melhorada → implementa com garantia de paridade.
-> O app original nunca é tocado até confirmação explícita (ou nunca, no caso de rewrite).
+> Transforms an existing app into a modern one.
+> Analyzes what exists → detects the correct mode → proposes improved UX → implements with parity guarantee.
+> The original app is never touched until explicit confirmation (or never, in the case of rewrite).
 
 ---
 
-## Dois modos — detectados automaticamente
+## Two modes — automatically detected
 
-| Modo | Quando | O que acontece |
-|------|--------|---------------|
-| **rewrite** | Framework legacy (AngularJS, Backbone, jQuery, Ember, CoffeeScript), stack incompatível com migração incremental, ou usuário quer pasta nova | Nova pasta + nova stack + mesmas features + UX melhorada |
-| **in-place** | Framework moderno (React, Vue, Next.js, Angular 14+), estrutura preservável, usuário quer substituir só a UI | Mesma pasta + substitui camada de apresentação + backend intacto |
+| Mode | When | What happens |
+|------|------|-------------|
+| **rewrite** | Legacy framework (AngularJS, Backbone, jQuery, Ember, CoffeeScript), stack incompatible with incremental migration, or user wants new folder | New folder + new stack + same features + improved UX |
+| **in-place** | Modern framework (React, Vue, Next.js, Angular 14+), preservable structure, user wants to replace only UI | Same folder + replaces presentation layer + backend intact |
 
-A skill detecta e recomenda — nunca age sem confirmação do usuário.
+The skill detects and recommends — never acts without user confirmation.
 
 ---
 
-## Fase 1 — Análise do app existente
+## Phase 1 — Existing app analysis
 
-> **Emitir:** `▶ [1/7] Analisando o app existente`
+> **Emit:** `▶ [1/7] Analyzing the existing app`
 
-### 1.1 — Identificar o tipo de entrada
+### 1.1 — Identify input type
 
-- **URL fornecida** → usar agent-browser para navegar o app em produção/staging
-- **Path de codebase** → explorar estrutura de arquivos + ler componentes principais
+- **URL provided** → use agent-browser to navigate the app in production/staging
+- **Codebase path** → explore file structure + read main components
 
-### 1.2 — Mapear via agent-browser (se URL disponível)
+### 1.2 — Map via agent-browser (if URL available)
 
-Navegar sistematicamente:
+Navigate systematically:
 
 ```
-Para cada página/tela do app:
-  □ URL e título da página
-  □ Elementos de navegação (menu principal, sidebar, breadcrumb, tabs)
-  □ Componentes principais visíveis (tabelas, formulários, cards, modais, dashboards)
-  □ Ações disponíveis (botões, links, formulários, drag-drop)
-  □ Estados da UI (loading, empty, error, success)
-  □ Fluxos de usuário (sequências de passos para completar uma tarefa)
+For each page/screen of the app:
+  □ URL and page title
+  □ Navigation elements (main menu, sidebar, breadcrumb, tabs)
+  □ Main visible components (tables, forms, cards, modals, dashboards)
+  □ Available actions (buttons, links, forms, drag-drop)
+  □ UI states (loading, empty, error, success)
+  □ User flows (step sequences to complete a task)
 
-Registrar também:
-  □ Integração com APIs (observar XHR/fetch calls se DevTools acessível)
-  □ Auth (login, logout, controle de acesso por rota)
-  □ Responsividade (testar em mobile viewport)
-  □ Pain points visuais (inconsistências, elementos desalinhados, UI datada)
+Also record:
+  □ API integration (observe XHR/fetch calls if DevTools accessible)
+  □ Auth (login, logout, route-based access control)
+  □ Responsiveness (test in mobile viewport)
+  □ Visual pain points (inconsistencies, misaligned elements, outdated UI)
 ```
 
-### 1.3 — Mapear via codebase (se path disponível, em paralelo ou alternativo)
+### 1.3 — Map via codebase (if path available, in parallel or alternative)
 
 ```bash
-# Detectar framework e stack
+# Detect framework and stack
 rtk cat package.json 2>/dev/null || rtk cat requirements.txt 2>/dev/null
 
-# Mapear rotas/telas
+# Map routes/screens
 find . -name "*.routes.*" -o -name "router*" -o -name "routes*" | head -20
 find . -name "*.component.*" -o -name "*.page.*" -o -name "*.view.*" | grep -v node_modules | head -40
 ```
 
-Extrair de cada arquivo de rota:
-- Path da URL
-- Componente/view associado
-- Guards de auth (se houver)
+Extract from each route file:
+- URL path
+- Associated component/view
+- Auth guards (if any)
 
-### 1.4 — Detectar framework e avaliar modo
+### 1.4 — Detect framework and evaluate mode
 
-**Sinais de REWRITE (nova pasta recomendado):**
-- AngularJS (angular.js v1.x), Backbone.js, Ember.js antigo, jQuery como framework principal
-- Stack sem TypeScript com > 50 componentes (migração incremental inviável)
-- Sem estrutura de componentes (HTML + JS direto)
-- Versão de framework com EOL (end-of-life)
-- Usuário explicitamente quer nova pasta / novo projeto
+**REWRITE signals (new folder recommended):**
+- AngularJS (angular.js v1.x), Backbone.js, old Ember.js, jQuery as main framework
+- Stack without TypeScript with > 50 components (incremental migration infeasible)
+- No component structure (HTML + JS directly)
+- Framework version with EOL (end-of-life)
+- User explicitly wants new folder / new project
 
-**Sinais de IN-PLACE:**
-- React (qualquer versão), Vue 3, Angular 14+, Next.js
-- Codebase com testes existentes que precisam ser preservados
-- Backend + frontend no mesmo repo e backend não muda
-- Usuário quer só substituir a camada visual
+**IN-PLACE signals:**
+- React (any version), Vue 3, Angular 14+, Next.js
+- Codebase with existing tests that need to be preserved
+- Backend + frontend in same repo and backend does not change
+- User wants to replace only the visual layer
 
-### 1.5 — Gerar inventário estruturado
+### 1.5 — Generate structured inventory
 
 ```
-INVENTÁRIO DO APP ATUAL
+CURRENT APP INVENTORY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Framework:    [nome + versão]
-Telas:        [N] telas mapeadas
-Features:     [lista estruturada por módulo]
-Navegação:    [estrutura atual de menus/rotas]
-Auth:         [sim/não + tipo]
-APIs:         [lista de integrações identificadas]
-Pain points:  [problemas visuais/UX encontrados]
+Framework:    [name + version]
+Screens:      [N] screens mapped
+Features:     [structured list by module]
+Navigation:   [current menu/route structure]
+Auth:         [yes/no + type]
+APIs:         [list of identified integrations]
+Pain points:  [visual/UX problems found]
 ```
 
 ---
 
-## Fase 2 — Detecção de modo + Stack decision
+## Phase 2 — Mode detection + Stack decision
 
-> **Emitir:** `▶ [2/7] Detectando modo + definindo stack`
+> **Emit:** `▶ [2/7] Detecting mode + defining stack`
 
-Apresentar recomendação com justificativa:
+Present recommendation with justification:
 
 ```
-RECOMENDAÇÃO DE MODO
+MODE RECOMMENDATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Framework atual: [nome + versão]
-Motivo:          [por que rewrite ou in-place]
+Current framework: [name + version]
+Reason:            [why rewrite or in-place]
 
-Modo recomendado: REWRITE | IN-PLACE
+Recommended mode: REWRITE | IN-PLACE
 
-[Se REWRITE:]
-Stack sugerida para o novo app:
-  Framework:    Next.js 14 (App Router) — [justificativa]
+[If REWRITE:]
+Suggested stack for the new app:
+  Framework:    Next.js 14 (App Router) — [justification]
   Styling:      Tailwind CSS + shadcn/ui
-  Animações:    Framer Motion (page transitions + micro-interactions)
-  Estado:       [Zustand | TanStack Query — baseado no que o app usa]
-  Auth:         [manter backend atual | reescrever — baseado na análise]
+  Animations:   Framer Motion (page transitions + micro-interactions)
+  State:        [Zustand | TanStack Query — based on what the app uses]
+  Auth:         [keep current backend | rewrite — based on analysis]
 
-Nova pasta:     ../[nome-do-projeto]-redesign/
+New folder:     ../[project-name]-redesign/
 
-[Se IN-PLACE:]
-Substituição:   Componentes de UI trocados, lógica preservada
+[If IN-PLACE:]
+Replacement:    UI components swapped, logic preserved
 Design system:  shadcn/ui + Tailwind
-Animações:      Framer Motion
+Animations:     Framer Motion
 ```
 
-**⏸ PAUSA:** Confirmar modo + stack antes de qualquer implementação.
+**⏸ PAUSE:** Confirm mode + stack before any implementation.
 
-Se o usuário quiser ajustar a stack sugerida → incorporar e confirmar novamente.
+If the user wants to adjust the suggested stack → incorporate and confirm again.
 
 ---
 
-## Fase 3 — Proposta de UX
+## Phase 3 — UX Proposal
 
-> **Emitir:** `▶ [3/7] Proposta de UX melhorada`
+> **Emit:** `▶ [3/7] Improved UX proposal`
 
-Esta é a fase de maior valor — não apenas replicar, mas melhorar.
+This is the highest-value phase — not just replicate, but improve.
 
-### 3.1 — Análise de padrões modernos equivalentes
+### 3.1 — Analysis of equivalent modern patterns
 
-Para cada tipo de tela identificada no inventário, pesquisar (agent-browser em sites de referência):
-- Dribbble, Mobbin, Awwwards para o tipo de produto (SaaS dashboard, e-commerce, ferramenta de gestão, etc.)
-- Apps modernos equivalentes e como resolvem os mesmos problemas
+For each screen type identified in the inventory, research (agent-browser on reference sites):
+- Dribbble, Mobbin, Awwwards for the product type (SaaS dashboard, e-commerce, management tool, etc.)
+- Equivalent modern apps and how they solve the same problems
 
-### 3.2 — Proposta de nova arquitetura de informação (IA)
+### 3.2 — New information architecture (IA) proposal
 
-Comparar estrutura atual vs. proposta:
+Compare current structure vs. proposed:
 
 ```
-NAVEGAÇÃO ATUAL                    NAVEGAÇÃO PROPOSTA
+CURRENT NAVIGATION                 PROPOSED NAVIGATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Menu principal:                    Menu principal:
   ├─ [item atual 1]           →      ├─ [item proposto 1] [motivo]
@@ -161,307 +161,307 @@ Menu principal:                    Menu principal:
   └─ [item atual 3]           →      └─ [item proposto 3] [motivo]
                                      └─ [item novo sugerido] [motivo]
 
-Sidebar/secundário:                Sidebar/secundário:
+Sidebar/secondary:                 Sidebar/secondary:
   └─ [atual]                  →      └─ [proposto]
 
-Fluxos reorganizados:
+Reorganized flows:
   "[tarefa X]" era 4 passos → proposta: 2 passos ([justificativa])
   "[recurso Y]" estava oculto → proposta: destaque em dashboard ([justificativa])
 ```
 
-### 3.3 — Design system e identidade visual
+### 3.3 — Design system and visual identity
 
 ```
-DESIGN SYSTEM PROPOSTO
+PROPOSED DESIGN SYSTEM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Base:        shadcn/ui (componentes acessíveis, customizáveis)
-Tema:        [claro | escuro | ambos — baseado no tipo de produto]
-Palette:     [sugestão de 3 cores com justificativa]
-Tipografia:  [fonte sugerida + escala]
-Ícones:      Lucide Icons (consistente com shadcn/ui)
-Animações:
+Base:        shadcn/ui (accessible, customizable components)
+Theme:       [light | dark | both — based on product type]
+Palette:     [suggestion of 3 colors with justification]
+Typography:  [suggested font + scale]
+Icons:       Lucide Icons (consistent with shadcn/ui)
+Animations:
   - Page transitions: Framer Motion (fade + slide)
   - Micro-interactions: hover states, loading skeletons, success feedback
-  - Data loading: skeleton screens (não spinners)
-  - Empty states: ilustrações + call-to-action
+  - Data loading: skeleton screens (not spinners)
+  - Empty states: illustrations + call-to-action
 ```
 
-### 3.4 — Apresentar proposta completa ao usuário
+### 3.4 — Present complete proposal to user
 
-Formato:
+Format:
 
 ```
-PROPOSTA DE REDESIGN — [Nome do App]
+REDESIGN PROPOSAL — [App Name]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-NOVA ARQUITETURA DE INFORMAÇÃO
-[diagrama texto comparando atual vs. proposto]
+NEW INFORMATION ARCHITECTURE
+[text diagram comparing current vs. proposed]
 
-MELHORIAS DE UX PROPOSTAS
-  1. [melhoria] — [motivo baseado em análise]
-  2. [melhoria] — [motivo]
+PROPOSED UX IMPROVEMENTS
+  1. [improvement] — [reason based on analysis]
+  2. [improvement] — [reason]
   ...
 
 DESIGN SYSTEM
-  [resumo das escolhas visuais]
+  [summary of visual choices]
 
-FEATURES MANTIDAS (paridade garantida)
+FEATURES MAINTAINED (parity guaranteed)
   ✓ [feature 1]
   ✓ [feature 2]
-  ... todas as [N] features do app atual
+  ... all [N] features of the current app
 
-FEATURES FORA DO ESCOPO (sugestão)
-  ○ [feature antiga que pode ser deprecada — com justificativa]
+FEATURES OUT OF SCOPE (suggestion)
+  ○ [old feature that can be deprecated — with justification]
 ```
 
-**⏸ PAUSA:** Aguarda aprovação ou ajustes. Só avança quando usuário confirmar.
+**⏸ PAUSE:** Awaits approval or adjustments. Only advances when user confirms.
 
-> **Checkpoint:** Escreve `.claude/checkpoint.md`:
+> **Checkpoint:** Writes `.claude/checkpoint.md`:
 > ```
 > skill: redesign
-> fase: ux-proposal-approved
-> arquivos_modificados: [list]
-> proximo: platform-detection
+> phase: ux-proposal-approved
+> modified_files: [list]
+> next: platform-detection
 > ```
-> Se contexto atingir ~60k tokens → escreve checkpoint e emite:
-> `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+> If context reaches ~60k tokens → writes checkpoint and emits:
+> `↺ Context ~60k. Recommend /compact. Use /resume to continue.`
 
 ---
 
-## Fase 4 — Detecção de plataforma + delegação mobile
+## Phase 4 — Platform detection + mobile delegation
 
-> **Emitir:** `▶ [4/7] Detecção de plataforma`
+> **Emit:** `▶ [4/7] Platform detection`
 
-Antes de iniciar a implementação, verificar se o app é mobile-native:
+Before starting implementation, check if the app is mobile-native:
 
-**Sinais de app mobile:**
-- `react-native` ou `expo` em `package.json`
-- Diretórios `android/` ou `ios/` na raiz
-- Arquivos `.xcodeproj`, `MainActivity.java`, ou `app.json` (Expo)
+**Mobile app signals:**
+- `react-native` or `expo` in `package.json`
+- Directories `android/` or `ios/` at root
+- Files `.xcodeproj`, `MainActivity.java`, or `app.json` (Expo)
 
-**Se mobile detectado:**
+**If mobile detected:**
 
 ```
-App mobile detectado (React Native / Expo).
-O redesign mobile usa /mobile scaffold + iterative /mobile feature — delegando agora.
+Mobile app detected (React Native / Expo).
+Mobile redesign uses /mobile scaffold + iterative /mobile feature — delegating now.
 ```
 
-Executar em sequência:
+Execute in sequence:
 
-1. **`/mobile scaffold`** — cria o novo projeto RN/Expo com arquitetura hexagonal, design system mobile (NativeWind), navegação, auth scaffold, e requisitos App Store/Play Store. Passar como contexto a proposta de navegação + design system aprovada na Fase 3.
+1. **`/mobile scaffold`** — creates the new RN/Expo project with hexagonal architecture, mobile design system (NativeWind), navigation, auth scaffold, and App Store/Play Store requirements. Pass as context the navigation + design system proposal approved in Phase 3.
 
-2. **`/mobile feature`** (uma chamada por feature) — para cada feature do inventário (Fase 1), na ordem da mais crítica para secundárias. Cada chamada recebe:
-   - Como a feature funciona no app original (inventário Fase 1)
-   - Como deve ficar no novo app (proposta aprovada Fase 3)
-   - Componentes e design system já criados pelo scaffold
+2. **`/mobile feature`** (one call per feature) — for each feature in the inventory (Phase 1), from most critical to secondary. Each call receives:
+   - How the feature works in the original app (Phase 1 inventory)
+   - How it should look in the new app (Phase 3 approved proposal)
+   - Components and design system already created by scaffold
 
-3. **`/mobile qa`** — QA final do app completo após todas as features.
+3. **`/mobile qa`** — final QA of the complete app after all features.
 
-`/mobile` executa seu próprio pipeline por scope (TDD com RNTL, Detox E2E, EAS Build).
-`/redesign` não continua após a delegação.
+`/mobile` executes its own pipeline per scope (TDD with RNTL, Detox E2E, EAS Build).
+`/redesign` does not continue after delegation.
 
-**Se app web:** continuar para Fase 5.
+**If web app:** continue to Phase 5.
 
 ---
 
-## Fase 5 — Implementação
+## Phase 5 — Implementation
 
-> **Emitir:** `▶ [5/7] Implementação`
+> **Emit:** `▶ [5/7] Implementation`
 
-### Stack de frontend padrão (aplicada em todo redesign web)
+### Default frontend stack (applied in every web redesign)
 
-O redesign usa o ecossistema frontend completo do kit:
+The redesign uses the complete frontend ecosystem of the kit:
 
-| Camada | Tecnologia | Responsabilidade |
-|--------|-----------|-----------------|
-| Design system | shadcn/ui + Tailwind CSS | Componentes acessíveis, tokens de design, tema claro/escuro |
-| Ícones | Lucide Icons | Biblioteca consistente, co-designed com shadcn/ui |
-| Animações | Framer Motion | Page transitions, micro-interactions, skeleton loaders |
-| Forms | React Hook Form + Zod | Validação type-safe com feedback em tempo real |
-| Estado global | Zustand ou TanStack Query | Conforme detectado no inventário do app |
-| Testes unitários | Vitest + Testing Library | TDD: RED → GREEN → REFACTOR em cada componente |
-| Testes E2E | Cypress | Fluxo completo por feature, antes de avançar |
-| QA visual | agent-browser via /qa-loop | Verificação com browser real após cada seção |
+| Layer | Technology | Responsibility |
+|-------|-----------|----------------|
+| Design system | shadcn/ui + Tailwind CSS | Accessible components, design tokens, light/dark theme |
+| Icons | Lucide Icons | Consistent library, co-designed with shadcn/ui |
+| Animations | Framer Motion | Page transitions, micro-interactions, skeleton loaders |
+| Forms | React Hook Form + Zod | Type-safe validation with real-time feedback |
+| Global state | Zustand or TanStack Query | As detected in app inventory |
+| Unit tests | Vitest + Testing Library | TDD: RED → GREEN → REFACTOR on each component |
+| E2E tests | Cypress | Complete flow per feature, before advancing |
+| Visual QA | agent-browser via /qa-loop | Verification with real browser after each section |
 
-### Se modo REWRITE
+### If REWRITE mode
 
 ```bash
-# Criar nova pasta ao lado do original — nunca dentro
-mkdir ../[projeto]-redesign
-cd ../[projeto]-redesign
+# Create new folder alongside the original — never inside
+mkdir ../[project]-redesign
+cd ../[project]-redesign
 ```
 
-Executar em sequência estrita:
+Execute in strict sequence:
 
-#### Passo 1 — Scaffold
+#### Step 1 — Scaffold
 ```
 /scaffold fullstack
 ```
-Gera: estrutura hexagonal, Docker, GitHub Actions (se scale ≥ Product), Git, GitHub repo com sufixo `-redesign`.
+Generates: hexagonal structure, Docker, GitHub Actions (if scale ≥ Product), Git, GitHub repo with `-redesign` suffix.
 
-#### Passo 2 — Foundation com pipeline /ui completo
+#### Step 2 — Foundation with complete /ui pipeline
 
 ```
 /ui foundation
 ```
 
-O `/ui` executa internamente:
-1. **Pesquisa visual** — agent-browser em Dribbble / Mobbin / Awwwards para referências do tipo de produto
-2. **TDD do design system** — testes para tokens, temas e componentes base antes de implementar
-3. **`/frontend-design`** (plugin oficial) — gera layout base, design tokens, tema claro/escuro conforme Fase 3
-4. **a11y check** — estrutura semântica, contraste WCAG AA, keyboard nav
-5. **browser-qa gate** — agent-browser verifica layout em desktop + mobile antes de avançar
+`/ui` executes internally:
+1. **Visual research** — agent-browser on Dribbble / Mobbin / Awwwards for product type references
+2. **Design system TDD** — tests for tokens, themes and base components before implementing
+3. **`/frontend-design`** (official plugin) — generates base layout, design tokens, light/dark theme per Phase 3
+4. **a11y check** — semantic structure, WCAG AA contrast, keyboard nav
+5. **browser-qa gate** — agent-browser verifies layout on desktop + mobile before advancing
 
 ```
-⛔ GATE Foundation: /qa-loop (dimensões: qa-design + qa-a11y)
-   PASS obrigatório antes de qualquer feature
+⛔ GATE Foundation: /qa-loop (dimensions: qa-design + qa-a11y)
+   Mandatory PASS before any feature
 ```
 
-#### Passo 3 — Auth
+#### Step 3 — Auth
 
 ```
 /auth scaffold
 ```
 
-Replica o sistema de auth do app original. Gate obrigatório:
+Replicates the auth system of the original app. Required gate:
 
 ```
-⛔ GATE Auth: /qa-loop (dimensões: qa-backend + qa-security + qa-e2e)
-   Se BLOCKER → redesign pausado. Corrigir auth antes de qualquer feature.
+⛔ GATE Auth: /qa-loop (dimensions: qa-backend + qa-security + qa-e2e)
+   If BLOCKER → redesign paused. Fix auth before any feature.
 ```
 
-#### Passo 4 — Features (uma por vez, na ordem do inventário)
+#### Step 4 — Features (one at a time, in inventory order)
 
-Para **cada feature** do inventário (da mais crítica para as secundárias):
+For **each feature** in the inventory (from most critical to secondary):
 
 ```
-Contexto obrigatório para o agente de implementação:
-  - Como a feature funciona no app original (inventário Fase 1)
-  - Como deve ficar no novo app (proposta aprovada Fase 3)
-  - Design system + componentes disponíveis (Passo 2)
-  - Schema da feature se entidades novas → /dba design antes de implementar
+Required context for the implementation agent:
+  - How the feature works in the original app (Phase 1 inventory)
+  - How it should look in the new app (Phase 3 approved proposal)
+  - Design system + available components (Step 2)
+  - Feature schema if new entities → /dba design before implementing
 ```
 
-**Sequência TDD por feature:**
+**TDD sequence per feature:**
 
 ```
 1. Gherkin scenario → tests/bdd/features/[feature].feature
 2. Unit tests (RED) → tests/unit/[feature].test.ts
-3. Implementação (GREEN) — componentes com shadcn/ui + Lucide + Framer Motion
-4. Refactor (REFACTOR) — extrair para componentes reutilizáveis se necessário
+3. Implementation (GREEN) — components with shadcn/ui + Lucide + Framer Motion
+4. Refactor (REFACTOR) — extract to reusable components if needed
 5. E2E test → tests/e2e/[feature].cy.ts
 ```
 
-**Gate por feature:**
+**Gate per feature:**
 
 ```
 ⛔ PHASE GATE [feature]:
-   □ rtk npx vitest run --coverage (unit tests passando)
+   □ rtk npx vitest run --coverage (unit tests passing)
    □ rtk npx cypress run --spec tests/e2e/[feature].cy.ts
-   □ /qa-loop (escopo: [feature], dimensões: qa-design + qa-ux + qa-a11y + qa-e2e)
-   □ /browser-qa <url> (navegação exaustiva da feature)
-   PASS obrigatório antes de avançar para a próxima feature
-   Fix loop automático (máx 3 iterações) → escalar se persistir
+   □ /qa-loop (scope: [feature], dimensions: qa-design + qa-ux + qa-a11y + qa-e2e)
+   □ /browser-qa <url> (exhaustive feature navigation)
+   Mandatory PASS before advancing to next feature
+   Automatic fix loop (max 3 iterations) → escalate if persists
 ```
 
-**Gate de paridade por feature:**
+**Parity gate per feature:**
 
 ```
-PARIDADE [feature]:
-  □ Comportamento equivalente ao original?
-  □ Dados/integrações funcionam?
-  □ Estados (loading / error / empty) implementados?
-  □ Responsiva em mobile viewport?
+PARITY [feature]:
+  □ Behavior equivalent to original?
+  □ Data/integrations work?
+  □ States (loading / error / empty) implemented?
+  □ Responsive in mobile viewport?
 ```
 
-### Se modo IN-PLACE
+### If IN-PLACE mode
 
-Substituição seção por seção — lógica de negócio intocada:
+Section-by-section replacement — business logic untouched:
 
 ```
-Instalar: shadcn/ui + Tailwind + Lucide + Framer Motion no projeto existente
-Criar: design tokens (cores, tipografia, espaçamentos) da proposta Fase 3
+Install: shadcn/ui + Tailwind + Lucide + Framer Motion in existing project
+Create: design tokens (colors, typography, spacing) from Phase 3 proposal
 ```
 
-Sequência de substituição:
+Replacement sequence:
 
 ```
 1. Header / Navbar → gate: /qa-loop (qa-design + qa-ux) + /browser-qa
-2. Sidebar / Navegação lateral → gate: /qa-loop + /browser-qa
-3. Páginas principais (core do produto) → gate por página
-4. Páginas secundárias → gate por página
-5. Modais / Drawers / Overlays → gate final
+2. Sidebar / Side navigation → gate: /qa-loop + /browser-qa
+3. Main pages (product core) → gate per page
+4. Secondary pages → gate per page
+5. Modals / Drawers / Overlays → final gate
 ```
 
-**Regras in-place:**
-- Nunca tocar arquivos fora de `components/`, `app/` ou `pages/` — lógica de negócio, API routes e serviços permanecem intactos
-- Para cada componente substituído: escrever teste de comportamento antes de substituir (garante paridade)
-- Se um componente original não tem teste → escrever o teste documentando o comportamento atual antes de substituir
+**In-place rules:**
+- Never touch files outside `components/`, `app/` or `pages/` — business logic, API routes and services remain intact
+- For each replaced component: write behavior test before replacing (ensures parity)
+- If an original component has no test → write the test documenting current behavior before replacing
 
 ---
 
-## Fase 6 — Verificação de paridade
+## Phase 6 — Parity verification
 
-> **Emitir:** `▶ [6/7] Verificação de paridade`
+> **Emit:** `▶ [6/7] Parity verification`
 
-Comparar sistematicamente o inventário da Fase 1 com o app novo:
+Systematically compare the Phase 1 inventory with the new app:
 
 ```
-PARIDADE CHECK
+PARITY CHECK
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Para cada feature do inventário:
-  □ Feature existe no novo app?
-  □ Comportamento é equivalente ao original?
-  □ Dados/integrações funcionam?
-  □ Fluxo de usuário completo funciona?
+For each feature in the inventory:
+  □ Feature exists in new app?
+  □ Behavior is equivalent to original?
+  □ Data/integrations work?
+  □ Complete user flow works?
 
-Para cada tela do inventário:
-  □ Tela existe no novo app?
-  □ Todos os elementos visíveis estão presentes?
-  □ Responsiva em mobile?
+For each screen in the inventory:
+  □ Screen exists in new app?
+  □ All visible elements are present?
+  □ Responsive on mobile?
 ```
 
-Usar agent-browser no novo app para verificar cada item.
-Issues encontrados → fix automático antes de avançar para Fase 7.
+Use agent-browser on the new app to verify each item.
+Issues found → automatic fix before advancing to Phase 7.
 
 ---
 
-## Fase 7 — QA final + entrega
+## Phase 7 — Final QA + delivery
 
-> **Emitir:** `▶ [7/7] QA final`
+> **Emit:** `▶ [7/7] Final QA`
 
-QA completo do app inteiro (não só a última feature):
-
-```
-/qa-loop (escopo: app completo, dimensões: qa-design + qa-ux + qa-a11y + qa-code + qa-security + qa-e2e + qa-perf)
-```
-
-Seguido de navegação exaustiva com browser real:
+Complete QA of the entire app (not just the last feature):
 
 ```
-/browser-qa <url-do-novo-app>
+/qa-loop (scope: complete app, dimensions: qa-design + qa-ux + qa-a11y + qa-code + qa-security + qa-e2e + qa-perf)
 ```
 
-O `/browser-qa` crawla toda a UI (menus, fluxos, estados, viewports mobile/desktop) e substitui `qa-e2e` individual.
+Followed by exhaustive navigation with real browser:
 
-Fix loop automático até PASS em todas as dimensões.
+```
+/browser-qa <url-of-new-app>
+```
 
-### Output final
+The `/browser-qa` crawls the entire UI (menus, flows, states, mobile/desktop viewports) and replaces individual `qa-e2e`.
+
+Automatic fix loop until PASS in all dimensions.
+
+### Final output
 
 ```
 REDESIGN COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Modo:           REWRITE | IN-PLACE
-App original:   [path/url] — intacto ✅
-Novo app:       [path/url do redesign]
-Stack:          [tecnologias usadas]
+Mode:           REWRITE | IN-PLACE
+Original app:   [path/url] — intact ✅
+New app:        [path/url of redesign]
+Stack:          [technologies used]
 
-Features implementadas: [N]/[N] (100% de paridade)
-Telas:          [N] telas
+Features implemented: [N]/[N] (100% parity)
+Screens:        [N] screens
 
-Melhorias de UX aplicadas:
-  ✓ [melhoria 1]
-  ✓ [melhoria 2]
+UX improvements applied:
+  ✓ [improvement 1]
+  ✓ [improvement 2]
 
 QA:
   Design:       ✅ PASS
@@ -470,24 +470,24 @@ QA:
   E2E:          ✅ PASS
   Browser:      ✅ PASS
 
-[Se REWRITE:]
-Repo:           github.com/[user]/[projeto]-redesign
-Para rodar:     rtk docker compose up -d (na pasta ../[projeto]-redesign)
+[If REWRITE:]
+Repo:           github.com/[user]/[project]-redesign
+To run:         rtk docker compose up -d (in folder ../[project]-redesign)
 
-App legado permanece em [path original] — nenhuma alteração foi feita.
+Legacy app remains at [original path] — no changes were made.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 ---
 
-## Regras
+## Rules
 
-1. **Nunca tocar o app original** sem confirmação explícita — no modo rewrite, trabalha exclusivamente na nova pasta
-2. **Proposta de UX antes de código** — nenhuma linha de implementação começa sem aprovação da Fase 3
-3. **Paridade é obrigatória** — toda feature do app original deve estar no novo, ou ter sido explicitamente removida com aprovação do usuário
-4. **Melhorias de UX são sugestões** — o usuário decide quais aceitar; nada é imposto
-5. **Design system do kit** — shadcn/ui + Tailwind + Lucide + Framer Motion como base; `/ui` pipeline para tudo que é visual
-6. **TDD em toda implementação** — Gherkin → unit test (RED) → implementação (GREEN) → refactor; nenhum componente sem teste
-7. **Gate de qualidade por feature** — `/qa-loop` + `/browser-qa` depois de cada feature; nunca acumular e testar tudo no final
-8. **Rewrite para legacy** — AngularJS, Backbone, Ember, jQuery-as-framework → sempre rewrite; nunca tenta migração incremental sem caminho oficial
-9. **Mobile detectado → /mobile scaffold + feature** — apps React Native / Expo delegam para `/mobile scaffold` (nova foundation) seguido de `/mobile feature` por feature (reimplementação), depois `/mobile qa` (gate final)
+1. **Never touch the original app** without explicit confirmation — in rewrite mode, work exclusively in the new folder
+2. **UX proposal before code** — no implementation line starts without Phase 3 approval
+3. **Parity is mandatory** — every feature of the original app must be in the new one, or have been explicitly removed with user approval
+4. **UX improvements are suggestions** — the user decides which to accept; nothing is imposed
+5. **Kit design system** — shadcn/ui + Tailwind + Lucide + Framer Motion as base; `/ui` pipeline for everything visual
+6. **TDD in all implementation** — Gherkin → unit test (RED) → implementation (GREEN) → refactor; no component without test
+7. **Quality gate per feature** — `/qa-loop` + `/browser-qa` after each feature; never accumulate and test everything at the end
+8. **Rewrite for legacy** — AngularJS, Backbone, Ember, jQuery-as-framework → always rewrite; never attempt incremental migration without official path
+9. **Mobile detected → /mobile scaffold + feature** — React Native / Expo apps delegate to `/mobile scaffold` (new foundation) followed by `/mobile feature` per feature (reimplementation), then `/mobile qa` (final gate)

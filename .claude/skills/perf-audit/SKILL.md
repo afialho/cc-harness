@@ -11,9 +11,9 @@ Structured performance audit across frontend bundle, backend queries, API respon
 
 ---
 
-## Fase 1 — Scope & Baseline
+## Phase 1 — Scope & Baseline
 
-> **Emitir:** `▶ [1/6] Scope & Baseline`
+> **Emit:** `▶ [1/6] Scope & Baseline`
 
 1. Identify what was built — read modified files (git diff or build handoff).
 2. Determine audit scope:
@@ -38,9 +38,9 @@ Structured performance audit across frontend bundle, backend queries, API respon
 
 ---
 
-## Fase 2 — Frontend Performance Audit
+## Phase 2 — Frontend Performance Audit
 
-> **Emitir:** `▶ [2/6] Frontend Performance Audit`
+> **Emit:** `▶ [2/6] Frontend Performance Audit`
 
 Skip entirely if scope is `backend`.
 
@@ -113,9 +113,9 @@ import { everything } from '@mui/material'  → use path imports
 
 ---
 
-## Fase 3 — Backend Performance Audit
+## Phase 3 — Backend Performance Audit
 
-> **Emitir:** `▶ [3/6] Backend Performance Audit`
+> **Emit:** `▶ [3/6] Backend Performance Audit`
 
 Skip entirely if scope is `frontend`.
 
@@ -202,13 +202,13 @@ Scan route handlers and controllers for blocking patterns:
 
 Flag each as MAJOR if it is in a request handler on a hot path.
 
-> **Checkpoint:** Se contexto atingir ~60k tokens → escreve `.claude/checkpoint.md` com skill, fase, arquivos, próximo passo. Emite: `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+> **Checkpoint:** If context reaches ~60k tokens → write `.claude/checkpoint.md` with skill, phase, files, next step. Emit: `↺ Context ~60k. Recommend /compact. Use /resume to continue.`
 
 ---
 
-## Fase 4 — Infrastructure & Networking
+## Phase 4 — Infrastructure & Networking
 
-> **Emitir:** `▶ [4/6] Infrastructure & Networking`
+> **Emit:** `▶ [4/6] Infrastructure & Networking`
 
 ### 4.1 — Database Connection Pooling
 
@@ -257,9 +257,9 @@ Use `CONCURRENTLY` for PostgreSQL to avoid table locks. Flag absence of `CONCURR
 
 ---
 
-## Fase 5 — Performance Report
+## Phase 5 — Performance Report
 
-> **Emitir:** `▶ [5/6] Performance Report`
+> **Emit:** `▶ [5/6] Performance Report`
 
 ```
 PERF AUDIT REPORT: [scope] — [project name]
@@ -297,9 +297,9 @@ OK — areas with no issues found:
 
 ---
 
-## Fase 6 — Regression Prevention
+## Phase 6 — Regression Prevention
 
-> **Emitir:** `▶ [6/6] Regression Prevention`
+> **Emit:** `▶ [6/6] Regression Prevention`
 
 Install guardrails so the findings do not regress silently.
 

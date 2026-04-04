@@ -4,48 +4,48 @@ description: Resume work autonomously from a checkpoint after context reset (/cl
 disable-model-invocation: true
 ---
 
-# /resume — Retomada Autônoma de Contexto
+# /resume — Autonomous Context Resumption
 
-Retoma o trabalho de onde parou após um reset de contexto.
+Resumes work from where it stopped after a context reset.
 
-## Instruções
+## Instructions
 
-Quando `/resume` é invocado:
+When `/resume` is invoked:
 
-### 1. Ler o checkpoint
-> **Emit:** `↺ Retomando a partir do checkpoint...`
+### 1. Read the checkpoint
+> **Emit:** `↺ Resuming from checkpoint...`
 
-Leia `.claude/checkpoint.md`. Se não existir, informe o usuário que não há trabalho em andamento.
+Read `.claude/checkpoint.md`. If it does not exist, inform the user that there is no work in progress.
 
-### 2. Reconstruir contexto
-A partir do checkpoint, identifique:
-- Qual skill estava sendo executada (`/feature-dev`, `/build`, `/agent-teams`, etc.)
-- Em qual fase/step parou
-- Quais arquivos foram criados/modificados
-- Qual é o próximo passo exato
+### 2. Reconstruct context
+From the checkpoint, identify:
+- Which skill was being executed (`/feature-dev`, `/build`, `/agent-teams`, etc.)
+- At which phase/step it stopped
+- Which files were created/modified
+- What the exact next step is
 
-Leia os arquivos relevantes mencionados no checkpoint para reconstruir o contexto técnico.
+Read the relevant files mentioned in the checkpoint to reconstruct the technical context.
 
-### 3. Apresentar estado resumido
-Mostre ao usuário em 5 linhas:
+### 3. Present summarized state
+Show the user in 5 lines:
 ```
-Retomando: [skill] — [feature name]
-Concluído: [phases/steps já feitos]
-Estado:    [o que está funcionando]
-Próximo:   [ação exata a executar]
-Continuando automaticamente...
+Resuming: [skill] — [feature name]
+Completed: [phases/steps already done]
+State:     [what is working]
+Next:      [exact action to execute]
+Continuing automatically...
 ```
 
-### 4. Continuar autonomamente
-Execute o próximo passo indicado no checkpoint sem pedir confirmação.
-Siga o protocolo da skill original (feature-dev, agent-teams, etc.) a partir do ponto indicado.
+### 4. Continue autonomously
+Execute the next step indicated in the checkpoint without asking for confirmation.
+Follow the original skill's protocol (feature-dev, agent-teams, etc.) from the indicated point.
 
-### 5. Após concluir a sessão
-Ao atingir novamente o threshold de contexto (~60k tokens), escreva um novo checkpoint atualizado e emita o aviso de compact.
+### 5. After completing the session
+Upon reaching the context threshold again (~60k tokens), write a new updated checkpoint and emit the compact warning.
 
-## Comportamento quando não há checkpoint
+## Behavior when there is no checkpoint
 
-Se `.claude/checkpoint.md` não existe, reconstruir contexto a partir do git:
+If `.claude/checkpoint.md` does not exist, reconstruct context from git:
 
 ```bash
 rtk git log --oneline -15
@@ -53,22 +53,22 @@ rtk git diff HEAD --name-only
 rtk git status
 ```
 
-Com base nos outputs:
-- Identificar a última feature em desenvolvimento (commits recentes)
-- Listar arquivos modificados mas não commitados (trabalho em andamento)
-- Apresentar ao usuário:
+Based on the outputs:
+- Identify the last feature in development (recent commits)
+- List modified but uncommitted files (work in progress)
+- Present to the user:
 
 ```
-Nenhum checkpoint encontrado. Contexto reconstruído a partir do git:
+No checkpoint found. Context reconstructed from git:
 
-Últimos commits:
-  [lista dos 15 commits mais recentes]
+Last commits:
+  [list of 15 most recent commits]
 
-Arquivos modificados não commitados:
-  [lista ou "nenhum"]
+Modified uncommitted files:
+  [list or "none"]
 
-Com base no histórico, o trabalho mais recente parece ser:
-  [inferência baseada nos commits — ex: "implementação de auth (feat/auth)"]
+Based on history, the most recent work appears to be:
+  [inference based on commits — e.g.: "auth implementation (feat/auth)"]
 
-Deseja continuar a partir daqui? Se sim, diga o que precisa retomar.
+Do you want to continue from here? If so, tell me what you need to resume.
 ```

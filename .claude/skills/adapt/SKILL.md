@@ -4,39 +4,39 @@ description: Auto-configure cc-harness for an existing project. Detects stack, a
 disable-model-invocation: true
 ---
 
-# /adapt — Configurar o Kit para o Projeto Existente
+# /adapt — Configure the Kit for an Existing Project
 
-Executar após `adopt.sh` ter instalado o kit em um projeto existente.
-Detecta a stack real e adapta automaticamente todas as configurações.
+Run after `adopt.sh` has installed the kit in an existing project.
+Detects the real stack and automatically adapts all configurations.
 
 ---
 
-## Quando usar /adapt vs. outras skills
+## When to use /adapt vs. other skills
 
-| Quero... | Skill certa |
+| I want to... | Right skill |
 |----------|------------|
-| **Instalar o kit** em um projeto que já existe e configurá-lo para a stack do projeto | `/adapt` (esta skill) |
-| **Melhorar a qualidade do código** — limpar, extrair, reorganizar camadas | `/refactor` |
-| **Mudar a interface** do app — novo visual, nova UX, novos componentes | `/redesign` |
-| **Mudar a arquitetura** — hexagonal, modular, microsserviços | `/modernize` |
-| **Construir algo novo** — feature, produto, protótipo | `/build` |
+| **Install the kit** in a project that already exists and configure it for the project's stack | `/adapt` (this skill) |
+| **Improve code quality** — clean, extract, reorganize layers | `/refactor` |
+| **Change the app's interface** — new visual, new UX, new components | `/redesign` |
+| **Change the architecture** — hexagonal, modular, microservices | `/modernize` |
+| **Build something new** — feature, product, prototype | `/build` |
 
-**Regra prática:**
-- Rodou `adopt.sh` agora? → `/adapt` primeiro, depois `/build` para features
-- O kit já está instalado e você quer melhorar código? → `/refactor`
-- O kit já está instalado e você quer mudar arquitetura? → `/modernize`
-
----
+**Practical rule:**
+- Just ran `adopt.sh`? → `/adapt` first, then `/build` for features
+- Kit already installed and you want to improve code? → `/refactor`
+- Kit already installed and you want to change architecture? → `/modernize`
 
 ---
 
-## Phase 1 — Exploração
+---
 
-> **Emit:** `▶ [1/6] Explorando o projeto`
+## Phase 1 — Exploration
 
-### Detectar linguagem e runtime
+> **Emit:** `▶ [1/6] Exploring the project`
 
-Verificar existência dos seguintes arquivos (use Glob e Read):
+### Detect language and runtime
+
+Check for the existence of the following files (use Glob and Read):
 
 - `package.json` → Node.js / TypeScript / JavaScript
 - `pyproject.toml` ou `requirements.txt` → Python
@@ -45,11 +45,11 @@ Verificar existência dos seguintes arquivos (use Glob e Read):
 - `pom.xml` ou `build.gradle` → Java / Kotlin
 - `Cargo.toml` → Rust
 
-### Detectar framework
+### Detect framework
 
-**Node.js — ler `package.json` (campo `dependencies`):**
+**Node.js — read `package.json` (field `dependencies`):**
 
-| Dependência | Framework |
+| Dependency | Framework |
 |---|---|
 | `next` | Next.js |
 | `react` (sem `next`) | React (SPA) |
@@ -59,26 +59,26 @@ Verificar existência dos seguintes arquivos (use Glob e Read):
 | `@nestjs/core` | NestJS |
 | `@hapi/hapi` | Hapi |
 
-**Python — ler `requirements.txt` ou `pyproject.toml`:**
+**Python — read `requirements.txt` or `pyproject.toml`:**
 
-| Pacote | Framework |
+| Package | Framework |
 |---|---|
 | `django` | Django |
 | `fastapi` | FastAPI |
 | `flask` | Flask |
 
-**Ruby — ler `Gemfile`:**
+**Ruby — read `Gemfile`:**
 
 | Gem | Framework |
 |---|---|
 | `rails` | Rails |
 | `sinatra` | Sinatra |
 
-### Detectar test framework
+### Detect test framework
 
-**Node.js — ler `package.json` (campo `devDependencies`):**
+**Node.js — read `package.json` (field `devDependencies`):**
 
-| Dependência | Framework |
+| Dependency | Framework |
 |---|---|
 | `jest` | Jest |
 | `vitest` | Vitest |
@@ -89,11 +89,11 @@ Verificar existência dos seguintes arquivos (use Glob e Read):
 
 **Ruby:** `rspec` em Gemfile → RSpec
 
-**Go:** presença de arquivos `*_test.go` ou `testing` em `go.mod` → Go testing
+**Go:** presence of `*_test.go` files or `testing` in `go.mod` → Go testing
 
-### Detectar padrão arquitetural
+### Detect architectural pattern
 
-Executar via Bash:
+Execute via Bash:
 
 ```bash
 find . -type d \
@@ -105,39 +105,39 @@ find . -type d \
   -maxdepth 4
 ```
 
-Mapear resultado para padrão:
+Map result to pattern:
 
-| Diretórios presentes | Padrão |
+| Directories present | Pattern |
 |---|---|
-| `src/domain/` **e** `src/application/` | **hexagonal** |
+| `src/domain/` **and** `src/application/` | **hexagonal** |
 | `app/models/`, `app/controllers/`, `app/views/` | **MVC (Rails/Django)** |
 | `src/routes/`, `src/controllers/`, `src/services/`, `src/models/` | **MVC (Express/NestJS)** |
-| `apps/` com subdiretórios de feature (ex: `users/`, `products/`) | **Django apps / feature-based** |
-| `src/features/` ou `src/modules/` | **feature-based** |
-| `app/` com `layout.tsx` ou `page.tsx` dentro | **Next.js App Router** |
-| `pages/` na raiz | **Next.js Pages Router** |
-| Nenhum padrão claro acima | **flat/desconhecido** |
+| `apps/` with feature subdirectories (e.g.: `users/`, `products/`) | **Django apps / feature-based** |
+| `src/features/` or `src/modules/` | **feature-based** |
+| `app/` with `layout.tsx` or `page.tsx` inside | **Next.js App Router** |
+| `pages/` at root | **Next.js Pages Router** |
+| No clear pattern above | **flat/unknown** |
 
-Verificar também se já existe `.claude/architecture.json` com conteúdo personalizado. Se sim, registrar como "personalizações existentes detectadas" e avisar na Phase 2.
+Also check if `.claude/architecture.json` already exists with custom content. If so, record as "existing customizations detected" and warn in Phase 2.
 
 ---
 
-## Phase 2 — Diagnóstico
+## Phase 2 — Diagnostic
 
-> **Emit:** `▶ [2/6] Diagnosticando compatibilidade`
+> **Emit:** `▶ [2/6] Diagnosing compatibility`
 
-Determinar compatibilidade de cada hook com a stack detectada:
+Determine compatibility of each hook with the detected stack:
 
 **architecture-guard:**
-- hexagonal → `✅ compatível` (verificar se paths batem com a estrutura real)
-- qualquer outro padrão → `⚠ precisa reconfigurar` ou `❌ não aplicável`
+- hexagonal → `✅ compatible` (check if paths match the real structure)
+- any other pattern → `⚠ needs reconfiguration` or `❌ not applicable`
 
 **tdd-guard:**
-- Jest → `✅ compatível`
-- Vitest, pytest, RSpec, Go testing → `⚠ extensões de arquivo a atualizar`
-- nenhum framework detectado → `❌ não aplicável`
+- Jest → `✅ compatible`
+- Vitest, pytest, RSpec, Go testing → `⚠ file extensions to update`
+- no framework detected → `❌ not applicable`
 
-**Comando de teste:**
+**Test command:**
 
 | Framework | Comando |
 |---|---|
@@ -147,47 +147,47 @@ Determinar compatibilidade de cada hook com a stack detectada:
 | RSpec | `bundle exec rspec` |
 | Go testing | `go test ./...` |
 
-Apresentar diagnóstico completo antes de qualquer alteração:
+Present complete diagnostic before any changes:
 
 ```
-DIAGNÓSTICO
+DIAGNOSTIC
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Stack detectada:     [linguagem + framework]
-Padrão arquitetural: [hexagonal | MVC | feature-based | flat | Next.js App Router]
-Test framework:      [nome]
-Test command:        [comando]
+Detected stack:      [language + framework]
+Architectural pattern: [hexagonal | MVC | feature-based | flat | Next.js App Router]
+Test framework:      [name]
+Test command:        [command]
 
-Compatibilidade:
-  architecture-guard: [✅ compatível | ⚠ precisa reconfigurar | ❌ não aplicável]
-  tdd-guard:          [✅ compatível | ⚠ extensões a atualizar | ❌ não aplicável]
+Compatibility:
+  architecture-guard: [✅ compatible | ⚠ needs reconfiguration | ❌ not applicable]
+  tdd-guard:          [✅ compatible | ⚠ extensions to update | ❌ not applicable]
 
-O que será alterado:
-  - .claude/architecture.json → [descrição da mudança]
-  - CLAUDE.md (ou CLAUDE.kit.md) → [descrição da mudança]
-  - .claude/hooks/session-start.mjs → comandos de teste atualizados
-  [outros itens detectados]
+What will be changed:
+  - .claude/architecture.json → [change description]
+  - CLAUDE.md (or CLAUDE.kit.md) → [change description]
+  - .claude/hooks/session-start.mjs → test commands updated
+  [other detected items]
 
-⚠ Personalizações existentes detectadas: [sim/não — se sim, listar arquivos]
+⚠ Existing customizations detected: [yes/no — if yes, list files]
 
-Prosseguir? (sim/ajustar)
+Proceed? (yes/adjust)
 ```
 
-**Aguardar confirmação explícita do usuário antes de prosseguir para Phase 3.**
+**Wait for explicit user confirmation before proceeding to Phase 3.**
 
-Se o usuário responder "ajustar", perguntar o que deve ser corrigido no diagnóstico e repetir o diagnóstico revisado antes de prosseguir.
+If the user responds "adjust", ask what should be corrected in the diagnostic and repeat the revised diagnostic before proceeding.
 
 ---
 
-## Phase 3 — Atualizar architecture.json
+## Phase 3 — Update architecture.json
 
-> **Emit:** `▶ [3/6] Configurando arquitetura`
+> **Emit:** `▶ [3/6] Configuring architecture`
 
-Gerar e escrever `.claude/architecture.json` baseado no padrão detectado.
+Generate and write `.claude/architecture.json` based on the detected pattern.
 
-### hexagonal (padrão já correto)
+### hexagonal (pattern already correct)
 
-Verificar se os paths em `allowedImportPrefixes` batem com a estrutura real.
-Corrigir apenas o que não corresponder. Não sobrescrever o que já estiver correto.
+Check if the paths in `allowedImportPrefixes` match the real structure.
+Fix only what doesn't match. Don't overwrite what is already correct.
 
 ```json
 {
@@ -322,7 +322,7 @@ Corrigir apenas o que não corresponder. Não sobrescrever o que já estiver cor
 }
 ```
 
-### flat / desconhecido
+### flat / unknown
 
 ```json
 {
@@ -333,36 +333,36 @@ Corrigir apenas o que não corresponder. Não sobrescrever o que já estiver cor
 }
 ```
 
-> **Checkpoint:** Se contexto atingir ~60k tokens → escreve `.claude/checkpoint.md` com skill: adapt, fase: 3, padrão detectado, arquivos a alterar, próximo passo. Emite: `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+> **Checkpoint:** If context reaches ~60k tokens → writes `.claude/checkpoint.md` with skill: adapt, phase: 3, detected pattern, files to change, next step. Emits: `↺ Context ~60k. Recommend /compact. Use /resume to continue.`
 
 ---
 
-## Phase 4 — Atualizar CLAUDE.md e hooks
+## Phase 4 — Update CLAUDE.md and hooks
 
-> **Emit:** `▶ [4/6] Atualizando configurações`
+> **Emit:** `▶ [4/6] Updating configurations`
 
 ### CLAUDE.md / CLAUDE.kit.md
 
-Determinar qual arquivo usar:
-- Se existir `CLAUDE.kit.md` na raiz → editar `CLAUDE.kit.md`
-- Caso contrário → editar `CLAUDE.md`
+Determine which file to use:
+- If `CLAUDE.kit.md` exists at root → edit `CLAUDE.kit.md`
+- Otherwise → edit `CLAUDE.md`
 
-Localizar a seção `## Core Development Principles` e dentro dela a subseção `### 1. Hexagonal Architecture`.
-Substituir essa subseção pelo bloco correspondente ao padrão detectado:
+Locate the section `## Core Development Principles` and within it the subsection `### 1. Hexagonal Architecture`.
+Replace that subsection with the block corresponding to the detected pattern:
 
-**hexagonal** — manter o conteúdo original, apenas corrigir os paths se necessário.
+**hexagonal** — keep original content, only fix paths if needed.
 
 **MVC (Rails/Django):**
 ```markdown
-### 1. Arquitetura — MVC (Rails/Django)
-Padrão MVC detectado. Business logic em `app/services/`, modelos em `app/models/`.
+### 1. Architecture — MVC (Rails/Django)
+MVC pattern detected. Business logic in `app/services/`, models in `app/models/`.
 
 ```
 app/
-  models/       Entidades e lógica de dados
-  controllers/  Handlers de request
-  services/     Lógica de negócio (use cases)
-  views/        Camada de apresentação
+  models/       Entities and data logic
+  controllers/  Request handlers
+  services/     Business logic (use cases)
+  views/        Presentation layer
 ```
 
 Test command: `bundle exec rspec`
@@ -370,15 +370,15 @@ Test command: `bundle exec rspec`
 
 **MVC (Express/NestJS):**
 ```markdown
-### 1. Arquitetura — MVC (Express/NestJS)
-Padrão MVC detectado. Rotas em `src/routes/`, lógica em `src/services/`.
+### 1. Architecture — MVC (Express/NestJS)
+MVC pattern detected. Routes in `src/routes/`, logic in `src/services/`.
 
 ```
 src/
-  routes/      Entry points e definição de rotas
-  controllers/ Handlers de request
-  services/    Lógica de negócio (use cases)
-  models/      Modelos e entidades de dados
+  routes/      Entry points and route definitions
+  controllers/ Request handlers
+  services/    Business logic (use cases)
+  models/      Data models and entities
 ```
 
 Test command: `npm test`
@@ -386,14 +386,14 @@ Test command: `npm test`
 
 **Next.js App Router:**
 ```markdown
-### 1. Arquitetura — Next.js App Router
-Next.js App Router detectado. Server Components por padrão, Client Components com `'use client'`.
+### 1. Architecture — Next.js App Router
+Next.js App Router detected. Server Components by default, Client Components with `'use client'`.
 
 ```
 app/           Pages, layouts, route segments (App Router)
 app/api/       API Route Handlers
-components/    Componentes React (server e client)
-lib/           Lógica de negócio e helpers server-side
+components/    React components (server and client)
+lib/           Business logic and server-side helpers
 ```
 
 Test command: `npm test`
@@ -401,42 +401,42 @@ Test command: `npm test`
 
 **feature-based:**
 ```markdown
-### 1. Arquitetura — Feature-Based
-Arquitetura baseada em features. Cada feature é autocontida em `src/features/`.
+### 1. Architecture — Feature-Based
+Feature-based architecture. Each feature is self-contained in `src/features/`.
 
 ```
 src/
-  features/    Módulos de feature (cada feature é autocontida)
-  shared/      Utilitários, componentes e concerns compartilhados
+  features/    Feature modules (each feature is self-contained)
+  shared/      Shared utilities, components and concerns
 ```
 
 Test command: `npm test`
 ```
 
-**flat/desconhecido:**
+**flat/unknown:**
 ```markdown
-### 1. Arquitetura — Não detectada
-Padrão arquitetural não identificado automaticamente.
-Atualize `.claude/architecture.json` manualmente com os layers do projeto.
+### 1. Architecture — Not detected
+Architectural pattern not automatically identified.
+Update `.claude/architecture.json` manually with the project's layers.
 
-Test command: [atualizar manualmente]
+Test command: [update manually]
 ```
 
-Atualizar também a seção de testes para refletir o test command correto da stack detectada.
+Also update the tests section to reflect the correct test command for the detected stack.
 
 ### session-start.mjs
 
-Localizar o arquivo `.claude/hooks/session-start.mjs`.
-Encontrar o bloco que define os comandos de teste (procurar por referências a `npm test`, `jest`, `vitest`, etc.).
-Substituir pelo comando correto detectado na Phase 1.
+Locate the file `.claude/hooks/session-start.mjs`.
+Find the block that defines test commands (look for references to `npm test`, `jest`, `vitest`, etc.).
+Replace with the correct command detected in Phase 1.
 
-Se o arquivo não existir, pular esta etapa e registrar no relatório final.
+If the file does not exist, skip this step and record in the final report.
 
 ### architecture-guard hook
 
-Localizar o arquivo `.claude/hooks/architecture-guard.*` (qualquer extensão).
-Se `architecture.json` tiver `"disabled": true`:
-- Adicionar no início do hook, após qualquer shebang ou imports, a seguinte verificação:
+Locate the file `.claude/hooks/architecture-guard.*` (any extension).
+If `architecture.json` has `"disabled": true`:
+- Add at the beginning of the hook, after any shebang or imports, the following check:
 
   **Para shell scripts:**
   ```sh
@@ -452,15 +452,15 @@ Se `architecture.json` tiver `"disabled": true`:
   if (arch.disabled) process.exit(0);
   ```
 
-Se o hook não existir, pular esta etapa e registrar no relatório final.
+If the hook does not exist, skip this step and record in the final report.
 
 ---
 
-## Phase 5 — Validação
+## Phase 5 — Validation
 
-> **Emit:** `▶ [5/6] Validando configuração`
+> **Emit:** `▶ [5/6] Validating configuration`
 
-Verificar que as alterações feitas estão funcionais:
+Verify that the changes made are functional:
 
 ### 5.1 — Validar architecture.json
 
@@ -468,80 +468,80 @@ Verificar que as alterações feitas estão funcionais:
 node -e "const c = JSON.parse(require('fs').readFileSync('.claude/architecture.json','utf8')); console.log('pattern:', c.pattern); console.log('layers:', Object.keys(c.layers || {}).join(', ')); console.log('valid: true')"
 ```
 
-Se falhar (JSON inválido, erro de parse) → corrigir antes de continuar.
+If it fails (invalid JSON, parse error) → fix before continuing.
 
-### 5.2 — Validar hooks
+### 5.2 — Validate hooks
 
-Verificar que os hooks essenciais existem e são executáveis:
+Verify that essential hooks exist and are executable:
 
 ```bash
-# Verificar que os hooks existem
+# Verify that hooks exist
 ls -la .claude/hooks/session-start.mjs .claude/hooks/architecture-guard.mjs .claude/hooks/tdd-guard.mjs 2>/dev/null
 ```
 
-Se `architecture.json` tem `"disabled": true` → verificar que architecture-guard respeita o flag:
+If `architecture.json` has `"disabled": true` → verify that architecture-guard respects the flag:
 ```bash
 echo '{"tool_name":"Write","tool_input":{"file_path":"test.ts","content":"import x from \"prisma\""}}' | node .claude/hooks/architecture-guard.mjs
-# Deve retornar ALLOW (não bloquear) quando disabled
+# Should return ALLOW (not block) when disabled
 ```
 
-### 5.3 — Testar detecção de stack
+### 5.3 — Test stack detection
 
 ```bash
-# Executar session-start e verificar que detecta a stack correta
+# Run session-start and verify it detects the correct stack
 echo '{}' | node .claude/hooks/session-start.mjs 2>/dev/null | node -e "process.stdin.on('data',d=>{const o=JSON.parse(d);console.log(o.additionalContext?.substring(0,500))})"
 ```
 
-Verificar que o output menciona a stack e framework corretos (detectados na Phase 1).
+Verify that the output mentions the correct stack and framework (detected in Phase 1).
 
-Se qualquer validação falhar → corrigir o arquivo afetado e re-validar antes de avançar para o relatório.
+If any validation fails → fix the affected file and re-validate before advancing to the report.
 
 ---
 
-## Phase 6 — Relatório final
+## Phase 6 — Final report
 
-> **Emit:** `▶ [6/6] Adaptação concluída`
+> **Emit:** `▶ [6/6] Adaptation complete`
 
-Apresentar relatório completo:
+Present complete report:
 
 ```
-ADAPT COMPLETO
+ADAPT COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Stack:    [linguagem + framework]
-Padrão:   [padrão arquitetural detectado]
+Stack:    [language + framework]
+Pattern:  [detected architectural pattern]
 
-Alterações feitas:
-  ✅ .claude/architecture.json — [descrição do que foi alterado]
-  ✅ CLAUDE.md (ou CLAUDE.kit.md) — seção arquitetura atualizada para [padrão]
-  ✅ .claude/hooks/session-start.mjs — test command: [comando]
-  [listar outros arquivos alterados]
+Changes made:
+  ✅ .claude/architecture.json — [description of what was changed]
+  ✅ CLAUDE.md (or CLAUDE.kit.md) — architecture section updated for [pattern]
+  ✅ .claude/hooks/session-start.mjs — test command: [command]
+  [list other changed files]
 
-Itens pulados (arquivo não encontrado):
-  [listar itens que foram pulados e o motivo]
+Items skipped (file not found):
+  [list items that were skipped and the reason]
 
-Skills disponíveis para este projeto:
+Skills available for this project:
   /build       → entry point: research → planning (PLAN.md) → implement
-  /research    → pesquisa antes de qualquer feature
-  /feature-dev → implementação TDD + arquitetura detectada
-  /dba         → schema design, índices, multi-tenancy (antes de implementar entidades novas)
-  /adapt       → rode novamente se a stack mudar
+  /research    → research before any feature
+  /feature-dev → TDD implementation + detected architecture
+  /dba         → schema design, indexes, multi-tenancy (before implementing new entities)
+  /adapt       → run again if the stack changes
 
-⚠ Verifique manualmente:
-  [lista de itens que precisam atenção humana]
-  Exemplos:
-  - architecture-guard desativado (padrão não-hexagonal detectado)
-  - tdd-guard: extensões de arquivo não atualizadas automaticamente para [framework]
-  - session-start.mjs não encontrado — atualize o test command manualmente
+⚠ Verify manually:
+  [list of items that need human attention]
+  Examples:
+  - architecture-guard disabled (non-hexagonal pattern detected)
+  - tdd-guard: file extensions not automatically updated for [framework]
+  - session-start.mjs not found — update the test command manually
 
-Pronto. Use /build <sua ideia> para começar.
+Ready. Use /build <your idea> to get started.
 ```
 
 ---
 
-## Notas de comportamento
+## Behavior Notes
 
-- **Nunca sobrescrever sem confirmar** — a Phase 2 sempre apresenta o diagnóstico completo e aguarda confirmação explícita antes de alterar qualquer arquivo.
-- **Ser conservador em caso de dúvida** — se o padrão arquitetural não puder ser determinado com clareza, reportar como "flat/desconhecido" e desabilitar guards em vez de configurar incorretamente.
-- **Preservar personalizações existentes** — se `.claude/architecture.json` ou `CLAUDE.md` já tiverem sido editados pelo usuário, detectar, avisar no diagnóstico e não sobrescrever sem confirmação explícita.
-- **Pular etapas faltantes graciosamente** — se um arquivo esperado (ex: `session-start.mjs`, `architecture-guard`) não existir, registrar no relatório final em vez de falhar.
-- **Não criar arquivos além dos listados** — esta skill atualiza arquivos existentes do kit. Não criar novos arquivos de configuração.
+- **Never overwrite without confirming** — Phase 2 always presents the complete diagnostic and waits for explicit confirmation before changing any file.
+- **Be conservative when in doubt** — if the architectural pattern cannot be clearly determined, report as "flat/unknown" and disable guards instead of configuring incorrectly.
+- **Preserve existing customizations** — if `.claude/architecture.json` or `CLAUDE.md` have already been edited by the user, detect, warn in the diagnostic and don't overwrite without explicit confirmation.
+- **Skip missing steps gracefully** — if an expected file (e.g.: `session-start.mjs`, `architecture-guard`) doesn't exist, record in the final report instead of failing.
+- **Don't create files beyond those listed** — this skill updates existing kit files. Don't create new configuration files.

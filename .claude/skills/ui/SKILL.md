@@ -7,60 +7,60 @@ argument-hint: <component or page>
 
 # /ui — UI Quality Pipeline
 
-> Orquestrador de qualidade para frontend.
-> O plugin oficial `frontend-design` é o engine de geração — esta skill define o que gerar, garante TDD, enforça padrões e faz o gate final com browser-qa.
+> Frontend quality orchestrator.
+> The official `frontend-design` plugin is the generation engine — this skill defines what to generate, ensures TDD, enforces standards, and performs the final gate with browser-qa.
 >
-> Fluxo: pesquisa real → contrato de design → testes failing → **geração via plugin oficial** → enforcement → acessibilidade → performance → browser-qa
+> Flow: real research → design contract → failing tests → **generation via official plugin** → enforcement → accessibility → performance → browser-qa
 
 ---
 
 ## Phase 0 — Design Reference Research
 
 > **Emit:** `▶ [0/9] Design Reference Research`
-> **Token budget: ~6k** — 3-5 referências máximo.
+> **Token budget: ~6k** — 3-5 references maximum.
 
-Esta fase é OBRIGATÓRIA. Designs sem referências reais resultam em AI slop.
+This phase is MANDATORY. Designs without real references result in AI slop.
 
 ### 0.1 — Context Brief
 
-Definir antes de pesquisar:
-- Tipo de produto: SaaS dashboard / landing page / e-commerce / ferramenta dev / consumer app / etc.
-- Público-alvo: devs / consumidores / empresas / criadores
-- Tom desejado: moderno/técnico · elegante/refinado · playful · minimalista · bold
-- Palavras-chave: `[tipo]-[tom]` ex: `saas-dashboard dark`, `fintech minimal`
+Define before researching:
+- Product type: SaaS dashboard / landing page / e-commerce / dev tool / consumer app / etc.
+- Target audience: devs / consumers / enterprises / creators
+- Desired tone: modern/technical · elegant/refined · playful · minimalist · bold
+- Keywords: `[type]-[tone]` e.g.: `saas-dashboard dark`, `fintech minimal`
 
 ### 0.2 — Deep Design Research
 
-**Agente: design-researcher**
+**Agent: design-researcher**
 
 ```
-Tool: vercel:agent-browser
+Tool: agent-browser CLI
 Token budget: 4k
 
-Pesquisar nesta ordem, parar com 5 referências de qualidade:
+Research in this order, stop with 5 quality references:
 1. Dribbble  → dribbble.com/search/[keywords]
 2. Awwwards  → awwwards.com/websites/[category]
 3. Behance   → behance.net/search/projects?field=ui-ux&search=[keywords]
 4. Mobbin    → mobbin.com/screens?platform=web&keyword=[keywords]
 5. Layers.to → layers.to
 
-Por referência documentar:
-- Palette de cores (hex dos 3-4 dominantes)
-- Tipografia (fontes visíveis)
+Per reference, document:
+- Color palette (hex of the 3-4 dominant colors)
+- Typography (visible fonts)
 - Layout pattern
-- Elemento de destaque (o que torna memorável)
-- Aplicabilidade ao projeto
+- Standout element (what makes it memorable)
+- Applicability to the project
 
 Output: DESIGN_REFS.md
 ```
 
-### 0.3 — Síntese
+### 0.3 — Synthesis
 
-Ler DESIGN_REFS.md e extrair:
-- **Paleta**: hex mais frequentes e bonitos entre as referências
-- **Tipografia**: fontes das referências ou equivalentes no Google Fonts
-- **Layout pattern**: padrão mais recorrente adaptado ao projeto
-- **Elemento signature**: um elemento visual específico e memorável
+Read DESIGN_REFS.md and extract:
+- **Palette**: most frequent and appealing hex values across references
+- **Typography**: fonts from references or equivalents on Google Fonts
+- **Layout pattern**: most recurring pattern adapted to the project
+- **Signature element**: a specific and memorable visual element
 
 ---
 
@@ -68,19 +68,19 @@ Ler DESIGN_REFS.md e extrair:
 
 > **Emit:** `▶ [1/9] Context + Design Direction`
 
-Comprometer-se com uma **direção estética clara e intencional**:
+Commit to a **clear and intentional aesthetic direction**:
 
-1. **Propósito**: Que problema resolve? Quem usa?
-2. **Tom** — escolher um extremo e executar com precisão:
-   - Brutalmente minimal · maximalismo caótico · retro-futurista
-   - Orgânico/natural · luxo/refinado · playful/lúdico
-   - Editorial/magazine · brutalista/raw · art déco/geométrico
-   - Suave/pastel · industrial/utilitário
-3. **Diferencial**: O que tornará este design INESQUECÍVEL?
-4. **Dados**: Quais entidades de domínio são exibidas ou mutadas?
-5. **Constraints**: Framework, performance, acessibilidade.
+1. **Purpose**: What problem does it solve? Who uses it?
+2. **Tone** — choose one extreme and execute with precision:
+   - Brutally minimal · chaotic maximalism · retro-futuristic
+   - Organic/natural · luxury/refined · playful/whimsical
+   - Editorial/magazine · brutalist/raw · art deco/geometric
+   - Soft/pastel · industrial/utilitarian
+3. **Differentiator**: What will make this design UNFORGETTABLE?
+4. **Data**: Which domain entities are displayed or mutated?
+5. **Constraints**: Framework, performance, accessibility.
 
-**Regra crítica**: maximalismo bold e minimalismo refinado funcionam igualmente — o que não funciona é indefinição. Escolher e executar com precisão.
+**Critical rule**: bold maximalism and refined minimalism work equally well — what does not work is indecision. Choose and execute with precision.
 
 ---
 
@@ -90,13 +90,13 @@ Comprometer-se com uma **direção estética clara e intencional**:
 
 ```
 COMPONENT: [Name]
-Aesthetic direction: [ex: "brutalista com acentos âmbar quente"]
-Purpose: [o que o usuário conquista]
+Aesthetic direction: [e.g.: "brutalist with warm amber accents"]
+Purpose: [what the user achieves]
 Variants: [default, loading, error, empty]
 States: [hover, focus, active, disabled]
 Props/API:
   - [prop]: [type] — [purpose]
-Data: [entidades de domínio envolvidas]
+Data: [domain entities involved]
 Accessibility:
   - ARIA role: [role]
   - Keyboard nav: [tab order, shortcuts]
@@ -121,19 +121,19 @@ Page/Container (smart — fetch data, manage state)
     │   ├── [PrimaryComponent]
     │   │   ├── [SubComponent A]
     │   │   └── [SubComponent B]
-    └── Sidebar/Footer (se aplicável)
+    └── Sidebar/Footer (if applicable)
 ```
 
-- **Smart** (containers): buscam dados, gerenciam estado, despacham eventos
-- **Dumb** (presentational): recebem props, renderizam UI, emitem eventos
+- **Smart** (containers): fetch data, manage state, dispatch events
+- **Dumb** (presentational): receive props, render UI, emit events
 
 ---
 
 ## Phase 4 — TDD: Write Failing Tests First
 
-> **Emit:** `▶ [4/9] TDD — Testes antes do código`
+> **Emit:** `▶ [4/9] TDD — Tests before code`
 
-Escrever testes ANTES de invocar o plugin de geração. Os testes definem o contrato; o plugin deve gerar código que os passe.
+Write tests BEFORE invoking the generation plugin. The tests define the contract; the plugin must generate code that passes them.
 
 ```typescript
 // Unit tests (component-level)
@@ -153,95 +153,95 @@ it('fetches and displays data end-to-end')
 // Full user flow involving this component
 ```
 
-Rodar: `rtk npx jest [component].test.tsx` — confirmar que falham (RED).
+Run: `rtk npx jest [component].test.tsx` — confirm they fail (RED).
 
 ---
 
 ## Phase 5 — Generate via Official Plugin
 
-> **Emit:** `▶ [5/9] Geração — plugin oficial`
+> **Emit:** `▶ [5/9] Generation — official plugin`
 
-**Invocar o plugin oficial `frontend-design` via Skill tool**, passando como argumento o contexto completo das fases anteriores:
+**Invoke the official `frontend-design` plugin via Skill tool**, passing as argument the complete context from previous phases:
 
 ```
-Argumento para frontend-design:
+Argument for frontend-design:
 
-Componente: [nome do componente/página]
+Component: [component/page name]
 
-Direção estética: [direção definida na Fase 1]
-Referências: [síntese do DESIGN_REFS.md — paleta, tipografia, elemento signature]
+Aesthetic direction: [direction defined in Phase 1]
+References: [DESIGN_REFS.md synthesis — palette, typography, signature element]
 
 Design contract:
-[colar o contrato completo da Fase 2]
+[paste complete contract from Phase 2]
 
-Hierarquia:
-[colar a hierarquia da Fase 3]
+Hierarchy:
+[paste hierarchy from Phase 3]
 
-Stack obrigatória:
+Required stack:
 - shadcn/ui + Tailwind CSS + Framer Motion
-- Lucide React para ícones (nunca emojis como ícones de UI)
-- Skeleton screens para loading (não spinners em conteúdo com forma)
-- Rive para animações stateful, Lottie para decorativas
+- Lucide React for icons (never emojis as UI icons)
+- Skeleton screens for loading (not spinners for shaped content)
+- Rive for stateful animations, Lottie for decorative ones
 
-Constraints de qualidade:
-- NUNCA: Arial, Inter, Roboto, system fonts
-- NUNCA: gradiente roxo em fundo branco ou paleta tímida distribuída igualmente
-- NUNCA: emojis como ícones funcionais
-- NUNCA: misturar estilos de ícone (outline + filled)
-- SEMPRE: prefers-reduced-motion respeitado
-- SEMPRE: estados completos (loading, error, empty, populated)
-- SEMPRE: atmosfera e profundidade no background (não cor sólida genérica)
+Quality constraints:
+- NEVER: Arial, Inter, Roboto, system fonts
+- NEVER: purple gradient on white background or timid palette evenly distributed
+- NEVER: emojis as functional icons
+- NEVER: mix icon styles (outline + filled)
+- ALWAYS: prefers-reduced-motion respected
+- ALWAYS: complete states (loading, error, empty, populated)
+- ALWAYS: atmosphere and depth in background (not a generic solid color)
 ```
 
-Após a geração, verificar se os testes da Fase 4 passam. Se não → ajustar até GREEN.
+After generation, verify that Phase 4 tests pass. If not → adjust until GREEN.
 
 ---
 
 ## Phase 6 — Enforce Standards
 
-> **Emit:** `▶ [6/9] Enforce — padrões de qualidade`
+> **Emit:** `▶ [6/9] Enforce — quality standards`
 
-Revisar o código gerado e corrigir qualquer violação:
+Review the generated code and fix any violations:
 
 **Icons:**
-- [ ] Sem emojis como ícone funcional — substituir por Lucide, Font Awesome ou Unicons
-- [ ] Estilos de ícone consistentes (outline OU filled, não misturado)
-- [ ] Ícone + label quando há espaço (não ícone isolado sem acessibilidade)
+- [ ] No emojis as functional icons — replace with Lucide, Font Awesome, or Unicons
+- [ ] Consistent icon styles (outline OR filled, not mixed)
+- [ ] Icon + label when there is space (not isolated icon without accessibility)
 
 **Animations:**
-- [ ] `prefers-reduced-motion` implementado
-- [ ] Loading states: skeleton screen em conteúdo com forma, não spinner
-- [ ] Transições existem onde o estado muda (nenhum elemento aparece/desaparece em 0ms)
-- [ ] Micro-animations apenas onde agregam valor (não em todo elemento)
-- [ ] Botão tem feedback de press (`scale(0.97)` ou equivalente)
+- [ ] `prefers-reduced-motion` implemented
+- [ ] Loading states: skeleton screen for shaped content, not spinner
+- [ ] Transitions exist where state changes (no element appears/disappears in 0ms)
+- [ ] Micro-animations only where they add value (not on every element)
+- [ ] Button has press feedback (`scale(0.97)` or equivalent)
 
 **Hexagonal Architecture:**
-- [ ] Componentes presentacionais não buscam dados diretamente
-- [ ] Smart containers usam use cases via hooks, não chamam API diretamente
-- [ ] Nenhum `import` de `infrastructure/` dentro de componentes de `screens/` ou `components/`
+- [ ] Presentational components do not fetch data directly
+- [ ] Smart containers use use cases via hooks, not calling API directly
+- [ ] No `import` from `infrastructure/` inside `screens/` or `components/`
 
 **Anti-patterns:**
-- [ ] Sem `<div>` como botão — usar `<button>`
-- [ ] Sem `onClick` sem equivalente de teclado
-- [ ] Sem conditional render aninhado > 2 níveis (extrair componente)
-- [ ] Sem estado que pode ser derivado de props
-- [ ] Sem strings hardcoded (usar constantes ou i18n keys)
-- [ ] Sem estilos inline além de valores dinâmicos
+- [ ] No `<div>` as button — use `<button>`
+- [ ] No `onClick` without keyboard equivalent
+- [ ] No nested conditional render > 2 levels (extract component)
+- [ ] No state that can be derived from props
+- [ ] No hardcoded strings (use constants or i18n keys)
+- [ ] No inline styles beyond dynamic values
 
 ---
 
 ## Phase 7 — Accessibility
 
-> **Emit:** `▶ [7/9] Acessibilidade`
+> **Emit:** `▶ [7/9] Accessibility`
 
-- [ ] Todo interativo alcançável por teclado (Tab)
-- [ ] Focus visível (não removido por CSS)
-- [ ] Imagens têm atributo `alt`
-- [ ] Formulários têm `<label>` associado
-- [ ] ARIA roles corretos (`role="button"`, `role="dialog"`, etc.)
-- [ ] Erros anunciados para screen readers
-- [ ] Cor não é único meio de transmitir informação
-- [ ] Contraste WCAG AA mínimo (4.5:1 para texto)
+- [ ] All interactive elements reachable by keyboard (Tab)
+- [ ] Visible focus (not removed by CSS)
+- [ ] Images have `alt` attribute
+- [ ] Forms have associated `<label>`
+- [ ] Correct ARIA roles (`role="button"`, `role="dialog"`, etc.)
+- [ ] Errors announced to screen readers
+- [ ] Color is not the only means of conveying information
+- [ ] WCAG AA minimum contrast (4.5:1 for text)
 - [ ] Touch targets ≥ 44×44px
 
 ---
@@ -250,12 +250,12 @@ Revisar o código gerado e corrigir qualquer violação:
 
 > **Emit:** `▶ [8/9] Performance`
 
-- [ ] Imagens otimizadas (WebP/AVIF, lazy load, tamanho correto)
-- [ ] Sem layout shift (CLS < 0.1)
-- [ ] Listas longas (> 100 itens) virtualizadas
-- [ ] Cálculos caros memoizados
-- [ ] Event listeners limpos no unmount
-- [ ] Sem re-renders desnecessários
+- [ ] Images optimized (WebP/AVIF, lazy load, correct size)
+- [ ] No layout shift (CLS < 0.1)
+- [ ] Long lists (> 100 items) virtualized
+- [ ] Expensive calculations memoized
+- [ ] Event listeners cleaned up on unmount
+- [ ] No unnecessary re-renders
 
 ---
 
@@ -265,14 +265,14 @@ Revisar o código gerado e corrigir qualquer violação:
 
 ```
 ⛔ GATE /ui:
-  □ Testes unitários: 0 failures
+  □ Unit tests: 0 failures
   □ Cypress E2E: 0 failures
-  □ Acessibilidade: checklist Phase 7 passou
-  □ Performance: checklist Phase 8 passou
-  □ Enforcement: checklist Phase 6 passou (sem violações)
+  □ Accessibility: Phase 7 checklist passed
+  □ Performance: Phase 8 checklist passed
+  □ Enforcement: Phase 6 checklist passed (no violations)
 ```
 
-**Invocar `/browser-qa`** na URL do componente/página para verificação visual exaustiva.
+**Invoke `/browser-qa`** on the component/page URL for exhaustive visual verification.
 
-Fix loop automático (máx 3 iterações) antes de escalar ao usuário.
-Só avançar quando todos os itens estiverem PASS.
+Automatic fix loop (max 3 iterations) before escalating to the user.
+Only advance when all items are PASS.

@@ -7,13 +7,13 @@ argument-hint: [scope: logging | tracing | metrics | all]
 
 # /observability — Structured Logging & OpenTelemetry → Grafana Stack
 
-> Instrumentação via OpenTelemetry (código não muda se o backend mudar).
-> Backend padrão: **Grafana Stack** — Prometheus (metrics) + Loki (logs) + Tempo (traces) + Grafana (dashboards) + Alertmanager.
+> Instrumentation via OpenTelemetry (code does not change if the backend changes).
+> Default backend: **Grafana Stack** — Prometheus (metrics) + Loki (logs) + Tempo (traces) + Grafana (dashboards) + Alertmanager.
 > Pipeline: App → OTel Collector → Prometheus / Loki / Tempo → Grafana.
 
 ---
 
-## Stack Grafana (padrão)
+## Grafana Stack (default)
 
 ```
 App (OTLP) → OpenTelemetry Collector
@@ -23,57 +23,57 @@ App (OTLP) → OpenTelemetry Collector
                                 Alertmanager ← Prometheus
 ```
 
-Todos os componentes rodam em Docker. Código da aplicação envia OTLP para o collector — nunca diretamente para Prometheus, Loki ou Tempo.
+All components run in Docker. Application code sends OTLP to the collector — never directly to Prometheus, Loki, or Tempo.
 
 ---
 
-## Workflow (6 Fases)
+## Workflow (6 Phases)
 
-### Fase 1 — Instrumentation Inventory
+### Phase 1 — Instrumentation Inventory
 > **Emit:** `▶ [1/6] Instrumentation Inventory`
 
-Scan do codebase antes de adicionar qualquer coisa:
+Scan the codebase before adding anything:
 
-- `console.log` / `print` / `fmt.Println` → candidatos para structured log upgrade
+- `console.log` / `print` / `fmt.Println` → candidates for structured log upgrade
 - HTTP server framework: Express, Fastify, FastAPI, Rails, Gin, Fiber
 - Database client: Prisma, TypeORM, Sequelize, SQLAlchemy, GORM, ActiveRecord
 - HTTP clients externos: `fetch`, `axios`, `httpx`, `net/http`
 - Background jobs: BullMQ, Sidekiq, Celery, Asynq
-- Observability existente: loggers, tracing libs, metrics exporters
+- Existing observability: loggers, tracing libs, metrics exporters
 
-Output: tabela do que existe, o que falta, quais fases estão no escopo.
+Output: table of what exists, what is missing, which phases are in scope.
 
-### Fase 2 — Structured Logging Setup
+### Phase 2 — Structured Logging Setup
 > **Emit:** `▶ [2/6] Structured Logging Setup`
 
-Ignorar se scope for `tracing` ou `metrics` only.
+Skip if scope is `tracing` or `metrics` only.
 
-**Campos obrigatórios em todo log:**
+**Required fields in every log:**
 
-| Campo | Tipo | Notas |
+| Field | Type | Notes |
 |---|---|---|
-| `timestamp` | ISO 8601 | UTC, sempre |
+| `timestamp` | ISO 8601 | UTC, always |
 | `level` | string | ERROR, WARN, INFO, DEBUG |
-| `message` | string | Descrição legível por humano |
-| `service` | string | Nome do serviço |
-| `version` | string | git SHA ou semver |
-| `correlationId` | string | Propaga entre chamadas distribuídas |
-| `requestId` | string | UUID por request |
-| `userId` | string/null | Presente quando autenticado |
+| `message` | string | Human-readable description |
+| `service` | string | Service name |
+| `version` | string | git SHA or semver |
+| `correlationId` | string | Propagated across distributed calls |
+| `requestId` | string | UUID per request |
+| `userId` | string/null | Present when authenticated |
 
-**Níveis — quando usar:**
-- `ERROR` — falha que requer intervenção. Serviço degradado ou dados em risco.
-- `WARN` — degradado mas funcional. Algo inesperado mas request teve sucesso.
-- `INFO` — eventos de negócio: usuário registrado, pagamento processado.
-- `DEBUG` — detalhe para dev. Desativar em produção via env var.
+**Levels — when to use:**
+- `ERROR` — failure requiring intervention. Service degraded or data at risk.
+- `WARN` — degraded but functional. Something unexpected but request succeeded.
+- `INFO` — business events: user registered, payment processed.
+- `DEBUG` — detail for dev. Disable in production via env var.
 
-**Proibido em logs — nunca logar:**
-- Senhas, API keys, tokens, secrets
-- Números de cartão, conta bancária
-- PII além de user IDs (sem email, nome, endereço, telefone)
-- Bodies completos de request/response sem scrubbing
+**Forbidden in logs — never log:**
+- Passwords, API keys, tokens, secrets
+- Credit card numbers, bank account numbers
+- PII beyond user IDs (no email, name, address, phone)
+- Full request/response bodies without scrubbing
 
-**Biblioteca por stack:**
+**Library per stack:**
 
 | Stack | Biblioteca |
 |---|---|
@@ -102,12 +102,12 @@ export function correlationIdMiddleware(req, res, next) {
 }
 ```
 
-### Fase 3 — OpenTelemetry Instrumentation
+### Phase 3 — OpenTelemetry Instrumentation
 > **Emit:** `▶ [3/6] OpenTelemetry Instrumentation`
 
-Ignorar se scope for `logging` ou `metrics` only.
+Skip if scope is `logging` or `metrics` only.
 
-**Instalação por stack:**
+**Installation per stack:**
 
 ```bash
 # Node.js
@@ -142,7 +142,7 @@ const sdk = new NodeSDK({
     [SEMRESATTRS_SERVICE_VERSION]: process.env.OTEL_SERVICE_VERSION ?? '0.0.0',
     'deployment.environment':      process.env.NODE_ENV             ?? 'development',
   }),
-  traceExporter:  new OTLPTraceExporter(),   // lê OTEL_EXPORTER_OTLP_ENDPOINT
+  traceExporter:  new OTLPTraceExporter(),   // reads OTEL_EXPORTER_OTLP_ENDPOINT
   metricExporter: new OTLPMetricExporter(),
   logExporter:    new OTLPLogExporter(),
   instrumentations: [getNodeAutoInstrumentations()],
@@ -151,7 +151,7 @@ const sdk = new NodeSDK({
 sdk.start();
 ```
 
-**Env vars (apontam para otel-collector, nunca diretamente para backends):**
+**Env vars (point to otel-collector, never directly to backends):**
 
 ```bash
 OTEL_SERVICE_NAME=my-api
@@ -161,7 +161,7 @@ OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 NODE_ENV=production
 ```
 
-**Spans manuais em lógica de negócio:**
+**Manual spans in business logic:**
 
 ```typescript
 import { trace, SpanStatusCode } from '@opentelemetry/api';
@@ -186,19 +186,19 @@ async function processPayment(orderId: string, amount: number) {
 }
 ```
 
-> **Checkpoint:** Se contexto atingir ~60k tokens → escreve `.claude/checkpoint.md` com skill, fase, arquivos, próximo passo. Emite: `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+> **Checkpoint:** If context reaches ~60k tokens → write `.claude/checkpoint.md` with skill, phase, files, next step. Emit: `↺ Context ~60k. Recommend /compact. Use /resume to continue.`
 
-### Fase 4 — Key Metrics
+### Phase 4 — Key Metrics
 > **Emit:** `▶ [4/6] Key Metrics`
 
-Ignorar se scope for `logging` ou `tracing` only.
+Skip if scope is `logging` or `tracing` only.
 
-**RED method — para todo endpoint:**
-- **Rate**: requests por segundo
-- **Errors**: taxa de erro < 1%
-- **Duration**: latência p50, p95, p99 (target: p95 < 500ms)
+**RED method — for every endpoint:**
+- **Rate**: requests per second
+- **Errors**: error rate < 1%
+- **Duration**: latency p50, p95, p99 (target: p95 < 500ms)
 
-**Business metrics — definir 3-5 eventos-chave:**
+**Business metrics — define 3-5 key events:**
 
 ```typescript
 import { metrics } from '@opentelemetry/api';
@@ -218,18 +218,18 @@ signupCounter.add(1, { plan: 'free', source: 'organic' });
 paymentHistogram.record(durationMs, { currency: 'USD', result: 'success' });
 ```
 
-### Fase 5 — Health Endpoints
+### Phase 5 — Health Endpoints
 > **Emit:** `▶ [5/6] Health Endpoints`
 
-Sempre implementar ambos.
+Always implement both.
 
 ```typescript
-// Liveness — o processo está vivo?
+// Liveness — is the process alive?
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Readiness — todas as deps estão acessíveis?
+// Readiness — are all deps reachable?
 app.get('/ready', async (_req, res) => {
   const checks = {
     db:    await pingDatabase() ? 'ok' : 'error',
@@ -242,20 +242,20 @@ app.get('/ready', async (_req, res) => {
   });
 });
 
-// Prometheus scrape endpoint (exposto via otel-collector — raramente necessário na app)
-// GET /metrics → usar prom-client se deploy usa scrape direto sem collector
+// Prometheus scrape endpoint (exposed via otel-collector — rarely needed in the app)
+// GET /metrics → use prom-client if deploy uses direct scrape without collector
 ```
 
-### Fase 6 — Grafana Stack Setup
+### Phase 6 — Grafana Stack Setup
 > **Emit:** `▶ [6/6] Grafana Stack Setup`
 
-#### 6.1 — docker-compose para desenvolvimento local
+#### 6.1 — docker-compose for local development
 
-Gerar `docker-compose.observability.yml` (separado do docker-compose principal para não poluir):
+Generate `docker-compose.observability.yml` (separate from the main docker-compose to avoid pollution):
 
 ```yaml
 # docker-compose.observability.yml
-# Subir com: docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+# Start with: docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 
 services:
   otel-collector:
@@ -289,7 +289,7 @@ services:
     command: ["-config.file=/etc/tempo.yaml"]
     ports:
       - "3200:3200"   # Tempo HTTP
-      - "4327:4317"   # OTLP gRPC (mapeado diferente para não conflitar)
+      - "4327:4317"   # OTLP gRPC (mapped differently to avoid conflict)
 
   grafana:
     image: grafana/grafana:latest
@@ -314,9 +314,9 @@ services:
       - "9093:9093"
 ```
 
-#### 6.2 — Configurações dos componentes
+#### 6.2 — Component configurations
 
-Gerar `.observability/collector.yaml`:
+Generate `.observability/collector.yaml`:
 
 ```yaml
 receivers:
@@ -364,7 +364,7 @@ service:
       exporters: [loki]
 ```
 
-Gerar `.observability/prometheus.yml`:
+Generate `.observability/prometheus.yml`:
 
 ```yaml
 global:
@@ -385,7 +385,7 @@ scrape_configs:
       - targets: ["otel-collector:8889"]
 ```
 
-Gerar `.observability/prometheus-alerts.yml`:
+Generate `.observability/prometheus-alerts.yml`:
 
 ```yaml
 groups:
@@ -417,7 +417,7 @@ groups:
           summary: "OTel Collector is down"
 ```
 
-Gerar `.observability/tempo.yaml`:
+Generate `.observability/tempo.yaml`:
 
 ```yaml
 server:
@@ -437,7 +437,7 @@ storage:
       path: /tmp/tempo/blocks
 ```
 
-Gerar `.observability/alertmanager.yml`:
+Generate `.observability/alertmanager.yml`:
 
 ```yaml
 global:
@@ -452,13 +452,13 @@ route:
 
 receivers:
   - name: 'default'
-    # Adicionar webhook, Slack, PagerDuty conforme necessário:
+    # Add webhook, Slack, PagerDuty as needed:
     # slack_configs:
     #   - api_url: 'https://hooks.slack.com/services/...'
     #     channel: '#alerts'
 ```
 
-Gerar `.observability/grafana/datasources/datasources.yaml`:
+Generate `.observability/grafana/datasources/datasources.yaml`:
 
 ```yaml
 apiVersion: 1
@@ -485,36 +485,36 @@ datasources:
         datasourceUid: Prometheus
 ```
 
-#### 6.3 — Comandos úteis
+#### 6.3 — Useful commands
 
 ```bash
-# Subir stack de observabilidade junto com a app
+# Start observability stack alongside the app
 rtk docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 
-# Abrir Grafana (user: admin / sem senha em dev)
+# Open Grafana (user: admin / no password in dev)
 open http://localhost:3030
 
-# Ver traces no Tempo via Grafana
-# Explore → Tempo → Search (por service name)
+# View traces in Tempo via Grafana
+# Explore → Tempo → Search (by service name)
 
-# Ver logs no Loki via Grafana
+# View logs in Loki via Grafana
 # Explore → Loki → {job="my-api"}
 
-# Ver métricas no Prometheus
+# View metrics in Prometheus
 open http://localhost:9090
 
-# Verificar que collector está recebendo dados
+# Verify that collector is receiving data
 rtk curl -s http://localhost:8889/metrics | grep app_
 
-# Health check da aplicação
+# Application health check
 rtk curl -s http://localhost:3000/health | rtk jq .
 rtk curl -s http://localhost:3000/ready  | rtk jq .
 
-# Tail de logs estruturados em dev (pino)
+# Tail structured logs in dev (pino)
 rtk npm run dev | rtk npx pino-pretty
 ```
 
-#### 6.4 — Gerar `docs/OBSERVABILITY.md`
+#### 6.4 — Generate `docs/OBSERVABILITY.md`
 
 ```markdown
 # Observability
@@ -522,37 +522,37 @@ rtk npm run dev | rtk npx pino-pretty
 ## Stack
 Prometheus (metrics) + Loki (logs) + Tempo (traces) + Grafana (dashboards) + Alertmanager
 
-## Como subir localmente
+## How to start locally
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 ```
 Grafana: http://localhost:3030
 
-## O que está instrumentado
+## What is instrumented
 - [ ] Structured logging (pino / structlog / slog)
 - [ ] Correlation ID middleware
 - [ ] HTTP request auto-instrumentation (OpenTelemetry)
 - [ ] Database query auto-instrumentation
 - [ ] External HTTP call auto-instrumentation
-- [ ] Manual spans em operações críticas: [listar]
-- [ ] RED metrics para todos os endpoints
-- [ ] Business counters: [listar]
+- [ ] Manual spans on critical operations: [list]
+- [ ] RED metrics for all endpoints
+- [ ] Business counters: [list]
 - [ ] /health endpoint
 - [ ] /ready endpoint
 
-## Variáveis de ambiente necessárias
+## Required environment variables
 ```bash
-OTEL_SERVICE_NAME=<nome-do-servico>
-OTEL_SERVICE_VERSION=<git-sha-ou-semver>
+OTEL_SERVICE_NAME=<service-name>
+OTEL_SERVICE_VERSION=<git-sha-or-semver>
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
 OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 ```
 
-## Alertas configurados
-| Alerta | Condição | Severidade |
-|--------|----------|------------|
-| HighErrorRate | Error rate > 1% por 2min | P1 |
-| HighLatency | p95 > 500ms por 2min | P2 |
+## Configured alerts
+| Alert | Condition | Severity |
+|-------|-----------|----------|
+| HighErrorRate | Error rate > 1% for 2min | P1 |
+| HighLatency | p95 > 500ms for 2min | P2 |
 | ServiceDown | OTel Collector down | P1 |
 ```
 
@@ -561,26 +561,26 @@ OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 ## Quick Reference
 
 ```bash
-# Verificar SDK inicializa sem erros (Node.js)
+# Verify SDK initializes without errors (Node.js)
 rtk node -e "require('./src/shared/telemetry')" 2>&1
 
-# Ver spans chegando no Tempo
+# View spans arriving in Tempo
 open http://localhost:3030  # Grafana → Explore → Tempo
 
-# Ver logs chegando no Loki
+# View logs arriving in Loki
 # Grafana → Explore → Loki → {service_name="my-api"}
 
-# Ver métricas chegando no Prometheus
+# View metrics arriving in Prometheus
 rtk curl -s http://localhost:8889/metrics | grep app_http
 ```
 
 ---
 
-## Deviações permitidas
+## Allowed deviations
 
-- Pular Fase 3 (tracing) se scope for `logging` ou `metrics` only
-- Pular Fase 4 (metrics) se scope for `logging` ou `tracing` only
-- Pular Fase 2 (logging) se scope for `tracing` ou `metrics` only
-- **Nunca pular Fase 5** (health endpoints) — obrigatório para qualquer serviço containerizado
-- **Nunca pular Fase 6** (Grafana stack) — docker-compose.observability.yml é o artefato de entrega
-- Para produção: substituir `backend: local` do Tempo por object storage (S3, GCS) e configurar retenção no Prometheus
+- Skip Phase 3 (tracing) if scope is `logging` or `metrics` only
+- Skip Phase 4 (metrics) if scope is `logging` or `tracing` only
+- Skip Phase 2 (logging) if scope is `tracing` or `metrics` only
+- **Never skip Phase 5** (health endpoints) — required for any containerized service
+- **Never skip Phase 6** (Grafana stack) — docker-compose.observability.yml is the delivery artifact
+- For production: replace Tempo's `backend: local` with object storage (S3, GCS) and configure retention in Prometheus

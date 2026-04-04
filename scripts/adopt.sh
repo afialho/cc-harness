@@ -347,20 +347,7 @@ if command -v claude &>/dev/null; then
   install_plugin "code-review"       "code-review@claude-plugins-official"
   install_plugin "code-simplifier"   "code-simplifier@claude-plugins-official"
 
-  # vercel:agent-browser MCP (required for /browser-qa)
-  if claude mcp list 2>/dev/null | grep -q "vercel"; then
-    ok "vercel:agent-browser MCP already installed"
-    track_skipped "vercel:agent-browser MCP"
-  else
-    if claude mcp add vercel npx -y @vercel/mcp-adapter@latest 2>/dev/null; then
-      ok "vercel:agent-browser MCP installed"
-      track_installed "vercel:agent-browser MCP"
-    else
-      warn "Could not auto-install vercel:agent-browser"
-      info "Install manually: claude mcp add vercel npx -y @vercel/mcp-adapter@latest"
-      track_skipped "vercel:agent-browser (manual install needed)"
-    fi
-  fi
+  # agent-browser CLI is installed separately — no MCP needed
 
 else
   warn "claude CLI not found — skipping plugin installation"

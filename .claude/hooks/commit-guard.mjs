@@ -1,10 +1,16 @@
 #!/usr/bin/env node
 /**
- * commit-guard.mjs — Conventional Commits Enforcement [AUTO RULE-GIT-002]
+ * commit-guard.mjs — Git Workflow Enforcement Hook
  *
+ * Consolidates all git-related rule checks into a single hook.
  * Triggered: PreToolUse / Bash
- * Hard blocks (exit 2) git commits that don't follow Conventional Commits format.
- * Skips: merge commits, heredoc commits (can't parse statically), non-commit commands.
+ *
+ * Enforces:
+ *   RULE-GIT-001 [ADVISORY] — Suggest worktrees for new branch creation
+ *   RULE-GIT-002 [HARD BLOCK] — Conventional Commits format required
+ *   RULE-GIT-003 [HARD BLOCK] — Block --no-verify (bypass test checks)
+ *
+ * Skips: merge commits, heredoc commits, non-git commands.
  */
 
 async function readStdin() {
@@ -28,18 +34,44 @@ async function main() {
     return;
   }
 
-  const toolName = input.tool_name;
-  if (toolName !== 'Bash') {
+  if (input.tool_name !== 'Bash') {
     process.stdout.write(JSON.stringify(input));
     return;
   }
 
-  const command = input.tool_input?.command || '';
+  const command = (input.tool_input?.command || '').trim();
 
-  // Only inspect git commit commands
+  // ── RULE-GIT-001 [ADVISORY]: Suggest worktrees for new branch creation ────
+  if ((command.includes('git checkout -b') || command.includes('git switch -c')) && !command.includes('worktree')) {
+    const advisory = [
+      `RULE-GIT-001: Creating a new branch?`,
+      `Consider using a worktree for parallel work:`,
+      `  rtk git worktree add ../[project]-[branch-name] -b [branch-name]`,
+      `See docs/WORKTREES.md for patterns.`,
+    ].join('\n');
+
+    const output = {
+      ...input,
+      additionalContext: advisory,
+    };
+    process.stdout.write(JSON.stringify(output));
+    return;
+  }
+
+  // Only inspect git commit commands from here
   if (!command.includes('git commit')) {
     process.stdout.write(JSON.stringify(input));
     return;
+  }
+
+  // ── RULE-GIT-003 [HARD BLOCK]: No --no-verify ────────────────────────────
+  if (command.includes('--no-verify')) {
+    process.stderr.write([
+      `RULE-GIT-003 VIOLATED: --no-verify bypasses test checks.`,
+      `Run tests first: rtk npm test (or equivalent)`,
+      `All tests must pass before committing.`,
+    ].join('\n') + '\n');
+    process.exit(2);
   }
 
   // Skip --amend without new message, --allow-empty-message, merge commits
@@ -48,6 +80,7 @@ async function main() {
     return;
   }
 
+  // ── RULE-GIT-002 [HARD BLOCK]: Conventional Commits format ────────────────
   // Extract message from -m flag (handles single and double quotes)
   const mMatch = command.match(/-m\s+(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/);
   if (!mMatch) {
@@ -57,13 +90,11 @@ async function main() {
   }
 
   const message = (mMatch[1] || mMatch[2] || '').trim();
-
-  // Allow co-author trailers appended by Claude
   const firstLine = message.split('\n')[0].trim();
 
   if (!CONVENTIONAL_RE.test(firstLine)) {
     const err = [
-      `🚫 RULE-GIT-002 — Conventional Commits format required.`,
+      `RULE-GIT-002 — Conventional Commits format required.`,
       ``,
       `Format:  type(scope): description`,
       `Types:   ${VALID_TYPES}`,
@@ -80,7 +111,7 @@ async function main() {
     ].join('\n');
 
     process.stderr.write(err + '\n');
-    process.exit(2); // Hard block
+    process.exit(2);
   }
 
   process.stdout.write(JSON.stringify(input));

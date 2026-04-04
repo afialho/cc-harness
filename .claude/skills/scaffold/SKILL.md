@@ -7,35 +7,35 @@ argument-hint: [type: web | api | fullstack | cli]
 
 # /scaffold — New Project Initialization
 
-> Cria a estrutura base de um projeto antes do /build começar a implementar.
-> Para mobile → delega para `/mobile scaffold`.
+> Creates the base structure of a project before /build starts implementing.
+> For mobile → delegates to `/mobile scaffold`.
 
 ---
 
-## Quando é invocado
+## When it is invoked
 
-- **Via `/build`**: automaticamente quando não existe `src/`, `app/`, `lib/` ou `package.json`
-- **Diretamente**: `/scaffold web`, `/scaffold api`, `/scaffold fullstack`, `/scaffold cli`
+- **Via `/build`**: automatically when `src/`, `app/`, `lib/` or `package.json` does not exist
+- **Directly**: `/scaffold web`, `/scaffold api`, `/scaffold fullstack`, `/scaffold cli`
 
 ---
 
-## Detecção de tipo
+## Type detection
 
-Se invocado sem argumento, detecta o tipo pelo IDEAS.md (se existir):
+If invoked without an argument, detects the type from IDEAS.md (if it exists):
 
-| Campo "Tipo" em IDEAS.md | Tipo inferido |
+| "Type" field in IDEAS.md | Inferred type |
 |-------------------------|---------------|
 | Web app (frontend + backend) | `fullstack` |
 | API / backend only | `api` |
-| Mobile first | `mobile` → delega para `/mobile scaffold` |
+| Mobile first | `mobile` → delegates to `/mobile scaffold` |
 | CLI tool | `cli` |
-| Integração / automação | `api` |
+| Integration / automation | `api` |
 
-Se IDEAS.md não existir → pergunta ao usuário antes de continuar.
+If IDEAS.md does not exist → asks the user before continuing.
 
 ---
 
-## Fase 1 — Estrutura de diretórios + dependências base
+## Phase 1 — Directory structure + base dependencies
 
 > **Emit:** `▶ [1/7] Project structure`
 
@@ -47,7 +47,7 @@ rtk npm install -D vitest @vitejs/plugin-react jsdom @testing-library/react @tes
 rtk npm install -D @cucumber/cucumber cypress
 ```
 
-Estrutura final:
+Final structure:
 ```
 src/
   app/           Next.js App Router — pages, layouts, API routes
@@ -63,7 +63,7 @@ tests/
   load/          k6 load tests
 ```
 
-### API only (Node.js + Fastify, arquitetura hexagonal)
+### API only (Node.js + Fastify, hexagonal architecture)
 
 ```bash
 rtk npm init -y
@@ -72,12 +72,12 @@ rtk npm install -D typescript tsx vitest @types/node
 rtk npm install -D @cucumber/cucumber cypress
 ```
 
-Estrutura hexagonal:
+Hexagonal structure:
 ```
 src/
-  domain/        Entidades e lógica pura — zero deps externos
+  domain/        Entities and pure logic — zero external deps
   application/   Use cases
-  ports/         Interfaces (contratos de adapters)
+  ports/         Interfaces (adapter contracts)
   infrastructure/ Adapters (DB, HTTP, messaging)
   shared/        Config, utils, logging
 tests/
@@ -99,11 +99,11 @@ rtk npm install -D typescript tsx vitest @types/node
 
 ---
 
-## Fase 2 — Docker Compose
+## Phase 2 — Docker Compose
 
 > **Emit:** `▶ [2/7] Docker Compose`
 
-Cria `docker-compose.yml` baseado no tipo. Todos os serviços usam `env_file: [".env"]` — nenhuma credencial inline.
+Creates `docker-compose.yml` based on the type. All services use `env_file: [".env"]` — no inline credentials.
 
 **Fullstack / API:**
 ```yaml
@@ -129,16 +129,16 @@ volumes:
   postgres_data:
 ```
 
-Cria `.env.example` com variáveis componente por componente — sem valores reais, sem connection strings combinadas:
+Creates `.env.example` with variables component by component — no real values, no combined connection strings:
 ```
 # App
 NODE_ENV=development
 PORT=3000
 
-# JWT — gerar com: openssl rand -hex 32
+# JWT — generate with: openssl rand -hex 32
 JWT_SECRET=
 
-# Database — componentes separados (app constrói a URL em runtime)
+# Database — separate components (app builds the URL at runtime)
 POSTGRES_DB=appdb
 POSTGRES_USER=
 POSTGRES_PASSWORD=
@@ -148,9 +148,9 @@ REDIS_HOST=redis
 REDIS_PORT=6379
 ```
 
-O app constrói a connection string a partir dos componentes individualmente em `src/shared/config/database.ts`. Nunca concatenar credenciais fora de uma função de config isolada.
+The app builds the connection string from individual components in `src/shared/config/database.ts`. Never concatenate credentials outside an isolated config function.
 
-Cria `Dockerfile` (dev-ready):
+Creates `Dockerfile` (dev-ready):
 ```dockerfile
 FROM node:20-alpine
 WORKDIR /app
@@ -161,11 +161,11 @@ EXPOSE 3000
 CMD ["npm", "run", "dev"]
 ```
 
-**CLI:** sem Docker Compose — ferramentas CLI rodam no host.
+**CLI:** no Docker Compose — CLI tools run on the host.
 
 ---
 
-## Fase 3 — TypeScript + Testing config
+## Phase 3 — TypeScript + Testing config
 
 > **Emit:** `▶ [3/7] TypeScript + Testing config`
 
@@ -216,7 +216,7 @@ module.exports = {
 }
 ```
 
-### Scripts em package.json
+### Scripts in package.json
 
 ```json
 {
@@ -235,11 +235,11 @@ module.exports = {
 
 ---
 
-## Fase 4 — Validation Gate
+## Phase 4 — Validation Gate
 
 > **Emit:** `▶ [4/7] Validation gate`
 
-Verifica que o projeto gerado compila, testa e sobe antes de commitar. **CLI projects** pulam o Docker check.
+Verifies that the generated project compiles, tests, and starts before committing. **CLI projects** skip the Docker check.
 
 ```bash
 # Tests pass
@@ -248,15 +248,15 @@ rtk npm test
 # Build compiles
 rtk npm run build
 
-# Docker Compose válido (skip para CLI)
+# Docker Compose valid (skip for CLI)
 rtk docker compose config --quiet
 ```
 
-Se qualquer check falhar → **diagnosticar e corrigir antes de prosseguir**. Não avançar para Git com projeto quebrado.
+If any check fails → **diagnose and fix before proceeding**. Do not advance to Git with a broken project.
 
 ---
 
-## Fase 5 — Git + GitHub
+## Phase 5 — Git + GitHub
 
 > **Emit:** `▶ [5/7] Git + GitHub`
 
@@ -277,10 +277,10 @@ coverage/
 .next/
 EOF
 
-# GitHub repo (nome = nome do diretório do projeto)
+# GitHub repo (name = project directory name)
 rtk gh repo create $(basename $(pwd)) --private --source=. --remote=origin
 
-# Commit inicial — nunca incluir .env, apenas .env.example
+# Initial commit — never include .env, only .env.example
 rtk git add .gitignore package.json docker-compose.yml .env.example tsconfig.json vitest.config.ts cucumber.js
 rtk git commit -m "chore(scaffold): initialize project structure"
 rtk git push -u origin main
@@ -288,49 +288,49 @@ rtk git push -u origin main
 
 ---
 
-## Fase 6 — MCP + Ferramentas de QA
+## Phase 6 — MCP + QA Tools
 
 > **Emit:** `▶ [6/7] MCP + QA tools`
 
-Instalar ferramentas necessárias para QA visual e browser testing (usadas por `/qa-loop`, `/browser-qa` e `/build`).
+Install tools needed for visual QA and browser testing (used by `/qa-loop`, `/browser-qa`, and `/build`).
 
-### agent-browser (obrigatório para projetos com UI)
-
-```bash
-# Verificar se já está instalado
-rtk claude mcp list
-```
-
-Se "vercel" **não estiver na lista**:
+### agent-browser CLI (required for projects with UI)
 
 ```bash
-rtk claude mcp add vercel -- npx -y @vercel/mcp-adapter@latest
+# Check if already installed
+which agent-browser && agent-browser --version
 ```
 
-Verificar instalação: `rtk claude mcp list` — "vercel" deve aparecer.
+If not found:
 
-Se falhar → emitir aviso (não bloqueia scaffold, mas será necessário antes do primeiro QA visual):
-```
-⚠️ agent-browser não instalou automaticamente.
-Instale manualmente antes de rodar /build: claude mcp add vercel -- npx -y @vercel/mcp-adapter@latest
+```bash
+npm install -g agent-browser && agent-browser install
 ```
 
-### Cypress (já instalado via dependências)
+Verify installation: `agent-browser --version` — should return version number.
 
-Verificar que Cypress está funcional:
+If it fails → emit warning (does not block scaffold, but will be needed before the first visual QA):
+```
+⚠️ agent-browser CLI did not install automatically.
+Install manually before running /build: npm install -g agent-browser && agent-browser install
+```
+
+### Cypress (already installed via dependencies)
+
+Verify that Cypress is functional:
 ```bash
 rtk npx cypress verify
 ```
 
-Se falhar → `rtk npx cypress install` e verificar novamente.
+If it fails → `rtk npx cypress install` and verify again.
 
 ---
 
-## Fase 7 — architecture.json + handoff
+## Phase 7 — architecture.json + handoff
 
 > **Emit:** `▶ [7/7] Architecture config`
 
-Cria `.claude/architecture.json` baseado no tipo:
+Creates `.claude/architecture.json` based on the type:
 
 **Fullstack (Next.js App Router):**
 ```json
@@ -358,32 +358,32 @@ Cria `.claude/architecture.json` baseado no tipo:
 }
 ```
 
-### Output final
+### Final output
 
 ```
 SCAFFOLD COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Tipo:          [web | api | fullstack | cli]
-Stack:         [tecnologias configuradas]
+Type:          [web | api | fullstack | cli]
+Stack:         [configured technologies]
 Docker:        docker-compose.yml ✅
-Testing:       [frameworks configurados] ✅
-agent-browser: vercel MCP ✅ (ou ⚠️ instalar manualmente)
-Cypress:       verificado ✅
-Git:           main branch inicializado ✅
+Testing:       [configured frameworks] ✅
+agent-browser: CLI ✅ (or ⚠️ install manually)
+Cypress:       verified ✅
+Git:           main branch initialized ✅
 GitHub:        github.com/[user]/[repo] ✅
-Arquitetura:   .claude/architecture.json ✅ (pattern: [pattern])
+Architecture:  .claude/architecture.json ✅ (pattern: [pattern])
 
-Próximo: /build [feature] para iniciar a implementação.
+Next: /build [feature] to start implementation.
 ```
 
 ---
 
-## Regras
+## Rules
 
-1. **Mobile → sempre delegar** para `/mobile scaffold` — nunca reimplementar
-2. **Docker sempre** — todo projeto tem `docker-compose.yml` antes de qualquer código
-3. **GitHub sempre** — repositório criado antes do primeiro commit
-4. **architecture.json sempre** — criado na Fase 6 para que hooks e skills funcionem
-5. **Credenciais em .env** — `.env.example` usa campos vazios sem valores reais; `.env` nunca é commitado
-6. **Sem dependências de negócio** — apenas infra base (framework, testing, build tools)
-7. **Nunca sobrescrever** — se `package.json` já existe, sinaliza ao usuário e aborta
+1. **Mobile → always delegate** to `/mobile scaffold` — never reimplement
+2. **Docker always** — every project has `docker-compose.yml` before any code
+3. **GitHub always** — repository created before the first commit
+4. **architecture.json always** — created in Phase 7 so that hooks and skills work
+5. **Credentials in .env** — `.env.example` uses empty fields with no real values; `.env` is never committed
+6. **No business dependencies** — only base infra (framework, testing, build tools)
+7. **Never overwrite** — if `package.json` already exists, notify the user and abort

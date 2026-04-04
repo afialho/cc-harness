@@ -1,6 +1,74 @@
 # Skills Catalog
 
-> Full catalog of available slash commands (27 skills + 1 built-in). Entry point: `/build`.
+> Full catalog of available slash commands (30 skills + 1 built-in). Entry point: `/build`.
+
+---
+
+## Skill Decision Tree
+
+Not sure which skill to use? Start here:
+
+```
+START
+├─ "I have a new idea / build something from scratch"
+│   └─ /build (auto-routes to /ideate if vague, /scaffold if empty project)
+│
+├─ "I'm adding a feature to an existing project"
+│   ├─ Auth feature? → /auth
+│   ├─ UI-heavy feature? → /ui
+│   ├─ Schema/DB changes needed? → /dba design → then /feature-dev
+│   ├─ Complex (3+ components)? → /agent-teams
+│   └─ General feature → /feature-dev
+│
+├─ "I need to improve existing code"
+│   ├─ UI/UX modernization → /redesign
+│   ├─ Code quality / technical debt → /refactor
+│   └─ Architecture transformation → /modernize
+│
+├─ "Something is broken"
+│   ├─ Production is down NOW → /hotfix
+│   ├─ Build/test/deploy failure → /debug
+│   └─ Performance degradation → /perf-audit
+│
+├─ "I need to ship / deploy"
+│   ├─ API changes involved? → /api-contract → then /deploy
+│   ├─ Need CI/CD pipeline? → /ci-cd
+│   └─ Ready to deploy → /deploy
+│
+├─ "I need documentation"
+│   ├─ API docs, C4 diagrams, changelog → /docs-gen
+│   ├─ Architecture Decision Record → /adr
+│   └─ Research a topic → /research
+│
+├─ "I need quality assurance"
+│   ├─ Multi-dimensional QA → /qa-loop
+│   ├─ Exhaustive browser testing → /browser-qa
+│   ├─ Code review → /code-review
+│   ├─ Security audit → /security-hardening
+│   └─ Performance audit → /perf-audit
+│
+├─ "I'm taking over an existing project"
+│   └─ /adapt (auto-configures the kit for the project)
+│
+└─ "I need to resume after /compact or /clear"
+    └─ /resume
+```
+
+---
+
+## Quality Gate Pipeline (canonical order)
+
+Referenced by `/build`, `/feature-dev`, and all skills that run quality checks:
+
+```
+1. Tests         → rtk npm test + rtk npx cucumber-js + rtk npx cypress run
+2. Code Review   → /code-review
+3. QA Loop       → /qa-loop (dimensions by feature type)
+4. Perf Audit    → /perf-audit (Scale only, or heavy endpoints/UI)
+5. Browser Audit → /browser-qa <url> (final visual gate)
+```
+
+Skip steps that don't apply. Never reorder.
 
 ---
 
@@ -32,6 +100,7 @@
 | `/mobile` | React Native + Expo mobile development. TDD with React Native Testing Library, Detox E2E, NativeWind styling, EAS Build pipeline. Hexagonal architecture adapted for mobile. Scopes: `scaffold`, `feature`, `qa`, `release`. |
 | `/dba` | Database schema design, data modeling, indexing strategy, and migration planning. ORM-aware (Prisma, TypeORM, Drizzle, Django ORM, ActiveRecord). Scopes: `design`, `index`, `seed`, `multi-tenant`, `review`. |
 | `/data-migration` | Database migration strategy with zero-downtime schema changes. Covers backwards-compatible migrations, CQRS, event sourcing patterns, and state machine validation for complex domains. |
+| `/api-contract` | API contract validation and backward compatibility. Detects breaking changes, generates contract tests, validates versioning strategy, and produces API changelog. Run before deploying API changes. |
 
 ## Quality & Review
 
@@ -43,6 +112,7 @@
 | `/simplify` | Built-in skill (configured outside the skills directory). Reviews changed code for reuse, quality, and efficiency, then fixes any issues found. Equivalent to running `/refactor simplify` on the current diff. |
 | `/perf-audit` | Performance audit: bundle analysis, database N+1 detection, caching strategy, Core Web Vitals thresholds, API response time profiling, and regression prevention. Scopes: `frontend`, `backend`, `full`. |
 | `/security-hardening` | Proactive security hardening: OWASP Top 10 checklist, security headers, secrets management, dependency scanning, rate limiting, and encryption guidance. |
+| `/debug` | Structured debugging and troubleshooting. 6-phase protocol: error capture, hypothesis generation, systematic investigation, fix, verification, and prevention. For build, test, deploy, or runtime failures. |
 
 ## Infrastructure & Operations
 
@@ -51,6 +121,7 @@
 | `/deploy` | Production deploy pipeline (8 phases): target detection, environment audit, security gate, production Docker config, Infrastructure-as-Code, secrets strategy, pre-deploy checklist, and post-deploy health validation. |
 | `/ci-cd` | CI/CD pipeline generation for GitHub Actions, GitLab CI, Bitbucket Pipelines, or CircleCI. Includes quality gates, security scans, Conventional Commits validation, caching, and environment-based deploy automation. |
 | `/observability` | Structured logging and OpenTelemetry instrumentation. Default backend: Grafana stack (Prometheus + Loki + Tempo + Grafana + Alertmanager). Docker Compose for local dev and production setup guidance. Scopes: `logging`, `tracing`, `metrics`, `all`. |
+| `/hotfix` | Expedited production fix with reduced quality gates. 5-phase protocol: triage (P0/P1/P2), rollback plan, targeted fix, smoke test, post-mortem. For critical incidents where speed matters. |
 
 ## Documentation & Planning
 

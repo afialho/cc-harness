@@ -5,520 +5,520 @@ disable-model-invocation: true
 argument-hint: <raw idea or just a few words>
 ---
 
-# /ideate — Ideia → Brief Estruturado
+# /ideate — Idea → Structured Brief
 
-> Skill de ideação colaborativa.
-> Transforma uma ideia vaga em um brief preciso com features mapeadas, MVP definido, escopo dimensionado e contexto pronto para o `/build`.
-
----
-
-## Visão geral do pipeline
-
-```
-/ideate <ideia bruta>
-    │
-    ├─ [1/5] Absorção
-    │         └─ Lê a ideia, identifica domínio, formula entendimento inicial
-    │
-    ├─ [2/5] Entrevista
-    │         └─ ⏸ PAUSA: 5-7 perguntas certeiras → aguarda respostas do usuário
-    │             (pode ter rodadas adicionais se respostas abrem novos ângulos)
-    │
-    ├─ [3/5] Mapeamento de Features
-    │         └─ ⏸ PAUSA: propõe feature list completa → usuário aprova / ajusta
-    │
-    ├─ [4/5] Definição de Escopo
-    │         └─ ⏸ PAUSA: propõe MVP + roadmap faseado → usuário confirma
-    │
-    └─ [5/5] Brief Final
-              └─ Gera IDEAS.md e apresenta handoff para /build
-```
-
-Cada pausa é obrigatória. Nunca avançar de fase sem resposta explícita do usuário.
+> Collaborative ideation skill.
+> Transforms a vague idea into a precise brief with mapped features, defined MVP, sized scope, and context ready for `/build`.
 
 ---
 
-## Fase 1 — Absorção
+## Pipeline Overview
 
-> **Emitir:** `▶ [1/5] Absorção da ideia`
+```
+/ideate <raw idea>
+    │
+    ├─ [1/5] Absorption
+    │         └─ Reads the idea, identifies domain, formulates initial understanding
+    │
+    ├─ [2/5] Interview
+    │         └─ ⏸ PAUSE: 5-7 targeted questions → waits for user responses
+    │             (may have additional rounds if answers open new angles)
+    │
+    ├─ [3/5] Feature Mapping
+    │         └─ ⏸ PAUSE: proposes complete feature list → user approves / adjusts
+    │
+    ├─ [4/5] Scope Definition
+    │         └─ ⏸ PAUSE: proposes MVP + phased roadmap → user confirms
+    │
+    └─ [5/5] Final Brief
+              └─ Generates IDEAS.md and presents handoff to /build
+```
 
-Recebe a ideia bruta (pode ser 3 palavras ou 3 parágrafos) e:
+Each pause is mandatory. Never advance to next phase without explicit user response.
 
-### 1.1 — Identifica domínio e tipo
+---
 
-Classifica a ideia em:
+## Phase 1 — Absorption
 
-**Domínio:**
-- Produtividade / gestão de tarefas
+> **Emit:** `▶ [1/5] Idea Absorption`
+
+Receives the raw idea (can be 3 words or 3 paragraphs) and:
+
+### 1.1 — Identifies domain and type
+
+Classifies the idea into:
+
+**Domain:**
+- Productivity / task management
 - E-commerce / marketplace
-- SaaS / ferramenta B2B
-- Rede social / comunidade
-- Saúde / bem-estar
-- Finanças / fintech
-- Educação / e-learning
-- Entretenimento / mídia
+- SaaS / B2B tool
+- Social network / community
+- Health / wellness
+- Finance / fintech
+- Education / e-learning
+- Entertainment / media
 - Developer tooling
-- Outro: [inferido da ideia]
+- Other: [inferred from the idea]
 
-**Tipo de app:**
+**App type:**
 - Web app (frontend + backend)
 - API / backend only
 - Mobile first
 - CLI tool
-- Integração / automação
+- Integration / automation
 
-**Analogias conhecidas** (máx 3):
-Identifica produtos existentes que se parecem com a ideia. Usados apenas como referência de vocabulário — não para copiar.
+**Known analogies** (max 3):
+Identifies existing products that resemble the idea. Used only as vocabulary reference — not for copying.
 
-### 1.2 — Reformula em linguagem técnica
+### 1.2 — Reformulate in technical language
 
-Apresenta ao usuário:
+Presents to the user:
 
 ```
-ENTENDIMENTO INICIAL
+INITIAL UNDERSTANDING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Ideia:        [nome curto sugerido]
-Domínio:      [domínio identificado]
-Tipo:         [tipo de app]
-Análogo a:    [produto A] + [produto B] (se relevante)
+Idea:         [suggested short name]
+Domain:       [identified domain]
+Type:         [app type]
+Similar to:   [product A] + [product B] (if relevant)
 
-Em uma frase: [o que o usuário conquista com esse produto]
+In one sentence: [what the user achieves with this product]
 
-O que parece ser o núcleo:
-  • [comportamento central 1]
-  • [comportamento central 2]
-  • [comportamento central 3, se evidente]
+What appears to be the core:
+  • [core behavior 1]
+  • [core behavior 2]
+  • [core behavior 3, if evident]
 ```
 
-### 1.3 — Avança direto para Fase 2
+### 1.3 — Advances directly to Phase 2
 
-Sem pedir confirmação aqui — a entrevista vai validar ou corrigir o entendimento.
+Without asking for confirmation here — the interview will validate or correct the understanding.
 
 ---
 
-## Fase 2 — Entrevista
+## Phase 2 — Interview
 
-> **Emitir:** `▶ [2/5] Entrevista`
+> **Emit:** `▶ [2/5] Interview`
 
-### 2.0 — Adaptar ao modo de operação
+### 2.0 — Adapt to operation mode
 
-O modo é herdado do `/build` (se chamado via build) ou detectado do argumento (se chamado direto):
+The mode is inherited from `/build` (if called via build) or detected from the argument (if called directly):
 
-| Modo | Comportamento na entrevista |
+| Mode | Interview behavior |
 |------|----------------------------|
-| **autonomous** (default) | 2-3 perguntas macro: scale, must-have absoluto, constraint crítico. AI define feature set a partir da pesquisa. |
-| **guided** | 5-7 perguntas detalhadas (comportamento padrão abaixo). Usuário define features. |
+| **autonomous** (default) | 2-3 macro questions: scale, absolute must-have, critical constraint. AI defines feature set from research. |
+| **guided** | 5-7 detailed questions (default behavior below). User defines features. |
 
-Detecção: argumento contém `guided`, `guiado`, `me pergunte` → guided. Caso contrário → autonomous.
+Detection: argument contains `guided`, `guiado`, `me pergunte` → guided. Otherwise → autonomous.
 
-**Se autonomous:** selecionar apenas perguntas de "Escala e ambição" (obrigatória) + 1-2 de "Problema e usuário" ou "Features e diferencial". Máximo 3 perguntas. A pesquisa (Fase 1 do /build) + Product Discovery Agent definirão o feature set.
+**If autonomous:** select only questions from "Scale and ambition" (mandatory) + 1-2 from "Problem and user" or "Features and differentiator". Maximum 3 questions. Research (Phase 1 of /build) + Product Discovery Agent will define the feature set.
 
-**Se guided:** seguir o fluxo completo abaixo (5-7 perguntas).
+**If guided:** follow the complete flow below (5-7 questions).
 
-### 2.1 — Seleciona perguntas
+### 2.1 — Select questions
 
-Com base no domínio e tipo identificados, seleciona **5 a 7 perguntas** do banco abaixo (modo guided) ou **2 a 3** (modo autonomous).
-Nunca fazer mais de 7 perguntas em uma rodada. Priorizar as mais decisivas para o escopo.
+Based on the identified domain and type, select **5 to 7 questions** from the bank below (guided mode) or **2 to 3** (autonomous mode).
+Never ask more than 7 questions in a single round. Prioritize the most decisive ones for scope.
 
-**Banco de perguntas por categoria:**
+**Question bank by category:**
 
-**Problema e usuário (sempre incluir pelo menos 2):**
-- Qual problema específico você está resolvendo? O que acontece hoje sem esse produto?
-- Quem é o usuário principal? (perfil, contexto de uso, nível técnico)
-- Existe um usuário secundário ou admin além do usuário final?
-- Você já teve esse problema pessoalmente, ou está resolvendo para outros?
+**Problem and user (always include at least 2):**
+- What specific problem are you solving? What happens today without this product?
+- Who is the main user? (profile, usage context, technical level)
+- Is there a secondary user or admin besides the end user?
+- Have you had this problem personally, or are you solving it for others?
 
-**Escala e ambição (sempre incluir pelo menos 1 — a primeira é obrigatória):**
-- Qual é o scale deste projeto? **MVP** (validar ideia, sem infra completa) / **Product** (vai para mercado, precisa de CI/CD e qualidade) / **Scale** (produto com tração, precisa de observabilidade e resiliência)?
-- Você tem expectativa de quantos usuários no início? (10, 100, 10.000, mais?)
-- Isso é um projeto pessoal / hobby, ou tem intenção comercial?
+**Scale and ambition (always include at least 1 — the first is mandatory):**
+- What is the scale of this project? **MVP** (validate idea, no full infra) / **Product** (going to market, needs CI/CD and quality) / **Scale** (product with traction, needs observability and resilience)?
+- Do you have an expectation of how many users at launch? (10, 100, 10,000, more?)
+- Is this a personal / hobby project, or does it have commercial intent?
 
-**Features e diferencial (sempre incluir pelo menos 1):**
-- Quais são as 3 coisas que esse produto PRECISA fazer para ser útil? (sem elas, não tem produto)
-- O que ele NÃO precisa fazer na primeira versão?
-- Qual é o diferencial em relação ao que já existe?
+**Features and differentiator (always include at least 1):**
+- What are the 3 things this product NEEDS to do to be useful? (without them, there is no product)
+- What does it NOT need to do in the first version?
+- What is the differentiator compared to what already exists?
 
-**Técnico e constraints (incluir se sinais técnicos aparecerem na ideia):**
-- Tem preferência de stack? (linguagem, framework, banco)
-- Precisa integrar com algum serviço externo? (pagamentos, auth, APIs)
-- Tem constraint de prazo ou budget?
-- Vai ser open source ou closed source?
+**Technical and constraints (include if technical signals appear in the idea):**
+- Do you have a stack preference? (language, framework, database)
+- Does it need to integrate with any external service? (payments, auth, APIs)
+- Is there a deadline or budget constraint?
+- Will it be open source or closed source?
 
-**Contexto adicional (incluir se domínio for especializado):**
-- Tem alguma regra de negócio ou compliance específico do domínio?
-- Existe alguma terminologia do setor que preciso entender?
+**Additional context (include if domain is specialized):**
+- Are there any domain-specific business rules or compliance requirements?
+- Is there any industry terminology I need to understand?
 
-### 2.2 — Apresenta as perguntas
+### 2.2 — Present the questions
 
-Formato:
+Format:
 
 ```
-Tenho [N] perguntas para entender melhor o que você quer construir:
+I have [N] questions to better understand what you want to build:
 
-1. [pergunta]
-2. [pergunta]
+1. [question]
+2. [question]
 ...
-N. [pergunta]
+N. [question]
 
-Pode responder na ordem que preferir, e se quiser pular alguma, tudo bem.
+You can answer in any order, and if you want to skip any, that's fine.
 ```
 
-**Aguarda respostas do usuário antes de continuar.**
+**Wait for user responses before continuing.**
 
-### 2.3 — Avalia as respostas
+### 2.3 — Evaluate the responses
 
-Após receber as respostas:
+After receiving the responses:
 
-- Se as respostas revelam novos ângulos importantes → faz **1 rodada adicional** com no máximo 3 perguntas de follow-up. Não fazer mais de 2 rodadas totais.
-- Se há ambiguidade crítica que impediria o mapeamento de features → esclarece antes de avançar.
-- Se as respostas são suficientes → avança direto para a Fase 3.
+- If the responses reveal important new angles → do **1 additional round** with at most 3 follow-up questions. No more than 2 total rounds.
+- If there is critical ambiguity that would prevent feature mapping → clarify before advancing.
+- If the responses are sufficient → advance directly to Phase 3.
 
-### 2.4 — Consolida o contexto
+### 2.4 — Consolidate context
 
-Internamente (não exibir ao usuário), consolida:
+Internally (do not display to the user), consolidate:
 
 ```
-contexto_entrevista = {
-  problema: [o que foi dito],
-  usuario_principal: [perfil],
-  usuario_secundario: [se houver],
-  mvp_ambicao: [rapido | completo],
-  escala_esperada: [micro | pequena | media | grande],
-  must_have: [lista do que não pode faltar],
-  nice_to_have: [lista do que pode ficar para depois],
-  diferencial: [o que torna único],
-  stack_hints: [se mencionou],
-  integracoes: [se mencionou],
-  constraints: [prazo, budget, etc],
-  dominio_especializado: [regras, terminologia],
+interview_context = {
+  problem: [what was said],
+  main_user: [profile],
+  secondary_user: [if any],
+  mvp_ambition: [quick | complete],
+  expected_scale: [micro | small | medium | large],
+  must_have: [list of what cannot be missing],
+  nice_to_have: [list of what can wait],
+  differentiator: [what makes it unique],
+  stack_hints: [if mentioned],
+  integrations: [if mentioned],
+  constraints: [deadline, budget, etc],
+  specialized_domain: [rules, terminology],
 }
 ```
 
 ---
 
-## Fase 3 — Mapeamento de Features
+## Phase 3 — Feature Mapping
 
-> **Emitir:** `▶ [3/5] Mapeamento de features`
+> **Emit:** `▶ [3/5] Feature Mapping`
 
-### 3.1 — Gera feature list completa
+### 3.1 — Generate complete feature list
 
-Com base no contexto consolidado da entrevista, gera a lista completa de features que o produto pode ter.
+Based on the consolidated context from the interview, generate the complete list of features the product can have.
 
-Organiza em 3 camadas:
+Organize into 3 layers:
 
-**NÚCLEO (must-have para o produto existir):**
-Features sem as quais o produto não tem proposta de valor. Geralmente 3-6 features.
+**CORE (must-have for the product to exist):**
+Features without which the product has no value proposition. Usually 3-6 features.
 
-**ESSENCIAL (necessário para ser competitivo):**
-Features que um usuário esperaria encontrar após o núcleo. Geralmente 4-8 features.
+**ESSENTIAL (necessary to be competitive):**
+Features a user would expect to find beyond the core. Usually 4-8 features.
 
-**EXTENSÃO (diferencial e crescimento):**
-Features que tornam o produto mais completo ou escalável. Podem ficar para versões futuras.
+**EXTENSION (differentiator and growth):**
+Features that make the product more complete or scalable. Can be left for future versions.
 
-### 3.2 — Apresenta para o usuário
+### 3.2 — Present to the user
 
-Formato:
+Format:
 
 ```
-FEATURE MAP — [Nome do Produto]
+FEATURE MAP — [Product Name]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-NÚCLEO (sem essas, não tem produto)
-  [ ] [Feature 1] — [uma linha explicando o que faz]
+CORE (without these, there is no product)
+  [ ] [Feature 1] — [one line explaining what it does]
   [ ] [Feature 2] — [...]
   [ ] [Feature 3] — [...]
 
-ESSENCIAL (para ser um produto completo)
+ESSENTIAL (for a complete product)
   [ ] [Feature 4] — [...]
   [ ] [Feature 5] — [...]
   [ ] [Feature 6] — [...]
 
-EXTENSÃO (diferencial / crescimento)
+EXTENSION (differentiator / growth)
   [ ] [Feature 7] — [...]
   [ ] [Feature 8] — [...]
 
-Dependências importantes:
-  • [Feature B] depende de [Feature A]
-  • [Feature D] depende de [Feature C]
+Important dependencies:
+  • [Feature B] depends on [Feature A]
+  • [Feature D] depends on [Feature C]
 
-Total: [N] features identificadas
+Total: [N] features identified
 ```
 
-### 3.3 — Pede aprovação
+### 3.3 — Request approval
 
 ```
-Esse mapeamento faz sentido para o que você quer construir?
+Does this mapping make sense for what you want to build?
 
-Você pode:
-  • Aprovar o mapeamento → "ok" / "aprovado" / "sim"
-  • Remover features → "remove [X]"
-  • Adicionar features → "adiciona [X]"
-  • Mover entre camadas → "move [X] para núcleo"
-  • Renomear → "renomeia [X] para [Y]"
-  • Ajuste livre → descreva o que mudar
+You can:
+  • Approve the mapping → "ok" / "approved" / "yes"
+  • Remove features → "remove [X]"
+  • Add features → "add [X]"
+  • Move between layers → "move [X] to core"
+  • Rename → "rename [X] to [Y]"
+  • Free adjustment → describe what to change
 ```
 
-**Aguarda resposta do usuário antes de continuar.**
+**Wait for user response before continuing.**
 
-Aceita o mapeamento e avança quando o usuário aprovar (inclui "sim", "ok", "pode ir", "aprovado", "vamos").
-Se o usuário pedir ajustes: incorpora e apresenta novamente até aprovação.
+Accept the mapping and advance when the user approves (includes "yes", "ok", "let's go", "approved", "go ahead").
+If the user requests adjustments: incorporate and present again until approval.
 
 ---
 
-## Fase 4 — Definição de Escopo
+## Phase 4 — Scope Definition
 
-> **Emitir:** `▶ [4/5] Definição de escopo`
+> **Emit:** `▶ [4/5] Scope Definition`
 
-### 4.1 — Detecta o porte do projeto
+### 4.1 — Detect project size
 
-Com base no feature map aprovado + sinais da entrevista, classifica o projeto:
+Based on the approved feature map + interview signals, classify the project:
 
-| Porte | Features totais | Complexidade | Protocolo recomendado |
-|-------|-----------------|--------------|----------------------|
-| **Micro** | 1-4 | Simples (CRUD, sem integrações) | `/feature-dev` direto |
-| **Pequeno** | 5-10 | Moderada (algumas integrações) | `/build` feature por feature |
-| **Médio** | 11-25 | Alta (múltiplas integrações, roles) | `/build` + `/agent-teams` em features complexas |
-| **Grande** | 26+ | Muito alta (multi-tenant, escala) | `/build` faseado + `/agent-teams` + múltiplos worktrees |
+| Size | Total features | Complexity | Recommended protocol |
+|------|----------------|------------|----------------------|
+| **Micro** | 1-4 | Simple (CRUD, no integrations) | `/feature-dev` directly |
+| **Small** | 5-10 | Moderate (some integrations) | `/build` feature by feature |
+| **Medium** | 11-25 | High (multiple integrations, roles) | `/build` + `/agent-teams` for complex features |
+| **Large** | 26+ | Very high (multi-tenant, scale) | `/build` phased + `/agent-teams` + multiple worktrees |
 
 ### 4.2 — Define MVP
 
-O MVP é a menor versão que valida a proposta de valor central.
+The MVP is the smallest version that validates the core value proposition.
 
-Regras para o MVP:
-- Incluir **todas** as features do NÚCLEO (se o porte permitir)
-- Para porte Grande/Médio: pode dividir o NÚCLEO em MVP-1 e MVP-2
-- Incluir features ESSENCIAIS que desbloqueiam o núcleo (ex: auth sempre vai junto)
-- Máximo 8 features no MVP-1
+Rules for the MVP:
+- Include **all** CORE features (if size permits)
+- For Large/Medium size: can split the CORE into MVP-1 and MVP-2
+- Include ESSENTIAL features that unblock the core (e.g.: auth always goes together)
+- Maximum 8 features in MVP-1
 
-### 4.3 — Propõe roadmap faseado
+### 4.3 — Propose phased roadmap
 
-Para projetos Médios e Grandes, divide em fases de entrega:
-
-```
-MVP (Fase 1) — [N] features → produto funciona
-  [lista das features MVP]
-
-Fase 2 — [N] features → produto é completo
-  [lista das features essenciais restantes]
-
-Fase 3 — [N] features → produto é competitivo
-  [lista das features de extensão]
-```
-
-Para projetos Micro e Pequenos, não há fases — tudo vai no MVP.
-
-### 4.4 — Apresenta ao usuário
+For Medium and Large projects, divide into delivery phases:
 
 ```
-ESCOPO DEFINIDO
+MVP (Phase 1) — [N] features → product works
+  [list of MVP features]
+
+Phase 2 — [N] features → product is complete
+  [list of remaining essential features]
+
+Phase 3 — [N] features → product is competitive
+  [list of extension features]
+```
+
+For Micro and Small projects, there are no phases — everything goes in the MVP.
+
+### 4.4 — Present to the user
+
+```
+SCOPE DEFINED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Porte:        [Micro | Pequeno | Médio | Grande]
-Protocolo:    [protocolo recomendado]
+Size:         [Micro | Small | Medium | Large]
+Protocol:     [recommended protocol]
 
-MVP — o que será construído primeiro:
+MVP — what will be built first:
   ✓ [Feature 1]
   ✓ [Feature 2]
   ...
 
-[Se houver fases adicionais:]
-Fase 2 (pós-MVP):
+[If there are additional phases:]
+Phase 2 (post-MVP):
   ○ [Feature N]
   ...
 
-Fase 3 (longo prazo):
+Phase 3 (long term):
   ○ [Feature N]
   ...
 
-Para começar, vou focar no MVP ([N] features).
+To start, I will focus on the MVP ([N] features).
 ```
 
-### 4.5 — Pede confirmação
+### 4.5 — Request confirmation
 
 ```
-Esse escopo reflete o que você quer construir primeiro?
+Does this scope reflect what you want to build first?
 
-Confirme com "sim" ou ajuste o que precisar.
+Confirm with "yes" or adjust what you need.
 ```
 
-**Aguarda confirmação antes de continuar.**
+**Wait for confirmation before continuing.**
 
 ---
 
-## Fase 5 — Brief Final
+## Phase 5 — Final Brief
 
-> **Emitir:** `▶ [5/5] Brief final`
+> **Emit:** `▶ [5/5] Final Brief`
 
-### 5.1 — Gera IDEAS.md
+### 5.1 — Generate IDEAS.md
 
-Cria `IDEAS.md` na raiz do projeto com toda a informação estruturada:
+Creates `IDEAS.md` at the project root with all structured information:
 
 ```markdown
-# IDEAS.md — [Nome do Produto]
+# IDEAS.md — [Product Name]
 
-> Gerado por /ideate em [data]
+> Generated by /ideate on [date]
 
-## Visão do produto
+## Product Vision
 
-**Em uma frase:** [proposta de valor]
+**In one sentence:** [value proposition]
 
-**Problema:** [problema que resolve]
+**Problem:** [problem it solves]
 
-**Usuário principal:** [perfil]
-**Usuário secundário:** [se houver]
+**Main user:** [profile]
+**Secondary user:** [if any]
 
-**Diferencial:** [o que torna único]
-
----
-
-## Context da entrevista
-
-**Must-have:** [lista do que não pode faltar]
-**Nice-to-have:** [lista do que pode esperar]
-**Scale:** MVP | Product | Scale (determina infra, CI/CD, observabilidade)
-**Constraints:** [prazo, budget, stack, compliance]
-**Integrações:** [serviços externos mencionados]
+**Differentiator:** [what makes it unique]
 
 ---
 
-## Feature Map aprovado
+## Interview Context
 
-### NÚCLEO
-- [Feature 1]: [descrição]
-- [Feature 2]: [descrição]
-
-### ESSENCIAL
-- [Feature N]: [descrição]
-
-### EXTENSÃO
-- [Feature N]: [descrição]
-
-### Dependências
-- [Feature B] depende de [Feature A]
+**Must-have:** [list of what cannot be missing]
+**Nice-to-have:** [list of what can wait]
+**Scale:** MVP | Product | Scale (determines infra, CI/CD, observability)
+**Constraints:** [deadline, budget, stack, compliance]
+**Integrations:** [external services mentioned]
 
 ---
 
-## Escopo confirmado
+## Approved Feature Map
 
-**Porte:** [Micro | Pequeno | Médio | Grande]
+### CORE
+- [Feature 1]: [description]
+- [Feature 2]: [description]
 
-### MVP (construir agora)
+### ESSENTIAL
+- [Feature N]: [description]
+
+### EXTENSION
+- [Feature N]: [description]
+
+### Dependencies
+- [Feature B] depends on [Feature A]
+
+---
+
+## Confirmed Scope
+
+**Size:** [Micro | Small | Medium | Large]
+
+### MVP (build now)
 - [Feature 1]
 - [Feature 2]
 
-### Fase 2 (pós-MVP)
+### Phase 2 (post-MVP)
 - [Feature N]
 
-### Fase 3 (longo prazo)
+### Phase 3 (long term)
 - [Feature N]
 
 ---
 
-## Stack e integrações
+## Stack and integrations
 
-**Stack hints:** [se mencionado, caso contrário: "nenhuma preferência — a ser definido na pesquisa"]
-**Integrações externas:** [lista ou "nenhuma identificada"]
-**Domínio especializado:** [regras ou "nenhuma"]
+**Stack hints:** [if mentioned, otherwise: "no preference — to be defined during research"]
+**External integrations:** [list or "none identified"]
+**Specialized domain:** [rules or "none"]
 
 ---
 
-## Analogias de referência
+## Reference analogies
 
-[produto A]: [o que aproveitar como referência]
-[produto B]: [o que aproveitar como referência]
+[product A]: [what to leverage as reference]
+[product B]: [what to leverage as reference]
 ```
 
-### 5.2 — Apresenta o brief ao usuário
+### 5.2 — Present the brief to the user
 
 ```
-BRIEF GERADO — [Nome do Produto]
+BRIEF GENERATED — [Product Name]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Produto:      [nome]
-Porte:        [porte]
+Product:      [name]
+Size:         [size]
 MVP:          [N] features
-Arquivo:      IDEAS.md
+File:         IDEAS.md
 
-O que será construído no MVP:
-  [lista das features MVP, uma por linha]
+What will be built in the MVP:
+  [list of MVP features, one per line]
 
-[Se houver integrações:]
-Integrações identificadas:
-  [lista]
+[If there are integrations:]
+Identified integrations:
+  [list]
 
-[Se houver constraints relevantes:]
+[If there are relevant constraints:]
 Constraints:
-  [lista]
+  [list]
 ```
 
-### 5.3 — Pergunta sobre o próximo passo
+### 5.3 — Ask about the next step
 
 ```
-IDEAS.md está pronto. Próximo passo: iniciar o build.
+IDEAS.md is ready. Next step: start the build.
 
-Para começar:
+To begin:
   /build IDEAS.md
 
-O /build vai pesquisar, planejar e implementar o MVP que definimos.
-Quer iniciar agora?
+/build will research, plan, and implement the MVP we defined.
+Do you want to start now?
 ```
 
-Se o usuário disser "sim" / "pode ir" / "bora" / "inicia" → chama `/build IDEAS.md` automaticamente.
-Se o usuário quiser revisar algo antes → aguarda instrução.
+If the user says "yes" / "let's go" / "go ahead" / "start" → call `/build IDEAS.md` automatically.
+If the user wants to review something first → wait for instructions.
 
 ---
 
-## Regras gerais
+## General Rules
 
-1. **Nunca assuma** — o que não foi dito explicitamente, pergunta na entrevista.
-2. **Pausas são sagradas** — cada fase com ⏸ exige resposta do usuário antes de avançar.
-3. **Sem julgamentos sobre a ideia** — o papel do /ideate é clarificar, não filtrar.
-4. **MVP sempre existe** — mesmo para projetos grandes, há um MVP. Sem MVP, não há handoff.
-5. **Porte determina protocolo** — não tratar um projeto grande como um pequeno, nem o contrário.
-6. **IDEAS.md é o artefato** — toda a conversa se consolida nesse arquivo. É o input do /build.
-7. **Perguntas objetivas** — nada de perguntas filosóficas ou abertas demais. Cada pergunta deve desbloquear uma decisão concreta de produto.
-
----
-
-## Tratamento de ideias vagas
-
-| Situação | Comportamento |
-|----------|---------------|
-| Ideia com 1-3 palavras ("tipo o Spotify") | Absorção infere domínio + analogia, entrevista começa com perguntas de problema |
-| Ideia muito técnica (sem usuário definido) | Entrevista prioriza perguntas de usuário e problema |
-| Ideia com tudo definido (doc completo) | Absorção confirma entendimento, entrevista pode ter apenas 2-3 perguntas de validação |
-| Ideia fora do escopo de software | Informa gentilmente e pergunta se há um produto digital por trás |
-| Ideia com contradições | Sinaliza a contradição na entrevista e pede esclarecimento |
+1. **Never assume** — what was not said explicitly, ask in the interview.
+2. **Pauses are sacred** — each phase with ⏸ requires the user's response before advancing.
+3. **No judgments about the idea** — the role of /ideate is to clarify, not to filter.
+4. **MVP always exists** — even for large projects, there is an MVP. Without MVP, there is no handoff.
+5. **Size determines protocol** — do not treat a large project as a small one, nor the opposite.
+6. **IDEAS.md is the artifact** — the entire conversation consolidates into this file. It is the input for /build.
+7. **Objective questions** — no philosophical or overly open questions. Each question should unlock a concrete product decision.
 
 ---
 
-## Sinais de porte — referência
+## Handling vague ideas
 
-| Sinal | Porte provável |
-|-------|---------------|
-| "um app simples", "para mim mesmo", "testar uma ideia" | Micro |
-| "lançar logo", "MVP em semanas", "produto para clientes" | Pequeno |
-| "plataforma", "múltiplos usuários com roles", "dashboard" | Médio |
-| "marketplace", "multi-tenant", "escalar para muitos usuários" | Grande |
-| Analogia com Spotify, Zendesk, Salesforce, Notion | Grande |
-| Analogia com Todoist, Notion para uso pessoal | Pequeno-Médio |
+| Situation | Behavior |
+|----------|---------|
+| Idea with 1-3 words ("like Spotify") | Absorption infers domain + analogy, interview starts with problem questions |
+| Very technical idea (no defined user) | Interview prioritizes user and problem questions |
+| Idea with everything defined (complete doc) | Absorption confirms understanding, interview may have only 2-3 validation questions |
+| Idea outside software scope | Kindly informs and asks if there is a digital product behind it |
+| Idea with contradictions | Flags the contradiction in the interview and asks for clarification |
+
+---
+
+## Size signals — reference
+
+| Signal | Likely size |
+|--------|------------|
+| "a simple app", "for myself", "test an idea" | Micro |
+| "launch soon", "MVP in weeks", "product for clients" | Small |
+| "platform", "multiple users with roles", "dashboard" | Medium |
+| "marketplace", "multi-tenant", "scale to many users" | Large |
+| Analogy with Spotify, Zendesk, Salesforce, Notion | Large |
+| Analogy with Todoist, Notion for personal use | Small-Medium |
 
 ---
 
 ## Context Budget
 
-Ideação envolve múltiplas rodadas de interação com o usuário — contexto cresce com cada resposta.
+Ideation involves multiple rounds of interaction with the user — context grows with each response.
 
 **Checkpoint triggers:**
-- Após [3/5] Mapeamento de Features aprovado: checkpoint obrigatório (maior consumo de contexto até aqui)
-- Se contexto estimado atingir ~60k tokens em qualquer fase: checkpoint imediato
+- After [3/5] Feature Mapping approved: mandatory checkpoint (highest context consumption up to this point)
+- If estimated context reaches ~60k tokens in any phase: immediate checkpoint
 
-**Formato do checkpoint:**
+**Checkpoint format:**
 ```
 skill: /ideate
-fase: [absorção | entrevista | mapeamento | escopo | entrega]
-ideia: [resumo da ideia]
-respostas_coletadas: [N de N]
-features_mapeadas: [sim/não + resumo]
-proximo: [próximo passo exato]
+phase: [absorption | interview | mapping | scope | delivery]
+idea: [idea summary]
+responses_collected: [N of N]
+features_mapped: [yes/no + summary]
+next: [exact next step]
 ```
 
-Emitir: `↺ Contexto ~60k — checkpoint escrito. Recomendo /compact. Use /resume para retomar /ideate na fase [N/5].`
+Emit: `↺ Context ~60k — checkpoint written. Recommend /compact. Use /resume to continue /ideate at phase [N/5].`

@@ -7,72 +7,72 @@ argument-hint: [scope: scaffold | feature | qa | release]
 
 # /mobile — React Native Mobile-First Development
 
-> Mobile-first development com React Native + Expo. Arquitetura hexagonal adaptada: domain puro, screens como adapters, navigation como infrastructure.
-> Substitui `/browser-qa` por Detox E2E. Substitui Cypress por React Native Testing Library + Detox.
+> Mobile-first development with React Native + Expo. Adapted hexagonal architecture: pure domain, screens as adapters, navigation as infrastructure.
+> Replaces `/browser-qa` with Detox E2E. Replaces Cypress with React Native Testing Library + Detox.
 
 ---
 
-## Stack padrão
+## Default stack
 
-| Camada | Tecnologia |
+| Layer | Technology |
 |--------|------------|
 | Framework | React Native + Expo SDK (latest stable) |
-| Linguagem | TypeScript (strict) |
-| Navegação | React Navigation v7 (Stack + Tab + Drawer) |
-| Estilo | NativeWind v4 (Tailwind para React Native) |
+| Language | TypeScript (strict) |
+| Navigation | React Navigation v7 (Stack + Tab + Drawer) |
+| Styling | NativeWind v4 (Tailwind for React Native) |
 | State global | Zustand |
 | Server state | TanStack Query (React Query) |
 | Forms | React Hook Form + Zod |
 | HTTP | Axios (com interceptors OTel) |
-| Storage local | AsyncStorage + Expo SecureStore (secrets) |
+| Local storage | AsyncStorage + Expo SecureStore (secrets) |
 | Push notifications | Expo Notifications |
 | Icons | @expo/vector-icons (Ionicons/MaterialCommunityIcons) + lucide-react-native |
-| Animações | React Native Reanimated 3 (native thread) |
+| Animations | React Native Reanimated 3 (native thread) |
 | Loading states | react-native-skeleton-placeholder + lottie-react-native |
 | Haptics | expo-haptics |
-| Tests unitários | Jest + React Native Testing Library |
+| Unit tests | Jest + React Native Testing Library |
 | E2E | Detox |
 | Build | EAS Build (Expo Application Services) |
 
 ---
 
-## Arquitetura (hexagonal adaptada para mobile)
+## Architecture (hexagonal adapted for mobile)
 
 ```
 src/
-  domain/            Entidades e regras de negócio puras. Zero deps externos.
-  application/       Use cases. Depende de domain + ports only.
-  ports/             Interfaces (contratos de adapters).
+  domain/            Pure business entities and rules. Zero external deps.
+  application/       Use cases. Depends on domain + ports only.
+  ports/             Interfaces (adapter contracts).
   infrastructure/
-    api/             Adapters HTTP (Axios clients).
-    storage/         Adapters AsyncStorage / SecureStore.
-    notifications/   Adapters push notifications.
-    analytics/       Adapters analytics / crash reporting.
-  screens/           Telas (adapters — entry points do usuário).
-  navigation/        Estrutura React Navigation (infrastructure).
-  components/        Componentes UI compartilhados.
+    api/             HTTP adapters (Axios clients).
+    storage/         AsyncStorage / SecureStore adapters.
+    notifications/   Push notification adapters.
+    analytics/       Analytics / crash reporting adapters.
+  screens/           Screens (adapters — user entry points).
+  navigation/        React Navigation structure (infrastructure).
+  components/        Shared UI components.
   shared/            Config, utils, theme, constants.
 tests/
-  unit/              Jest + RNTL por componente/use case.
-  e2e/               Detox — fluxos completos.
+  unit/              Jest + RNTL per component/use case.
+  e2e/               Detox — complete flows.
   bdd/               Cucumber.js (Gherkin scenarios).
 ```
 
-**Regras de camada (mesmo do hexagonal web):**
-- `domain/` → zero imports de `react-native`, `expo`, `axios`
-- `application/` → imports de `domain/` e `ports/` somente
-- `screens/` → nunca importa `infrastructure/` diretamente — passa por `application/`
+**Layer rules (same as hexagonal web):**
+- `domain/` → zero imports from `react-native`, `expo`, `axios`
+- `application/` → imports from `domain/` and `ports/` only
+- `screens/` → never imports `infrastructure/` directly — goes through `application/`
 
 ---
 
 ## Scope: scaffold
 
-> Inicializar projeto React Native do zero.
+> Initialize React Native project from scratch.
 
-### Fase 1 — Bootstrap
+### Phase 1 — Bootstrap
 
 ```bash
-# Criar projeto Expo
+# Create Expo project
 rtk npx create-expo-app@latest [nome] --template expo-template-blank-typescript
 cd [nome]
 
@@ -80,7 +80,7 @@ cd [nome]
 rtk npm install nativewind tailwindcss
 rtk npx tailwindcss init
 
-# Navegação
+# Navigation
 rtk npm install @react-navigation/native @react-navigation/stack @react-navigation/bottom-tabs
 rtk npm install react-native-screens react-native-safe-area-context react-native-gesture-handler
 
@@ -96,79 +96,79 @@ rtk npm install @react-native-async-storage/async-storage expo-secure-store
 # Tests
 rtk npm install -D jest @testing-library/react-native @testing-library/jest-native detox
 
-# Tipos
+# Types
 rtk npm install -D @types/react @types/react-native
 ```
 
-### Fase 2 — Estrutura de pastas
+### Phase 2 — Folder structure
 
-Criar estrutura conforme arquitetura acima. Gerar arquivos base:
+Create structure according to architecture above. Generate base files:
 - `src/shared/theme.ts` — palette, typography, spacing
-- `src/navigation/RootNavigator.tsx` — estrutura de navegação raiz
-- `src/navigation/AuthNavigator.tsx` — stack de auth
-- `src/navigation/AppNavigator.tsx` — stack de app autenticado
-- `tailwind.config.js` — configurado para RN
+- `src/navigation/RootNavigator.tsx` — root navigation structure
+- `src/navigation/AuthNavigator.tsx` — auth stack
+- `src/navigation/AppNavigator.tsx` — authenticated app stack
+- `tailwind.config.js` — configured for RN
 
-### Fase 3 — Design system mobile
+### Phase 3 — Mobile design system
 
-Criar em `src/components/ui/`:
-- `Button.tsx` — variantes: primary, secondary, ghost, danger
-- `Input.tsx` — com label, erro, ícone
-- `Card.tsx` — com sombra adaptada por plataforma
+Create in `src/components/ui/`:
+- `Button.tsx` — variants: primary, secondary, ghost, danger
+- `Input.tsx` — with label, error, icon
+- `Card.tsx` — with platform-adapted shadow
 - `Typography.tsx` — h1→h4, body, caption, label
-- `Screen.tsx` — wrapper com SafeAreaView + KeyboardAvoidingView
+- `Screen.tsx` — wrapper with SafeAreaView + KeyboardAvoidingView
 - `LoadingSpinner.tsx`
-- `EmptyState.tsx` — com ícone + mensagem + ação opcional
+- `EmptyState.tsx` — with icon + message + optional action
 
-Todos com suporte a dark mode via NativeWind `dark:` classes.
+All with dark mode support via NativeWind `dark:` classes.
 
-### Fase 4 — Auth scaffold
+### Phase 4 — Auth scaffold
 
-Implementar estrutura de auth:
-- `src/domain/auth/` — entidades User, Token, AuthError
-- `src/ports/AuthPort.ts` — interface AuthService
+Implement auth structure:
+- `src/domain/auth/` — entities User, Token, AuthError
+- `src/ports/AuthPort.ts` — AuthService interface
 - `src/application/auth/` — use cases: login, logout, register, refreshToken
-- `src/infrastructure/api/AuthAdapter.ts` — implementação HTTP
+- `src/infrastructure/api/AuthAdapter.ts` — HTTP implementation
 - `src/screens/auth/` — LoginScreen, RegisterScreen, ForgotPasswordScreen
-- Auth state no Zustand: `src/shared/stores/authStore.ts`
-- Protected routes via navigation: `AppNavigator` só acessível quando autenticado
+- Auth state in Zustand: `src/shared/stores/authStore.ts`
+- Protected routes via navigation: `AppNavigator` only accessible when authenticated
 
-### Fase 5 — Requisitos obrigatórios App Store / Play Store
+### Phase 5 — Mandatory App Store / Play Store Requirements
 
-> Criar junto com o scaffold. Não é feature opcional — é requisito de aprovação nas lojas.
+> Create alongside scaffold. This is not an optional feature — it is a store approval requirement.
 
-#### Apple App Store — obrigatórios
+#### Apple App Store — required
 
-**1. Exclusão de conta (obrigatório desde junho 2023)**
+**1. Account deletion (required since June 2023)**
 
-Todo app com criação de conta DEVE oferecer exclusão de conta dentro do app.
+Every app with account creation MUST offer account deletion within the app.
 
 ```typescript
 // src/screens/settings/DeleteAccountScreen.tsx
-// Fluxo:
-// 1. Tela de confirmação com aviso claro do que será deletado
-// 2. Confirmação adicional (digitar "DELETAR" ou reautenticar)
-// 3. Haptics.notificationAsync(NotificationFeedbackType.Warning) antes de confirmar
-// 4. Chamar API DELETE /auth/account
-// 5. Limpar SecureStore + AsyncStorage + auth state
-// 6. Navegar para AuthNavigator (logout total)
+// Flow:
+// 1. Confirmation screen with clear warning of what will be deleted
+// 2. Additional confirmation (type "DELETE" or re-authenticate)
+// 3. Haptics.notificationAsync(NotificationFeedbackType.Warning) before confirming
+// 4. Call API DELETE /auth/account
+// 5. Clear SecureStore + AsyncStorage + auth state
+// 6. Navigate to AuthNavigator (full logout)
 
-// A tela deve estar acessível em: Settings → Conta → Deletar conta
+// Screen must be accessible at: Settings → Account → Delete account
 ```
 
-**2. Política de Privacidade (obrigatório)**
-- URL da privacy policy configurada no App Store Connect
-- Link acessível dentro do app: Settings → Política de Privacidade
-- Deve abrir `Linking.openURL(PRIVACY_POLICY_URL)` ou WebView interna
-- Manter URL em `src/shared/constants/legal.ts`
+**2. Privacy Policy (required)**
+- Privacy policy URL configured in App Store Connect
+- Accessible link within the app: Settings → Privacy Policy
+- Must open `Linking.openURL(PRIVACY_POLICY_URL)` or internal WebView
+- Keep URL in `src/shared/constants/legal.ts`
 
-**3. Termos de Uso (fortemente recomendado, obrigatório para compras)**
-- Link acessível: Settings → Termos de Uso
-- Aceite no primeiro login/registro (checkbox + timestamp gravado)
+**3. Terms of Use (strongly recommended, required for purchases)**
+- Accessible link: Settings → Terms of Use
+- Acceptance on first login/registration (checkbox + recorded timestamp)
 
 **4. App Privacy Nutrition Label**
-- Configurar no App Store Connect quais dados o app coleta
-- Documentar em `docs/privacy/data-collected.md` (facilita preenchimento)
+- Configure in App Store Connect which data the app collects
+- Document in `docs/privacy/data-collected.md` (facilitates form filling)
 
 ```typescript
 // src/shared/constants/legal.ts
@@ -179,35 +179,35 @@ export const LEGAL = {
 };
 ```
 
-#### Telas obrigatórias no SettingsNavigator
+#### Mandatory screens in SettingsNavigator
 
 ```typescript
-// src/navigation/SettingsNavigator.tsx — incluir sempre:
+// src/navigation/SettingsNavigator.tsx — always include:
 // - SettingsScreen (hub)
-// - PrivacyPolicyScreen → abre URL
-// - TermsOfUseScreen → abre URL
-// - DeleteAccountScreen → fluxo de exclusão (se app tem auth)
-// - ContactSupportScreen → abre email ou URL de suporte
+// - PrivacyPolicyScreen → opens URL
+// - TermsOfUseScreen → opens URL
+// - DeleteAccountScreen → deletion flow (if app has auth)
+// - ContactSupportScreen → opens email or support URL
 ```
 
-#### Play Store — obrigatórios
+#### Play Store — required
 
-- **Política de Privacidade**: URL obrigatória no Play Console para apps que coletam dados
-- **Data Safety Section**: declarar quais dados são coletados/compartilhados no Play Console
-- **Target API Level**: manter `targetSdkVersion` atualizado (Google exige versão atual)
-- Exclusão de conta: não obrigatória pelo Play Store, mas fortemente recomendada (paridade iOS)
+- **Privacy Policy**: required URL in Play Console for apps that collect data
+- **Data Safety Section**: declare which data is collected/shared in Play Console
+- **Target API Level**: keep `targetSdkVersion` updated (Google requires current version)
+- Account deletion: not required by Play Store, but strongly recommended (iOS parity)
 
-#### Gate de aprovação nas lojas
+#### Store approval gate
 
 ```
 ⛔ GATE STORE COMPLIANCE:
-  □ DeleteAccountScreen implementada e acessível em Settings
-  □ PrivacyPolicyScreen com URL válida
-  □ TermsOfUseScreen com URL válida (se app tem compras: obrigatório)
-  □ LEGAL constants configuradas em .env
-  □ Aceite de termos no registro (timestamp gravado)
-  □ docs/privacy/data-collected.md criado
-  Sem estes itens → app será rejeitado na App Store.
+  □ DeleteAccountScreen implemented and accessible in Settings
+  □ PrivacyPolicyScreen with valid URL
+  □ TermsOfUseScreen with valid URL (if app has purchases: required)
+  □ LEGAL constants configured in .env
+  □ Terms acceptance on registration (recorded timestamp)
+  □ docs/privacy/data-collected.md created
+  Without these items → app will be rejected from the App Store.
 ```
 
 ---
@@ -216,45 +216,45 @@ export const LEGAL = {
 
 ## UX Quality — Nielsen Heuristics + Platform Conventions
 
-> Aplicar em toda tela e componente. Não é opcional — é qualidade mínima aceitável.
+> Apply to every screen and component. This is not optional — it is minimum acceptable quality.
 
-### 10 Heurísticas de Nielsen aplicadas ao mobile
+### Nielsen's 10 Heuristics applied to mobile
 
-| # | Heurística | Aplicação mobile |
-|---|-----------|-----------------|
-| 1 | Visibilidade do status do sistema | Loading states sempre visíveis: skeleton, spinner, progress bar. Nunca operação silenciosa > 300ms |
-| 2 | Correspondência com o mundo real | Labels nativos da plataforma (iOS: "Cancel", Android: "Cancelar" em PT, ícone Back ← não ✕) |
-| 3 | Controle e liberdade do usuário | Back sempre disponível. Desfazer em ações destrutivas. Swipe-back em iOS nunca bloqueado |
-| 4 | Consistência e padrões | Seguir convenções da plataforma (ver abaixo). Não inventar padrões de navegação |
-| 5 | Prevenção de erros | Botão destrutivo desabilitado até confirmação. Dialog de confirmação antes de deletar |
-| 6 | Reconhecimento em vez de lembrança | Ações contextuais visíveis (não em menu oculto). Labels em ícones quando há espaço |
-| 7 | Flexibilidade e eficiência | Swipe gestures para power users. Atalhos para ações frequentes |
-| 8 | Design estético e minimalista | Uma ação primária por tela. Hierarquia visual clara. Sem informação desnecessária |
-| 9 | Reconhecimento, diagnóstico e recuperação de erros | Mensagem específica (não "Erro desconhecido"). Ação de recuperação sempre presente |
-| 10 | Ajuda e documentação | Onboarding em features complexas. Tooltips em ícones sem label |
+| # | Heuristic | Mobile application |
+|---|-----------|-------------------|
+| 1 | Visibility of system status | Loading states always visible: skeleton, spinner, progress bar. Never silent operation > 300ms |
+| 2 | Match between system and real world | Platform-native labels (iOS: "Cancel", Android: platform convention, Back icon ← not ✕) |
+| 3 | User control and freedom | Back always available. Undo on destructive actions. Swipe-back on iOS never blocked |
+| 4 | Consistency and standards | Follow platform conventions (see below). Do not invent navigation patterns |
+| 5 | Error prevention | Destructive button disabled until confirmation. Confirmation dialog before delete |
+| 6 | Recognition rather than recall | Contextual actions visible (not in hidden menu). Labels on icons when there is space |
+| 7 | Flexibility and efficiency of use | Swipe gestures for power users. Shortcuts for frequent actions |
+| 8 | Aesthetic and minimalist design | One primary action per screen. Clear visual hierarchy. No unnecessary information |
+| 9 | Help users recognize, diagnose, and recover from errors | Specific message (not "Unknown error"). Recovery action always present |
+| 10 | Help and documentation | Onboarding for complex features. Tooltips on unlabeled icons |
 
-### Convenções de Plataforma
+### Platform Conventions
 
 **iOS (Human Interface Guidelines):**
-- Navigation bar no topo, Tab bar na base
-- Swipe-to-go-back (nunca interceptar o gesto padrão)
-- Large Title em telas de entrada de seções
-- SF Symbols style (rounded, stroked) para ícones — usar Ionicons como aproximação
-- Botão destrutivo sempre vermelho, sempre último
-- Pull-to-refresh nativo (`RefreshControl`)
-- Action Sheet para menus com múltiplas opções
-- Sheets modais com drag handle visível
+- Navigation bar at top, Tab bar at bottom
+- Swipe-to-go-back (never intercept the default gesture)
+- Large Title on section entry screens
+- SF Symbols style (rounded, stroked) for icons — use Ionicons as approximation
+- Destructive button always red, always last
+- Native pull-to-refresh (`RefreshControl`)
+- Action Sheet for menus with multiple options
+- Modal sheets with visible drag handle
 
 **Android (Material Design 3):**
-- Top App Bar (não navigation bar no estilo iOS)
-- FAB (Floating Action Button) para ação primária
-- Bottom Navigation para 3-5 destinos principais
-- Ripple effect em todo elemento tappable (`android_ripple`)
-- Snackbar para feedback de ação (não Alert)
-- Material Icons style (rounded ou outlined)
-- Back button do dispositivo deve funcionar sempre
+- Top App Bar (not iOS-style navigation bar)
+- FAB (Floating Action Button) for primary action
+- Bottom Navigation for 3-5 main destinations
+- Ripple effect on every tappable element (`android_ripple`)
+- Snackbar for action feedback (not Alert)
+- Material Icons style (rounded or outlined)
+- Device back button must always work
 
-**Implementação com `Platform.OS`:**
+**Implementation with `Platform.OS`:**
 ```typescript
 import { Platform } from 'react-native';
 
@@ -269,41 +269,41 @@ const styles = {
 };
 ```
 
-### Haptic Feedback — Padrão de uso
+### Haptic Feedback — Usage pattern
 
 ```typescript
 import * as Haptics from 'expo-haptics';
 
-// Light — seleção, toggle, switch
+// Light — selection, toggle, switch
 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-// Medium — botão primário, confirmação
+// Medium — primary button, confirmation
 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-// Heavy — ação irreversível (delete, logout)
+// Heavy — irreversible action (delete, logout)
 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-// Success — operação concluída com sucesso
+// Success — operation completed successfully
 await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-// Error — falha, validação inválida
+// Error — failure, invalid validation
 await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
-// Warning — ação de risco, confirmação necessária
+// Warning — risky action, confirmation needed
 await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 ```
 
-Regra: **todo botão primário tem haptic Medium**. Elementos de lista selecionados têm haptic Light. Erros têm haptic Error. Nunca haptic em scroll ou ações passivas.
+Rule: **every primary button has haptic Medium**. Selected list elements have haptic Light. Errors have haptic Error. Never haptic on scroll or passive actions.
 
-### Loading States — Hierarquia de escolha
+### Loading States — Choice hierarchy
 
-1. **Skeleton screen** — para conteúdo que tem forma definida (cards, listas, perfis)
-2. **Lottie** — para empty states, onboarding, success/error com personalidade
-3. **ActivityIndicator nativo** — somente para operações globais (login, submit)
-4. Spinner por componente individual = anti-pattern
+1. **Skeleton screen** — for content with defined shape (cards, lists, profiles)
+2. **Lottie** — for empty states, onboarding, success/error with personality
+3. **Native ActivityIndicator** — only for global operations (login, submit)
+4. Spinner per individual component = anti-pattern
 
 ```typescript
-// Skeleton com shimmer
+// Skeleton with shimmer
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 
 const CardSkeleton = () => (
@@ -314,7 +314,7 @@ const CardSkeleton = () => (
   </SkeletonPlaceholder>
 );
 
-// Lottie para empty state
+// Lottie for empty state
 import LottieView from 'lottie-react-native';
 
 const EmptyState = ({ title, subtitle, animationSource }) => (
@@ -326,19 +326,19 @@ const EmptyState = ({ title, subtitle, animationSource }) => (
 );
 ```
 
-### Animações Mobile — Reanimated 3
+### Mobile Animations — Reanimated 3
 
 ```typescript
 import Animated, { FadeInDown, FadeOut, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
-// Entrada de item de lista com stagger
+// List item entry with stagger
 const ListItem = ({ item, index }) => (
   <Animated.View entering={FadeInDown.delay(index * 60).springify()}>
     <ItemContent item={item} />
   </Animated.View>
 );
 
-// Botão com feedback de press
+// Button with press feedback
 const AnimatedButton = ({ onPress, children }) => {
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({
@@ -357,47 +357,47 @@ const AnimatedButton = ({ onPress, children }) => {
 };
 ```
 
-### Iconografia mobile
+### Mobile iconography
 
-- **Ionicons** (via `@expo/vector-icons`) — style iOS nativo, padrão para apps com iOS focus
-- **MaterialCommunityIcons** (via `@expo/vector-icons`) — style Android nativo
-- **lucide-react-native** — quando paridade visual com web é necessária
-- Regra: **nunca emojis como ícones funcionais**
-- Regra: tamanho mínimo 20px, área tappable mínima 44pt (iOS) / 48dp (Android)
-- Regra: consistência de estilo — não misturar Ionicons + Material no mesmo layout
+- **Ionicons** (via `@expo/vector-icons`) — native iOS style, default for iOS-focused apps
+- **MaterialCommunityIcons** (via `@expo/vector-icons`) — native Android style
+- **lucide-react-native** — when visual parity with web is needed
+- Rule: **never emojis as functional icons**
+- Rule: minimum size 20px, minimum tappable area 44pt (iOS) / 48dp (Android)
+- Rule: style consistency — do not mix Ionicons + Material in the same layout
 
 ---
 
 ## Scope: feature
 
-> Implementar uma feature mobile seguindo TDD. Adapta o `/feature-dev` 7 fases para mobile.
+> Implement a mobile feature following TDD. Adapts `/feature-dev` 7 phases for mobile.
 
-### Fase 1 — BDD Scenarios
+### Phase 1 — BDD Scenarios
 
-Escrever Gherkin em `tests/bdd/features/[feature].feature` antes de qualquer código.
-Mobile-specific scenarios incluem:
+Write Gherkin in `tests/bdd/features/[feature].feature` before any code.
+Mobile-specific scenarios include:
 - `Given the app is on foreground`
 - `Given the device is offline`
 - `When the user pulls to refresh`
 - `When the user swipes left on [item]`
 
-### Fase 2 — Domain RED (testes failing)
+### Phase 2 — Domain RED (failing tests)
 
-Tests em `tests/unit/domain/[feature].test.ts`.
-Usar Jest puro (sem RN) para domain — é TypeScript puro.
+Tests in `tests/unit/domain/[feature].test.ts`.
+Use pure Jest (no RN) for domain — it is pure TypeScript.
 
-### Fase 3 — Domain GREEN
+### Phase 3 — Domain GREEN
 
-Implementar entidades e regras em `src/domain/[feature]/`.
+Implement entities and rules in `src/domain/[feature]/`.
 
-### Fase 4 — Use Cases RED → GREEN
+### Phase 4 — Use Cases RED → GREEN
 
-Tests em `tests/unit/application/[feature].test.ts`.
-Mockar ports. Sem RN, sem HTTP.
+Tests in `tests/unit/application/[feature].test.ts`.
+Mock ports. No RN, no HTTP.
 
-### Fase 5 — Infrastructure + Screen RED → GREEN
+### Phase 5 — Infrastructure + Screen RED → GREEN
 
-Tests de componentes com RNTL:
+Component tests with RNTL:
 
 ```typescript
 import { render, fireEvent, screen } from '@testing-library/react-native';
@@ -414,15 +414,15 @@ it('should navigate to detail on tap', () => {
 });
 ```
 
-Princípios RNTL:
-- `getByRole`, `getByLabelText`, `getByText` — não `getByTestId`
-- Testar comportamento, não implementação
-- `fireEvent.press()` para taps, `fireEvent.changeText()` para inputs
-- `waitFor` e `findBy*` para operações assíncronas
+RNTL principles:
+- `getByRole`, `getByLabelText`, `getByText` — not `getByTestId`
+- Test behavior, not implementation
+- `fireEvent.press()` for taps, `fireEvent.changeText()` for inputs
+- `waitFor` and `findBy*` for async operations
 
-### Fase 6 — Detox E2E
+### Phase 6 — Detox E2E
 
-Escrever specs em `tests/e2e/[feature].e2e.ts`:
+Write specs in `tests/e2e/[feature].e2e.ts`:
 
 ```typescript
 describe('Product List', () => {
@@ -442,61 +442,61 @@ describe('Product List', () => {
 });
 ```
 
-Rodar:
+Run:
 ```bash
 rtk npx detox build --configuration ios.sim.debug
 rtk npx detox test --configuration ios.sim.debug tests/e2e/[feature].e2e.ts
 ```
 
-### Fase 7 — Review + Performance
+### Phase 7 — Review + Performance
 
-- `FlashList` (Shopify) em vez de `FlatList` para listas longas (> 50 itens)
-- `React.memo` para componentes de lista que não mudam
-- `useCallback` em handlers passados a filhos
-- Verificar: sem `console.log` em produção, sem imagens não otimizadas
+- `FlashList` (Shopify) instead of `FlatList` for long lists (> 50 items)
+- `React.memo` for list components that do not change
+- `useCallback` on handlers passed to children
+- Check: no `console.log` in production, no unoptimized images
 
 ---
 
 ## Scope: qa
 
-> QA exaustivo mobile — substitui `/browser-qa` para projetos React Native.
+> Exhaustive mobile QA — replaces `/browser-qa` for React Native projects.
 
-### Dimensões de QA mobile
+### Mobile QA dimensions
 
-**Visual (ambas plataformas)**
-- iOS Simulator (iPhone 14, 375pt): sem overflow, sem clip
-- Android Emulator (Pixel 5, 360dp): sem overflow, sem clip
-- Dark mode: testar em `Appearance.getColorScheme() === 'dark'`
-- Landscape: elementos se adaptam?
+**Visual (both platforms)**
+- iOS Simulator (iPhone 14, 375pt): no overflow, no clip
+- Android Emulator (Pixel 5, 360dp): no overflow, no clip
+- Dark mode: test with `Appearance.getColorScheme() === 'dark'`
+- Landscape: do elements adapt?
 
-**Interações**
-- Todo `TouchableOpacity`/`Pressable` tem feedback visual (`activeOpacity` ou `android_ripple`)
-- Long press onde esperado (menus contextuais)
-- Pull-to-refresh em listas
-- Swipe gestures (se aplicável)
+**Interactions**
+- Every `TouchableOpacity`/`Pressable` has visual feedback (`activeOpacity` or `android_ripple`)
+- Long press where expected (contextual menus)
+- Pull-to-refresh on lists
+- Swipe gestures (if applicable)
 
-**Teclado**
-- Inputs empurram conteúdo com `KeyboardAvoidingView`
-- Teclado fecha ao tocar fora (ou em Submit)
-- `returnKeyType` correto por tipo de campo
-- Sequência de `nextFocus` lógica
+**Keyboard**
+- Inputs push content with `KeyboardAvoidingView`
+- Keyboard closes when tapping outside (or on Submit)
+- Correct `returnKeyType` per field type
+- Logical `nextFocus` sequence
 
 **Offline / Edge cases**
-- App carrega sem internet (cache local)
-- Erro amigável quando sem conexão
-- Ação de retry disponível
+- App loads without internet (local cache)
+- Friendly error when offline
+- Retry action available
 
-**Acessibilidade**
-- Todo elemento interativo tem `accessibilityLabel`
-- Todo elemento de texto tem contraste mínimo WCAG AA
-- Suporte a TalkBack/VoiceOver (pelo menos fluxo principal)
-- `accessibilityRole` correto em botões, links, imagens
+**Accessibility**
+- Every interactive element has `accessibilityLabel`
+- Every text element has minimum WCAG AA contrast
+- TalkBack/VoiceOver support (at least main flow)
+- Correct `accessibilityRole` on buttons, links, images
 
 **Performance**
-- FlatList/FlashList com `keyExtractor` único
-- Imagens com `resizeMode` correto e tamanho adequado
-- Sem re-renders desnecessários (verificar com React DevTools Profiler)
-- Tempo de startup < 3s em device real
+- FlatList/FlashList with unique `keyExtractor`
+- Images with correct `resizeMode` and appropriate size
+- No unnecessary re-renders (check with React DevTools Profiler)
+- Startup time < 3s on real device
 
 ### Gate QA
 
@@ -504,35 +504,35 @@ rtk npx detox test --configuration ios.sim.debug tests/e2e/[feature].e2e.ts
 ⛔ GATE MOBILE QA:
   □ RNTL: 0 failures
   □ Detox E2E: 0 failures
-  □ iOS render: sem overflow/clip (iPhone 14 375pt)
-  □ Android render: sem overflow/clip (Pixel 5 360dp)
-  □ Dark mode: sem texto ilegível, sem componente quebrado
+  □ iOS render: no overflow/clip (iPhone 14 375pt)
+  □ Android render: no overflow/clip (Pixel 5 360dp)
+  □ Dark mode: no illegible text, no broken components
 
   UX (Nielsen):
-  □ Todo loading > 300ms tem skeleton ou spinner visível
-  □ Nenhuma operação silenciosa (sem feedback visual/haptic)
-  □ Back navigation funciona em todas as telas
-  □ Botões destrutivos têm confirmação
-  □ Erros têm mensagem específica + ação de recuperação
+  □ Every loading > 300ms has visible skeleton or spinner
+  □ No silent operation (no visual/haptic feedback)
+  □ Back navigation works on all screens
+  □ Destructive buttons have confirmation
+  □ Errors have specific message + recovery action
 
-  Plataforma:
-  □ iOS: swipe-back não interceptado, Tab bar na base
-  □ Android: hardware back button funciona, ripple em tappables
-  □ Platform.OS usado onde convenções divergem
+  Platform:
+  □ iOS: swipe-back not intercepted, Tab bar at bottom
+  □ Android: hardware back button works, ripple on tappables
+  □ Platform.OS used where conventions diverge
 
   Haptics:
-  □ Botão primário tem Haptics.Medium
-  □ Ações destrutivas têm Haptics.Heavy + Haptics.Error
-  □ Seleção de item tem Haptics.Light
+  □ Primary button has Haptics.Medium
+  □ Destructive actions have Haptics.Heavy + Haptics.Error
+  □ Item selection has Haptics.Light
 
-  Acessibilidade:
-  □ Todo interativo tem accessibilityLabel
-  □ accessibilityRole correto em botões, links, imagens
+  Accessibility:
+  □ Every interactive has accessibilityLabel
+  □ Correct accessibilityRole on buttons, links, images
   □ Touch targets ≥ 44pt (iOS) / 48dp (Android)
-  □ Contraste WCAG AA em modo claro e escuro
+  □ WCAG AA contrast in light and dark mode
 
-  □ Offline: erro amigável + retry disponível
-  Fix loop automático (máx 3 iterações) antes de escalar.
+  □ Offline: friendly error + retry available
+  Automatic fix loop (max 3 iterations) before escalating.
 ```
 
 ---
@@ -588,23 +588,23 @@ rtk eas submit --platform ios --latest
 rtk eas submit --platform android --latest
 ```
 
-### OTA Updates (sem nova build)
+### OTA Updates (no new build)
 
 ```bash
-# Publish update instantânea para todos os usuários
-rtk eas update --branch production --message "fix: [descrição]"
+# Publish instant update to all users
+rtk eas update --branch production --message "fix: [description]"
 ```
 
 ---
 
-## Diferenças vs. web (guia rápido)
+## Differences vs. web (quick guide)
 
 | Web | Mobile (RN) |
 |-----|-------------|
 | Cypress E2E | Detox E2E |
 | `/browser-qa` | `/mobile qa` |
-| shadcn/ui | Componentes customizados + NativeWind |
-| CSS flexbox | StyleSheet flexbox (column-first por padrão) |
+| shadcn/ui | Custom components + NativeWind |
+| CSS flexbox | StyleSheet flexbox (column-first by default) |
 | `onClick` | `onPress` |
 | `<div>` | `<View>` |
 | `<p>`, `<span>` | `<Text>` |
@@ -612,7 +612,7 @@ rtk eas update --branch production --message "fix: [descrição]"
 | `<input>` | `<TextInput>` |
 | `<a>` | `navigation.navigate()` |
 | localStorage | AsyncStorage / SecureStore |
-| `window.fetch` | Axios (com interceptors) |
+| `window.fetch` | Axios (with interceptors) |
 | React Router | React Navigation |
 | Responsive CSS | Platform.OS + Dimensions API |
 | `window.alert` | `Alert.alert()` |
@@ -621,33 +621,33 @@ rtk eas update --branch production --message "fix: [descrição]"
 
 ## Foundation Protocol (mobile)
 
-Para qualquer app com UI, Foundation antes de qualquer feature:
+For any app with UI, Foundation before any feature:
 
 ### [M-3a] Design System + Navigation Base
 
-1. Instalar e configurar NativeWind + tema (cores, fontes, dark/light mode)
-2. Criar componentes base (`Button`, `Input`, `Screen`, `Typography`, `Card`)
-3. Configurar `RootNavigator` + `AuthNavigator` + `AppNavigator`
-4. Testar renderização em iOS simulator + Android emulator
+1. Install and configure NativeWind + theme (colors, fonts, dark/light mode)
+2. Create base components (`Button`, `Input`, `Screen`, `Typography`, `Card`)
+3. Configure `RootNavigator` + `AuthNavigator` + `AppNavigator`
+4. Test rendering in iOS simulator + Android emulator
 
 ```
 ⛔ GATE [M-3a]: /mobile qa
-  □ Componentes renderizam sem erro em iOS e Android
-  □ Dark mode funciona
-  □ Navegação entre telas funciona
-  PASS obrigatório antes de qualquer feature
+  □ Components render without error on iOS and Android
+  □ Dark mode works
+  □ Navigation between screens works
+  Mandatory PASS before any feature
 ```
 
 ### [M-3b] Auth — Register / Login / Logout
 
-1. Implementar fluxo completo: register, login, logout, refresh token, proteção de rotas
-2. Escrever Detox specs: `tests/e2e/auth.e2e.ts`
+1. Implement complete flow: register, login, logout, refresh token, route protection
+2. Write Detox specs: `tests/e2e/auth.e2e.ts`
 3. `rtk npx detox test tests/e2e/auth.e2e.ts`
 
 ```
-⛔ GATE [M-3b]: /mobile qa (escopo: auth)
-  Se auth falha → TODO o build para
-  Sem exceções.
+⛔ GATE [M-3b]: /mobile qa (scope: auth)
+  If auth fails → ALL build stops
+  No exceptions.
 ```
 
-> **Checkpoint:** Se contexto atingir ~60k tokens → escreve `.claude/checkpoint.md` com skill, fase, arquivos, próximo passo. Emite: `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+> **Checkpoint:** If context reaches ~60k tokens → writes `.claude/checkpoint.md` with skill, phase, files, next step. Emits: `↺ Context ~60k. Recommend /compact. Use /resume to continue.`

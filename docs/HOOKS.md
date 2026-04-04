@@ -1,114 +1,114 @@
-# Hooks — O que é Determinístico e o que Não é
+# Hooks — What is Deterministic and What is Not
 
-## Resposta direta
+## Direct Answer
 
-**Dos 5 hooks criados, apenas 2 regras são verdadeiramente determinísticas (bloqueiam).**
-Os demais são *advisory* — influenciam o Claude, mas não forçam a ação.
+**Of the 5 hooks created, only 2 rules are truly deterministic (blocking).**
+The rest are *advisory* — they influence Claude, but do not force the action.
 
 ---
 
-## Como funcionam os hooks do Claude Code
+## How Claude Code Hooks Work
 
-Hooks recebem um JSON via stdin com os dados do tool call e podem:
+Hooks receive a JSON via stdin with the tool call data and can:
 
-| Saída | Efeito | Determinístico? |
+| Output | Effect | Deterministic? |
 |-------|--------|----------------|
-| `process.exit(2)` + mensagem no stderr | Bloqueia o tool call — a ação NÃO acontece | ✅ Sim |
-| JSON com `additionalContext` | Adiciona texto ao contexto do Claude | ⚠️ Não — LLM pode ignorar |
-| Nada (pass-through) | Deixa a ação acontecer normalmente | — |
+| `process.exit(2)` + message on stderr | Blocks the tool call — the action does NOT happen | Yes |
+| JSON with `additionalContext` | Adds text to Claude's context | No — LLM may ignore |
+| Nothing (pass-through) | Lets the action happen normally | — |
 
-**O problema do `additionalContext`:** ele injeta texto na conversa, o que *influencia* o Claude, mas não *impede* nada. O Claude é um LLM — pode decidir ignorar o contexto injetado, especialmente sob pressão de completar uma tarefa rapidamente.
+**The problem with `additionalContext`:** it injects text into the conversation, which *influences* Claude, but does not *prevent* anything. Claude is an LLM — it may decide to ignore the injected context, especially under pressure to complete a task quickly.
 
-**O único mecanismo verdadeiramente determinístico em hooks** é o `process.exit` com código não-zero, que faz o Claude Code cancelar o tool call antes de executar.
+**The only truly deterministic mechanism in hooks** is `process.exit` with a non-zero code, which causes Claude Code to cancel the tool call before executing it.
 
 ---
 
-## Auditoria dos hooks criados
+## Audit of Created Hooks
 
-### ✅ Determinístico — `rules-engine.mjs`
+### Deterministic — `rules-engine.mjs`
 
-Estas regras **bloqueiam de verdade** (exit 2):
+These rules **actually block** (exit 2):
 
-| Regra | Trigger | O que bloqueia |
+| Rule | Trigger | What it blocks |
 |-------|---------|---------------|
-| RULE-GIT-003 | Bash: `git commit --no-verify` | Impede bypass do hook de pre-commit |
-| RULE-ARCH-FILES | Write/Edit | Impede arquivos `.test.*` dentro de `src/` |
+| RULE-GIT-003 | Bash: `git commit --no-verify` | Prevents bypassing the pre-commit hook |
+| RULE-ARCH-FILES | Write/Edit | Prevents `.test.*` files inside `src/` |
 
-Registrado em `settings.json` para `Bash` e `Write|Edit`.
+Registered in `settings.json` for `Bash` and `Write|Edit`.
 
-### ✅ Determinístico — `architecture-guard.mjs`
+### Deterministic — `architecture-guard.mjs`
 
-Estes checks **bloqueiam de verdade** (exit 2) via `PreToolUse/Write|Edit`:
+These checks **actually block** (exit 2) via `PreToolUse/Write|Edit`:
 
-| Regra | Trigger | O que bloqueia |
+| Rule | Trigger | What it blocks |
 |-------|---------|---------------|
-| RULE-ARCH-001 | Write/Edit em `src/domain/` | Imports de ORMs, HTTP clients, frameworks |
-| RULE-ARCH-002 | Write/Edit em `src/application/` | Imports de ORMs, HTTP clients, frameworks |
+| RULE-ARCH-001 | Write/Edit in `src/domain/` | Imports of ORMs, HTTP clients, frameworks |
+| RULE-ARCH-002 | Write/Edit in `src/application/` | Imports of ORMs, HTTP clients, frameworks |
 
-Além do hard block, injeta `additionalContext` com as regras da camada como lembrete.
+In addition to the hard block, it injects `additionalContext` with the layer rules as a reminder.
 
-### ⚠️ Advisory — `rtk-rewrite.mjs`
-- Detecta comandos que deveriam usar RTK
-- Adiciona `additionalContext` pedindo para reescrever com `rtk`
-- **Não força nada** — o Claude precisa cooperar
+### Advisory — `rtk-rewrite.mjs`
+- Detects commands that should use RTK
+- Adds `additionalContext` asking to rewrite with `rtk`
+- **Does not force anything** — Claude needs to cooperate
 
-*Por quê não bloquear?* Bloquear todo `git status` sem RTK instalado quebraria o fluxo de novos membros do time. A abordagem correta é a global hook do próprio RTK (já configurada no seu ambiente).
+*Why not block?* Blocking every `git status` without RTK installed would break the flow for new team members. The correct approach is the global hook from RTK itself (already configured in your environment).
 
-### ⚠️ Advisory — `tdd-guard.mjs`
-- Verifica se existe arquivo de teste correspondente **após** a escrita do arquivo de implementação
-- Adiciona contexto de aviso se não existe
-- **Não bloqueia a escrita**
+### Advisory — `tdd-guard.mjs`
+- Checks if a corresponding test file exists **after** the implementation file is written
+- Adds a warning context if it does not exist
+- **Does not block the write**
 
-### ℹ️ Informacional — `session-start.mjs`
-- Injeta contexto de boas-vindas no início da sessão
-- Puramente informacional
-
----
-
-## Por que não tudo foi feito determinístico?
-
-### 1. Verificação de imports requer parsing do conteúdo
-Para bloquear um arquivo de domínio que importa infraestrutura, o hook precisa:
-1. Receber o `content` do tool call Write
-2. Parsear os imports
-3. Verificar contra as regras
-4. Bloquear se violar
-
-Isso é possível em `PreToolUse/Write` — o `tool_input.content` está disponível. **O hook atualizado abaixo implementa isso.**
-
-### 2. TDD guard com hard block tem edge cases
-Se bloquear `Write` de implementação quando não há teste, quebraria o caso onde:
-- O agente cria teste e implementação na mesma sessão (o teste ainda não foi escrito quando o hook dispara na implementação)
-- Arquivos de configuração, DTOs, tipos que não precisam de teste
-
-Solução: bloquear apenas arquivos de domínio/application (negócio puro), não toda a `src/`.
-
-### 3. O LLM coopera quando o contexto é claro
-Na prática, `additionalContext` bem escrito + regras claras no `CLAUDE.md` + prompts de skills funcionam muito bem. O Claude Code segue o contexto injetado na maioria dos casos.
+### Informational — `session-start.mjs`
+- Injects welcome context at the start of the session
+- Purely informational
 
 ---
 
-## Hooks verdadeiramente determinísticos: como implementar mais
+## Why Not Everything Was Made Deterministic
 
-### Padrão para hard block
+### 1. Import verification requires content parsing
+To block a domain file that imports infrastructure, the hook needs to:
+1. Receive the `content` from the Write tool call
+2. Parse the imports
+3. Verify against the rules
+4. Block if violated
+
+This is possible in `PreToolUse/Write` — the `tool_input.content` is available. **The updated hook below implements this.**
+
+### 2. TDD guard with hard block has edge cases
+If it blocked `Write` of implementation when there is no test, it would break the case where:
+- The agent creates test and implementation in the same session (the test has not yet been written when the hook fires on the implementation)
+- Configuration files, DTOs, types that do not need tests
+
+Solution: block only domain/application files (pure business logic), not all of `src/`.
+
+### 3. The LLM cooperates when context is clear
+In practice, well-written `additionalContext` + clear rules in `CLAUDE.md` + skill prompts work very well. Claude Code follows the injected context in most cases.
+
+---
+
+## Truly Deterministic Hooks: How to Implement More
+
+### Pattern for hard block
 
 ```javascript
-// Em qualquer hook .mjs
+// In any hook .mjs
 const violation = checkSomething(input);
 
 if (violation) {
   process.stderr.write(`🚫 RULE-XXX: ${violation.message}\n`);
-  process.exit(2); // Bloqueia o tool call — exit code != 0
+  process.exit(2); // Blocks the tool call — exit code != 0
 }
 
-// Se chegou aqui, passou — output o input de volta
+// If it reached here, it passed — output the input back
 process.stdout.write(JSON.stringify(input));
 ```
 
-### Verificação de imports (PreToolUse/Write)
+### Import verification (PreToolUse/Write)
 
 ```javascript
-// Extrai imports de TypeScript/JavaScript
+// Extract imports from TypeScript/JavaScript
 function extractImports(content) {
   const importRegex = /^import\s+.*?from\s+['"](.+?)['"]/gm;
   const requireRegex = /require\(['"](.+?)['"]\)/g;
@@ -119,7 +119,7 @@ function extractImports(content) {
   return matches;
 }
 
-// Verifica se os imports violam as regras da camada
+// Check if imports violate the layer rules
 function findViolations(filePath, content, config) {
   const layer = detectLayer(filePath, config);
   if (!layer || !layer.allowedImportPrefixes.length) return [];
@@ -139,17 +139,17 @@ function findViolations(filePath, content, config) {
 }
 ```
 
-### Verificação TDD em PreToolUse
+### TDD verification in PreToolUse
 
 ```javascript
-// Bloqueia implementação de domínio/application se teste não existe
+// Block domain/application implementation if test does not exist
 if (isBusinessLogicFile(filePath) && !testExists(filePath, config)) {
   const testPath = getExpectedTestPath(filePath, config);
   process.stderr.write([
-    `🚫 TDD GUARD (RULE-TEST-001): Escreva o teste primeiro.`,
-    `Arquivo de implementação: ${filePath}`,
-    `Crie o teste primeiro em: ${testPath}`,
-    `Depois escreva a implementação.`,
+    `🚫 TDD GUARD (RULE-TEST-001): Write the test first.`,
+    `Implementation file: ${filePath}`,
+    `Create the test first at: ${testPath}`,
+    `Then write the implementation.`,
   ].join('\n'));
   process.exit(2);
 }
@@ -157,28 +157,28 @@ if (isBusinessLogicFile(filePath) && !testExists(filePath, config)) {
 
 ---
 
-## O que é verdadeiramente garantido hoje
+## What is Truly Guaranteed Today
 
-| Garantia | Mecanismo | Confiança |
+| Guarantee | Mechanism | Confidence |
 |---------|-----------|-----------|
-| Não usar `--no-verify` | Hook bloqueia (exit 2) | ✅ 100% |
-| Não criar testes em `src/` | Hook bloqueia (exit 2) | ✅ 100% |
-| Imports proibidos em domain/application | Hook bloqueia (exit 2) | ✅ 100% |
-| Usar RTK no CLI | Context + RTK global hook | ⚠️ ~90% |
-| TDD (teste antes da impl) | Context + advisory | ⚠️ ~80% |
-| Seguir CLAUDE.md/Rules.md | Context + skills | ⚠️ ~85% |
+| Not using `--no-verify` | Hook blocks (exit 2) | 100% |
+| Not creating tests in `src/` | Hook blocks (exit 2) | 100% |
+| Forbidden imports in domain/application | Hook blocks (exit 2) | 100% |
+| Using RTK in CLI | Context + RTK global hook | ~90% |
+| TDD (test before implementation) | Context + advisory | ~80% |
+| Following CLAUDE.md/Rules.md | Context + skills | ~85% |
 
-## O que fornece garantia complementar
+## What Provides Complementary Guarantees
 
-Os hooks do Claude Code são uma linha de defesa. As demais:
+Claude Code hooks are one line of defense. The others:
 
-1. **Pre-commit git hooks** (Husky, Lefthook): verificam imports, linting, testes antes do commit — 100% determinístico
-2. **CI pipeline**: roda toda a test suite — 100% determinístico
-3. **Code review obrigatório**: no pull request — humano ou agent reviewer
+1. **Pre-commit git hooks** (Husky, Lefthook): verify imports, linting, tests before commit — 100% deterministic
+2. **CI pipeline**: runs the full test suite — 100% deterministic
+3. **Mandatory code review**: on the pull request — human or agent reviewer
 
-Para **garantia total**, configure também:
+For **full guarantee**, also configure:
 ```bash
-# Lefthook (recomendado — mais leve que Husky)
+# Lefthook (recommended — lighter than Husky)
 npm install --save-dev lefthook
 
 # lefthook.yml
@@ -194,8 +194,8 @@ pre-commit:
 
 ---
 
-## Resumo
+## Summary
 
-> Os hooks do Claude Code são excelentes para **orientar e influenciar** o comportamento do LLM.
-> Para **enforcement garantido**, combine com: pre-commit hooks (git) + CI pipeline.
-> As duas camadas juntas dão cobertura completa.
+> Claude Code hooks are excellent for **guiding and influencing** the LLM's behavior.
+> For **guaranteed enforcement**, combine with: pre-commit hooks (git) + CI pipeline.
+> The two layers together provide complete coverage.

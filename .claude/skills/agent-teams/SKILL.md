@@ -6,251 +6,251 @@ disable-model-invocation: true
 
 # /agent-teams — Multi-Team Parallel Orchestration
 
-Orquestra múltiplos times de agentes em paralelo para trabalho de grande escala.
-Cada time tem 3–5 agentes. Cada agente tem janela de contexto máxima de 100k tokens.
-O orquestrador garante granularidade antes de despachar qualquer time.
+Orchestrates multiple agent teams in parallel for large-scale work.
+Each team has 3-5 agents. Each agent has a maximum context window of 100k tokens.
+The orchestrator ensures granularity before dispatching any team.
 
 ---
 
-## Quando usar
+## When to use
 
-Use `/agent-teams` quando a tarefa:
-- Envolve 3+ features ou componentes independentes simultaneamente
-- Teria mais de 500 linhas de código no total
-- Pode ser dividida em workstreams que não dependem uns dos outros
-- Se beneficia de paralelismo real (diferentes partes do sistema)
+Use `/agent-teams` when the task:
+- Involves 3+ features or independent components simultaneously
+- Would have more than 500 lines of code in total
+- Can be divided into workstreams that don't depend on each other
+- Benefits from real parallelism (different parts of the system)
 
-Use `/feature-dev` para features únicas.
-Use `/agent-teams` para múltiplas features ou features muito grandes em paralelo.
+Use `/feature-dev` for single features.
+Use `/agent-teams` for multiple features or very large features in parallel.
 
 ---
 
-## Modelo Mental
+## Mental Model
 
 ```
-ORQUESTRADOR (você, Claude principal)
-├── Time Alpha  ←── worktree: feature/alpha
-│   ├── Agente 1 (explorer)
-│   ├── Agente 2 (test-writer)
-│   └── Agente 3 (implementer)
+ORCHESTRATOR (you, main Claude)
+├── Team Alpha  ←── worktree: feature/alpha
+│   ├── Agent 1 (explorer)
+│   ├── Agent 2 (test-writer)
+│   └── Agent 3 (implementer)
 │
-├── Time Beta   ←── worktree: feature/beta
-│   ├── Agente 1 (explorer)
-│   ├── Agente 2 (implementer)
-│   └── Agente 3 (reviewer)
+├── Team Beta   ←── worktree: feature/beta
+│   ├── Agent 1 (explorer)
+│   ├── Agent 2 (implementer)
+│   └── Agent 3 (reviewer)
 │
-└── Time Gamma  ←── worktree: feature/gamma
-    ├── Agente 1 (bdd-writer)
-    ├── Agente 2 (implementer)
-    └── Agente 3 (e2e-writer)
+└── Team Gamma  ←── worktree: feature/gamma
+    ├── Agent 1 (bdd-writer)
+    ├── Agent 2 (implementer)
+    └── Agent 3 (e2e-writer)
 
-Os 3 times rodam em PARALELO (Agent tool calls simultâneos).
-Cada time gerencia seus próprios waves internos.
-Orquestrador agrega resultados ao final.
+All 3 teams run in PARALLEL (simultaneous Agent tool calls).
+Each team manages its own internal waves.
+Orchestrator aggregates results at the end.
 ```
 
 ---
 
-## Protocolo do Orquestrador
+## Orchestrator Protocol
 
-### Etapa 1 — Decomposição em Workstreams
-> **Emit:** `▶ [1/5] Decomposição em Workstreams`
+### Step 1 — Workstream Decomposition
+> **Emit:** `▶ [1/5] Workstream Decomposition`
 
-Antes de criar qualquer time, o orquestrador:
+Before creating any team, the orchestrator:
 
-1. Recebe o objetivo geral
-2. Identifica workstreams independentes (sem dependência de dados entre si)
-3. Para cada workstream, estima o budget de tokens:
+1. Receives the overall objective
+2. Identifies independent workstreams (no data dependency between them)
+3. For each workstream, estimates the token budget:
 
 ```
-ESTIMATIVA DE TOKEN BUDGET:
-  Arquivos a ler:      N × ~1.500 tokens/arquivo
-  Raciocínio interno:  ~20.000 tokens fixos
-  Código a gerar:      linhas × ~20 tokens/linha
-  Handoff de saída:    ~5.000 tokens fixos
+TOKEN BUDGET ESTIMATE:
+  Files to read:       N × ~1,500 tokens/file
+  Internal reasoning:  ~20,000 fixed tokens
+  Code to generate:    lines × ~20 tokens/line
+  Output handoff:      ~5,000 fixed tokens
   ─────────────────────────────────────────────
-  Total estimado:      deve ficar abaixo de 85.000 tokens
+  Estimated total:     must stay below 85,000 tokens
 
-  Se estimativa > 85k → dividir o workstream em 2
-  Se estimativa < 20k → considerar fundir com outro workstream pequeno
+  If estimate > 85k → split the workstream in 2
+  If estimate < 20k → consider merging with another small workstream
 ```
 
-**Regras práticas para granularidade:**
-- Max 25 arquivos para ler por time
-- Max 15 arquivos para criar/modificar por time
-- Max 300 linhas de código por time
-- Uma tarefa deve ser descrita em 1–2 frases. Se precisar de mais → muito grande.
+**Practical rules for granularity:**
+- Max 25 files to read per team
+- Max 15 files to create/modify per team
+- Max 300 lines of code per team
+- A task should be described in 1-2 sentences. If it needs more → too large.
 
-### Etapa 2 — Criação dos Times
-> **Emit:** `▶ [2/5] Criação dos Times`
+### Step 2 — Team Creation
+> **Emit:** `▶ [2/5] Team Creation`
 
-Para cada workstream aprovado, crie um **Time Brief**:
+For each approved workstream, create a **Team Brief**:
 
 ```
-TIME BRIEF — [Nome do Time]
+TEAM BRIEF — [Team Name]
 ──────────────────────────────────────────────
-Workstream:    [o que este time vai construir]
-Worktree:      rtk git worktree add ../[proj]-[nome] -b feature/[nome]
-Arquivos lidos: [lista exata de arquivos — max 25]
-Arquivos criados/modificados: [lista exata — max 15]
-Restrições:    [regras relevantes de Rules.md]
-Agentes (3–5): [lista com tipo e tarefa de cada um]
-Budget estimado: [Xk tokens]
-Output esperado: [o que o time deve retornar]
+Workstream:    [what this team will build]
+Worktree:      rtk git worktree add ../[proj]-[name] -b feature/[name]
+Files read:    [exact file list — max 25]
+Files created/modified: [exact list — max 15]
+Constraints:   [relevant rules from Rules.md]
+Agents (3–5):  [list with type and task of each]
+Estimated budget: [Xk tokens]
+Expected output: [what the team must return]
 ```
 
-### Etapa 3 — Lançamento Paralelo
-> **Emit:** `▶ [3/5] Lançamento dos Times`
+### Step 3 — Parallel Launch
+> **Emit:** `▶ [3/5] Launching Teams`
 
-Lance todos os times **no mesmo turno** (múltiplos Agent tool calls simultâneos):
-
-```
-← Turno único do orquestrador →
-  Agent(Time Alpha, run_in_background=false)
-  Agent(Time Beta,  run_in_background=false)
-  Agent(Time Gamma, run_in_background=false)
-```
-
-Cada time roda de forma independente em sua worktree.
-O orquestrador aguarda todos completarem antes de prosseguir.
-
-### Etapa 4 — Waves Internas por Time
-> **Emit:** `▶ [4/5] Waves Internas` *(emit novamente ao iniciar cada wave: `▶ Wave N — <nome>`)*
-
-Dentro de cada time, o agente-líder organiza waves internas:
+Launch all teams **in the same turn** (multiple simultaneous Agent tool calls):
 
 ```
-Wave Interna 1 (exploração):
-  Explorer — entende o contexto específico do workstream
-
-Wave Interna 2 (testes primeiro — TDD):
-  Test-writer — escreve testes falhos (RED)
-
-Wave Interna 3 (implementação):
-  Implementer — faz os testes passarem (GREEN → REFACTOR)
-
-Wave Interna 4 (qualidade):
-  Reviewer — revisa código do próprio time
+← Single orchestrator turn →
+  Agent(Team Alpha, run_in_background=false)
+  Agent(Team Beta,  run_in_background=false)
+  Agent(Team Gamma, run_in_background=false)
 ```
 
-Máximo 5 agentes por wave interna. Se um wave precisar de mais → cria wave adicional.
+Each team runs independently in its worktree.
+The orchestrator waits for all to complete before proceeding.
 
-### Etapa 5 — Handoff e Agregação
-> **Emit:** `▶ [5/5] Agregando Resultados`
+### Step 4 — Internal Waves per Team
+> **Emit:** `▶ [4/5] Internal Waves` *(emit again when starting each wave: `▶ Wave N — <name>`)*
 
-Cada time retorna ao orquestrador:
+Within each team, the lead agent organizes internal waves:
 
 ```
-RELATÓRIO DO TIME — [Nome]
+Internal Wave 1 (exploration):
+  Explorer — understands the specific workstream context
+
+Internal Wave 2 (tests first — TDD):
+  Test-writer — writes failing tests (RED)
+
+Internal Wave 3 (implementation):
+  Implementer — makes the tests pass (GREEN → REFACTOR)
+
+Internal Wave 4 (quality):
+  Reviewer — reviews the team's own code
+```
+
+Maximum 5 agents per internal wave. If a wave needs more → create additional wave.
+
+### Step 5 — Handoff and Aggregation
+> **Emit:** `▶ [5/5] Aggregating Results`
+
+Each team returns to the orchestrator:
+
+```
+TEAM REPORT — [Name]
 ──────────────────────────────────────────────
-Status:          [COMPLETO | PARCIAL | BLOQUEADO]
-Arquivos criados: [lista]
-Arquivos modificados: [lista]
-Testes:          [N unit, N integration, N BDD]
-Issues:          [problemas encontrados ou "Nenhum"]
-Dependências descobertas: [coisas que outros times precisam saber]
-Próximos passos: [o que o orquestrador deve fazer após merge]
+Status:          [COMPLETE | PARTIAL | BLOCKED]
+Files created:   [list]
+Files modified:  [list]
+Tests:           [N unit, N integration, N BDD]
+Issues:          [problems found or "None"]
+Discovered dependencies: [things other teams need to know]
+Next steps:      [what the orchestrator should do after merge]
 ```
 
-O orquestrador:
-1. Coleta todos os relatórios
-2. Verifica conflitos entre workstreams
-3. Faz merge das branches na feature branch principal
-4. Lança um time final de review global (se necessário)
+The orchestrator:
+1. Collects all reports
+2. Checks for conflicts between workstreams
+3. Merges branches into the main feature branch
+4. Launches a final global review team (if needed)
 
 ---
 
-## Exemplo: Feature Grande em Múltiplos Times
+## Example: Large Feature in Multiple Teams
 
-### Objetivo: "Sistema completo de pedidos (orders)"
+### Objective: "Complete order system"
 
-#### Decomposição do orquestrador:
-
-```
-Workstream A — Domínio de pedidos
-  Estimativa: 15 arquivos lidos × 1.5k + 200 linhas × 20 = ~26k tokens ✅
-  Arquivos: Order entity, OrderItem VO, OrderStatus VO, testes unitários
-
-Workstream B — Use cases de pedidos
-  Estimativa: 20 arquivos lidos × 1.5k + 250 linhas × 20 = ~35k tokens ✅
-  Arquivos: PlaceOrderUseCase, CancelOrderUseCase, testes unitários
-
-Workstream C — Infraestrutura + API
-  Estimativa: 18 arquivos lidos × 1.5k + 300 linhas × 20 = ~33k tokens ✅
-  Arquivos: PostgresOrderRepository, OrderController, testes integração
-
-Dependência: C depende de A e B → C roda em wave separada
-```
-
-#### Lançamento:
+#### Orchestrator decomposition:
 
 ```
-Wave de Times 1 (paralelo):
-  Agent(Time A — domínio)    → worktree: proj-orders-domain
-  Agent(Time B — use cases)  → worktree: proj-orders-usecases
+Workstream A — Orders domain
+  Estimate: 15 files read × 1.5k + 200 lines × 20 = ~26k tokens ✅
+  Files: Order entity, OrderItem VO, OrderStatus VO, unit tests
 
-Wave de Times 2 (após Wave 1):
-  Agent(Time C — infra+api)  → worktree: proj-orders-infra
-  Agent(Time D — BDD+E2E)    → worktree: proj-orders-tests
+Workstream B — Orders use cases
+  Estimate: 20 files read × 1.5k + 250 lines × 20 = ~35k tokens ✅
+  Files: PlaceOrderUseCase, CancelOrderUseCase, unit tests
+
+Workstream C — Infrastructure + API
+  Estimate: 18 files read × 1.5k + 300 lines × 20 = ~33k tokens ✅
+  Files: PostgresOrderRepository, OrderController, integration tests
+
+Dependency: C depends on A and B → C runs in separate wave
 ```
 
-#### Cada time internamente:
+#### Launch:
 
 ```
-Time A — Domínio (3 agentes):
-  Agente 1 (explorer):      explora padrões existentes de entities
-  Agente 2 (test-writer):   escreve Order.test.ts, OrderItem.test.ts (RED)
-  Agente 3 (implementer):   implementa Order, OrderItem, OrderStatus (GREEN)
+Team Wave 1 (parallel):
+  Agent(Team A — domain)     → worktree: proj-orders-domain
+  Agent(Team B — use cases)  → worktree: proj-orders-usecases
 
-Time B — Use Cases (4 agentes):
-  Agente 1 (explorer):      explora use cases existentes para padrão
-  Agente 2 (test-writer):   escreve PlaceOrderUseCase.test.ts (RED)
-  Agente 3 (implementer):   implementa PlaceOrderUseCase (GREEN)
-  Agente 4 (reviewer):      revisa SOLID + hexagonal compliance
+Team Wave 2 (after Wave 1):
+  Agent(Team C — infra+api)  → worktree: proj-orders-infra
+  Agent(Team D — BDD+E2E)    → worktree: proj-orders-tests
+```
+
+#### Each team internally:
+
+```
+Team A — Domain (3 agents):
+  Agent 1 (explorer):      explores existing entity patterns
+  Agent 2 (test-writer):   writes Order.test.ts, OrderItem.test.ts (RED)
+  Agent 3 (implementer):   implements Order, OrderItem, OrderStatus (GREEN)
+
+Team B — Use Cases (4 agents):
+  Agent 1 (explorer):      explores existing use cases for patterns
+  Agent 2 (test-writer):   writes PlaceOrderUseCase.test.ts (RED)
+  Agent 3 (implementer):   implements PlaceOrderUseCase (GREEN)
+  Agent 4 (reviewer):      reviews SOLID + hexagonal compliance
 ```
 
 ---
 
-## Gerenciamento de Janela de Contexto
+## Context Window Management
 
-### Cada agente monitora seu próprio budget:
+### Each agent monitors its own budget:
 
 ```
-BUDGET POR AGENTE:
-├── Contexto recebido (brief + handoffs anteriores): ≤ 20k tokens
-├── Trabalho ativo (leitura, raciocínio, escrita):   ≤ 70k tokens
-└── Handoff de saída:                                ≤ 5k tokens
-                                              TOTAL: ≤ 95k tokens
+BUDGET PER AGENT:
+├── Received context (brief + previous handoffs): ≤ 20k tokens
+├── Active work (reading, reasoning, writing):    ≤ 70k tokens
+└── Output handoff:                               ≤ 5k tokens
+                                           TOTAL: ≤ 95k tokens
 ```
 
-### Se um agente se aproximar de 80k tokens consumidos:
+### If an agent approaches 80k tokens consumed:
 
-1. Para o trabalho atual
-2. Escreve handoff parcial: `Status: PARCIAL`
-3. Descreve exatamente onde parou e o que falta
-4. Sinaliza ao time-líder para lançar agente de continuação
+1. Stops current work
+2. Writes partial handoff: `Status: PARTIAL`
+3. Describes exactly where it stopped and what remains
+4. Signals the team lead to launch a continuation agent
 
-### O orquestrador previne overflow com a regra de granularidade:
-- Nenhum workstream passa para um time sem estimativa de budget
-- Se estimativa > 85k → workstream dividido antes de lançar
+### The orchestrator prevents overflow with the granularity rule:
+- No workstream is passed to a team without a budget estimate
+- If estimate > 85k → workstream split before launching
 
 ---
 
-## Estrutura de Worktrees por Time
+## Worktree Structure per Team
 
 ```bash
-# Orquestrador cria worktrees antes de lançar os times
+# Orchestrator creates worktrees before launching teams
 rtk git worktree add ../[proj]-[workstream-a] -b feature/[workstream-a]
 rtk git worktree add ../[proj]-[workstream-b] -b feature/[workstream-b]
 rtk git worktree add ../[proj]-[workstream-c] -b feature/[workstream-c]
 
-# Após todos os times completarem:
+# After all teams complete:
 rtk git checkout feature/[feature-principal]
 rtk git merge feature/[workstream-a]
 rtk git merge feature/[workstream-b]
 rtk git merge feature/[workstream-c]
 
-# Limpeza
+# Cleanup
 rtk git worktree remove ../[proj]-[workstream-a]
 rtk git worktree remove ../[proj]-[workstream-b]
 rtk git worktree remove ../[proj]-[workstream-c]
@@ -258,18 +258,18 @@ rtk git worktree remove ../[proj]-[workstream-c]
 
 ---
 
-## Checklist do Orquestrador
+## Orchestrator Checklist
 
-Antes de lançar qualquer time:
-- [ ] Workstreams são independentes (sem race condition de dados)
-- [ ] Estimativa de tokens calculada para cada workstream (< 85k)
-- [ ] Time Brief escrito para cada time (agentes definidos, arquivos listados)
-- [ ] Worktrees criadas
-- [ ] Dependências entre workstreams mapeadas (qual wave deve esperar qual)
+Before launching any team:
+- [ ] Workstreams are independent (no data race conditions)
+- [ ] Token estimate calculated for each workstream (< 85k)
+- [ ] Team Brief written for each team (agents defined, files listed)
+- [ ] Worktrees created
+- [ ] Dependencies between workstreams mapped (which wave must wait for which)
 
-Após todos os times completarem:
-- [ ] Todos os relatórios coletados
-- [ ] Nenhum time retornou `Status: BLOQUEADO` sem resolução
-- [ ] Merge das branches sem conflitos
-- [ ] Suite completa de testes rodando na branch merged
-- [ ] Review global (se mudanças cruzam múltiplos workstreams)
+After all teams complete:
+- [ ] All reports collected
+- [ ] No team returned `Status: BLOCKED` without resolution
+- [ ] Branch merge without conflicts
+- [ ] Full test suite running on the merged branch
+- [ ] Global review (if changes cross multiple workstreams)

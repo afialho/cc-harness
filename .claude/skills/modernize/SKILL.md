@@ -7,219 +7,219 @@ argument-hint: [target: hexagonal | modular | microservices]
 
 # /modernize — Monolith Modernization
 
-> Transforma um monolito em uma arquitetura estruturada.
-> Analisa o que existe → identifica bounded contexts → propõe estratégia → migra incrementalmente.
-> O sistema continua funcionando durante toda a migração. Nunca um big bang rewrite.
+> Transforms a monolith into a structured architecture.
+> Analyzes what exists → identifies bounded contexts → proposes strategy → migrates incrementally.
+> The system keeps running throughout the entire migration. Never a big bang rewrite.
 
 ---
 
-## Targets disponíveis
+## Available Targets
 
-| Target | O que é | Quando escolher |
+| Target | What it is | When to choose |
 |--------|---------|----------------|
-| `hexagonal` | Monolito reestruturado com camadas hexagonais (domain, application, ports, infrastructure) | Monolito com lógica misturada mas escala razoável — quer ordem sem complexidade distribuída |
-| `modular` | Monolito dividido em módulos bem definidos com interfaces claras entre eles | Time crescendo, features se acumulando, quer fronteiras claras sem microsserviços |
-| `microservices` | Extração de serviços independentes com comunicação via API/mensageria | Alta escala, times autônomos, partes do sistema com ciclos de deploy distintos |
+| `hexagonal` | Monolith restructured with hexagonal layers (domain, application, ports, infrastructure) | Monolith with mixed logic but reasonable scale — wants order without distributed complexity |
+| `modular` | Monolith divided into well-defined modules with clear interfaces between them | Growing team, accumulating features, wants clear boundaries without microservices |
+| `microservices` | Extraction of independent services with API/messaging communication | High scale, autonomous teams, parts of the system with distinct deploy cycles |
 
-**Recomendação padrão:** começar com `hexagonal` ou `modular` antes de `microservices`.
-Microserviços introduzem complexidade distribuída — só valem quando os problemas que resolvem são reais.
+**Default recommendation:** start with `hexagonal` or `modular` before `microservices`.
+Microservices introduce distributed complexity — only worth it when the problems they solve are real.
 
 ---
 
-## Fase 1 — Análise do monolito
+## Phase 1 — Monolith analysis
 
-> **Emit:** `▶ [1/6] Analisando o monolito`
+> **Emit:** `▶ [1/6] Analyzing the monolith`
 
-### 1.1 — Mapeamento estrutural
+### 1.1 — Structural mapping
 
 ```bash
-# Estrutura de diretórios
+# Directory structure
 find . -type d -not -path '*/node_modules/*' -not -path '*/.git/*' -maxdepth 5
 
-# Tamanho dos módulos (identificar os maiores)
+# Module sizes (identify the largest)
 find src -name "*.ts" -o -name "*.js" -o -name "*.py" -o -name "*.rb" | \
   xargs wc -l 2>/dev/null | sort -rn | head -30
 ```
 
-### 1.2 — Mapeamento de dependências
+### 1.2 — Dependency mapping
 
-Identificar:
-- **Dependências externas**: quais serviços/APIs o sistema consome
-- **Dependências internas**: quais módulos importam de quais (grafo de dependências)
-- **Acoplamentos problemáticos**: módulos que importam de muitos outros (fan-out alto)
-- **Gargalos**: módulos importados por muitos outros (fan-in alto — candidatos a extrair como biblioteca)
+Identify:
+- **External dependencies**: which services/APIs the system consumes
+- **Internal dependencies**: which modules import from which (dependency graph)
+- **Problematic couplings**: modules that import from many others (high fan-out)
+- **Bottlenecks**: modules imported by many others (high fan-in — candidates for extraction as library)
 
-### 1.3 — Identificar bounded contexts
+### 1.3 — Identify bounded contexts
 
-Um bounded context é um domínio com linguagem, entidades e regras próprias.
+A bounded context is a domain with its own language, entities, and rules.
 
-Sinais de bounded contexts distintos no código:
-- Grupos de entidades que se referem mutuamente mas raramente cruzam para outros grupos
-- Lógica de negócio com terminologia própria (ex: "fatura" no contexto de billing vs. "pedido" no contexto de vendas)
-- Partes do sistema que são alteradas por razões diferentes (ciclos de mudança distintos)
-- Dados que não precisam ser consistentes em tempo real entre partes do sistema
+Signs of distinct bounded contexts in code:
+- Groups of entities that reference each other but rarely cross into other groups
+- Business logic with its own terminology (e.g.: "invoice" in the billing context vs. "order" in the sales context)
+- Parts of the system that change for different reasons (distinct change cycles)
+- Data that does not need to be real-time consistent across parts of the system
 
-Para cada bounded context identificado, registrar:
+For each bounded context identified, record:
 ```
-Context: [nome]
-Entidades principais: [lista]
-Responsabilidade: [o que esse contexto faz]
-Dependências de outros contexts: [lista]
-Tamanho estimado: [N] arquivos
-```
-
-### 1.4 — Diagnóstico de dívida técnica
-
-```
-Para cada módulo/arquivo:
-  □ Viola separação de responsabilidades (lógica de negócio misturada com DB/HTTP)?
-  □ Tem dependências circulares?
-  □ Tem testes? Qual a cobertura?
-  □ Tem > 500 linhas? (candidato a extração)
-  □ É acessado diretamente por mais de 5 outros módulos? (candidato a interface)
+Context: [name]
+Main entities: [list]
+Responsibility: [what this context does]
+Dependencies on other contexts: [list]
+Estimated size: [N] files
 ```
 
-### 1.5 — Relatório de diagnóstico
+### 1.4 — Technical debt diagnostic
 
 ```
-DIAGNÓSTICO DO MONOLITO
+For each module/file:
+  □ Violates separation of responsibilities (business logic mixed with DB/HTTP)?
+  □ Has circular dependencies?
+  □ Has tests? What is the coverage?
+  □ Has > 500 lines? (candidate for extraction)
+  □ Is directly accessed by more than 5 other modules? (candidate for interface)
+```
+
+### 1.5 — Diagnostic report
+
+```
+MONOLITH DIAGNOSTIC
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Tamanho:         [N] arquivos, [N] linhas
-Stack:           [linguagem + framework]
-Cobertura atual: [X]%
+Size:            [N] files, [N] lines
+Stack:           [language + framework]
+Current coverage: [X]%
 
-Bounded contexts identificados:
-  1. [context] — [N] arquivos — [responsabilidade]
-  2. [context] — [N] arquivos
+Bounded contexts identified:
+  1. [context] — [N] files — [responsibility]
+  2. [context] — [N] files
   ...
 
-Problemas críticos:
-  □ Lógica de negócio misturada com infraestrutura em [N] arquivos
-  □ Dependências circulares em [lista]
-  □ [outros problemas]
+Critical issues:
+  □ Business logic mixed with infrastructure in [N] files
+  □ Circular dependencies in [list]
+  □ [other issues]
 
-Cobertura de testes por contexto:
+Test coverage by context:
   [context 1]: [X]%
   [context 2]: [X]%
 ```
 
 ---
 
-## Fase 2 — Estratégia de migração
+## Phase 2 — Migration strategy
 
-> **Emit:** `▶ [2/6] Definindo estratégia`
+> **Emit:** `▶ [2/6] Defining strategy`
 
-### 2.1 — Escolher padrão de migração
+### 2.1 — Choose migration pattern
 
-**Strangler Fig (recomendado para a maioria dos casos):**
-- Construir o novo código ao lado do antigo
-- Redirecionar gradualmente para o novo
-- Remover o antigo quando o novo estiver validado
-- Zero downtime, risco baixo, progresso incremental verificável
+**Strangler Fig (recommended for most cases):**
+- Build new code alongside the old
+- Gradually redirect to the new
+- Remove the old when the new is validated
+- Zero downtime, low risk, verifiable incremental progress
 
 **Branch by Abstraction:**
-- Introduzir uma interface na frente do código legado
-- Criar implementação nova atrás da interface
-- Trocar a implementação quando nova estiver pronta
-- Ideal quando o código legado não pode ser isolado facilmente
+- Introduce an interface in front of the legacy code
+- Create new implementation behind the interface
+- Swap the implementation when the new one is ready
+- Ideal when the legacy code cannot be easily isolated
 
-**Big Bang Rewrite (raramente recomendado):**
-- Reescrever tudo de uma vez em nova estrutura
-- Alto risco, zero valor entregue até o final
-- Só justificado se o código legado é literalmente impossível de testar ou isolar
+**Big Bang Rewrite (rarely recommended):**
+- Rewrite everything at once in a new structure
+- High risk, zero value delivered until the end
+- Only justified if the legacy code is literally impossible to test or isolate
 
-Para monolitos funcionais: **Strangler Fig** ou **Branch by Abstraction** sempre.
+For functional monoliths: **Strangler Fig** or **Branch by Abstraction** always.
 
-### 2.2 — Definir ordem de migração
+### 2.2 — Define migration order
 
-Princípios:
-- Começar pelos bounded contexts com **menor acoplamento** (mais fáceis de isolar)
-- Deixar por último os contexts com mais dependências entre si
-- Contextos de auth e infraestrutura compartilhada ficam por último (todos dependem deles)
+Principles:
+- Start with bounded contexts with **lowest coupling** (easiest to isolate)
+- Leave for last the contexts with most dependencies between them
+- Auth and shared infrastructure contexts go last (everything depends on them)
 
 ```
-ORDEM DE MIGRAÇÃO PROPOSTA
+PROPOSED MIGRATION ORDER
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Fase A (menor acoplamento — começar aqui):
-  1. [context] — motivo: [X dependências externas, fácil de isolar]
+Phase A (lowest coupling — start here):
+  1. [context] — reason: [X external dependencies, easy to isolate]
   2. [context]
 
-Fase B (acoplamento médio):
+Phase B (medium coupling):
   3. [context]
   4. [context]
 
-Fase C (maior acoplamento — por último):
-  5. [context] — motivo: [depende de A e B, só isolar depois]
-  6. [context] — auth/infra compartilhada
+Phase C (highest coupling — last):
+  5. [context] — reason: [depends on A and B, only isolate after]
+  6. [context] — shared auth/infra
 ```
 
-### 2.3 — Apresentar proposta ao usuário
+### 2.3 — Present proposal to user
 
 ```
-PROPOSTA DE MODERNIZAÇÃO
+MODERNIZATION PROPOSAL
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Target:      [hexagonal | modular | microservices]
-Estratégia:  Strangler Fig (migração incremental, zero downtime)
-Contexts:    [N] bounded contexts identificados
+Strategy:    Strangler Fig (incremental migration, zero downtime)
+Contexts:    [N] bounded contexts identified
 
-Sequência de migração:
-  [ordem detalhada]
+Migration sequence:
+  [detailed order]
 
-Estimativa:
-  [N] fases de migração
-  Sistema funcional em produção durante toda a migração
+Estimate:
+  [N] migration phases
+  System functional in production throughout the entire migration
 
-Riscos identificados:
-  [lista de riscos com mitigação]
+Identified risks:
+  [list of risks with mitigation]
 ```
 
-**⏸ PAUSA:** Aguarda aprovação antes de qualquer modificação no código.
+**PAUSE:** Awaits approval before any code modification.
 
-> **Checkpoint:** Escreve `.claude/checkpoint.md`:
+> **Checkpoint:** Writes `.claude/checkpoint.md`:
 > ```
 > skill: modernize
-> fase: strategy-approved
-> arquivos_modificados: [list]
-> proximo: safety-net
+> phase: strategy-approved
+> files_modified: [list]
+> next: safety-net
 > ```
-> Se contexto atingir ~60k tokens → escreve checkpoint e emite:
-> `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+> If context reaches ~60k tokens → writes checkpoint and emits:
+> `↺ Context ~60k. Recommend /compact. Use /resume to continue.`
 
 ---
 
-## Fase 3 — Safety net global
+## Phase 3 — Global safety net
 
-> **Emit:** `▶ [3/6] Estabelecendo safety net`
+> **Emit:** `▶ [3/6] Establishing safety net`
 
-Antes de qualquer migração, garantir cobertura de testes adequada.
+Before any migration, ensure adequate test coverage.
 
-**Meta:** cobertura ≥ 70% nos arquivos que serão modificados.
+**Goal:** coverage >= 70% in files that will be modified.
 
-Para cada bounded context na ordem de migração:
-1. Identificar testes existentes
-2. Adicionar testes para comportamentos críticos não cobertos
-3. Adicionar integration tests para APIs/endpoints expostos
-4. Verificar que todos passam
+For each bounded context in migration order:
+1. Identify existing tests
+2. Add tests for uncovered critical behaviors
+3. Add integration tests for exposed APIs/endpoints
+4. Verify that all pass
 
 ```bash
 rtk npm test -- --coverage
-# Registrar baseline: essa cobertura não pode regredir durante a migração
+# Record baseline: this coverage must not regress during migration
 ```
 
 ---
 
-## Fase 4 — Migração por context
+## Phase 4 — Migration by context
 
-> **Emit:** `▶ [4/6] Migrando — Context [N/Total]`
+> **Emit:** `▶ [4/6] Migrating — Context [N/Total]`
 
-Para **cada bounded context**, em sequência (um de cada vez):
+For **each bounded context**, in sequence (one at a time):
 
-### 4.1 — Criar estrutura de destino
+### 4.1 — Create target structure
 
 **Target hexagonal:**
 ```
 src/[context]/
-  domain/        Entidades puras do context
+  domain/        Pure context entities
   application/   Use cases
   ports/         Interfaces (inbound + outbound)
   infrastructure/ Adapters
@@ -228,119 +228,119 @@ src/[context]/
 **Target modular:**
 ```
 src/modules/[context]/
-  [context].module.ts    Barrel export (interface pública)
+  [context].module.ts    Barrel export (public interface)
   [context].service.ts   Business logic
-  [context].types.ts     Types e DTOs
+  [context].types.ts     Types and DTOs
   [context].repository.ts Data access
 ```
 
 **Target microservices:**
 ```
-services/[context]/      Serviço independente (próprio package.json, Dockerfile)
+services/[context]/      Independent service (own package.json, Dockerfile)
   src/
   tests/
   Dockerfile
   docker-compose.yml (development)
 ```
 
-### 4.2 — Migrar com Strangler Fig
+### 4.2 — Migrate with Strangler Fig
 
 ```
-Passo 1: Criar novo módulo/serviço VAZIO ao lado do antigo
-Passo 2: Implementar uma feature do contexto no novo módulo (TDD)
-Passo 3: Adicionar feature flag ou adapter que redireciona para o novo
-Passo 4: Testar novo comportamento em produção (ou staging)
-Passo 5: Quando validado → remover o código antigo correspondente
-Passo 6: Repetir para a próxima feature do contexto
+Step 1: Create new EMPTY module/service alongside the old one
+Step 2: Implement one feature of the context in the new module (TDD)
+Step 3: Add feature flag or adapter that redirects to the new one
+Step 4: Test new behavior in production (or staging)
+Step 5: When validated → remove the corresponding old code
+Step 6: Repeat for the next feature of the context
 ```
 
-Para microserviços, adicionar após Passo 1:
-- Definir API contract (OpenAPI) do serviço
-- Configurar comunicação (REST síncrono ou mensageria assíncrona)
-- Adicionar service ao docker-compose global
+For microservices, add after Step 1:
+- Define API contract (OpenAPI) of the service
+- Configure communication (synchronous REST or asynchronous messaging)
+- Add service to global docker-compose
 
-### 4.3 — Verificação após cada context
+### 4.3 — Verification after each context
 
 ```bash
-rtk npm test             # testes não podem regredir
-rtk docker compose up -d # sistema deve subir completo
+rtk npm test             # tests must not regress
+rtk docker compose up -d # system must start completely
 ```
 
-Se `/qa-loop` revelar regressão → reverter o context, diagnosticar, recomeçar.
+If `/qa-loop` reveals regression → revert the context, diagnose, restart.
 
 ---
 
-## Fase 5 — Limpeza e consolidação
+## Phase 5 — Cleanup and consolidation
 
-> **Emit:** `▶ [5/6] Limpeza`
+> **Emit:** `▶ [5/6] Cleanup`
 
-Após todos os contexts migrados:
+After all contexts are migrated:
 
-1. **Remover código legado** — todo código que foi substituído pelo Strangler Fig
-2. **Verificar dependências circulares** — nenhuma deve existir após a migração
-3. **Atualizar `architecture.json`** — refletir a nova estrutura
-4. **Atualizar Docker Compose** — se microserviços, garantir que todos os serviços sobem
+1. **Remove legacy code** — all code that was replaced by the Strangler Fig
+2. **Check circular dependencies** — none should exist after migration
+3. **Update `architecture.json`** — reflect the new structure
+4. **Update Docker Compose** — for microservices, ensure all services start
 
 ```bash
-# Verificar que nenhum arquivo legado ainda é importado
+# Verify that no legacy file is still imported
 rtk grep -r "from.*legacy\|require.*legacy\|import.*old" src/ --include="*.ts"
 ```
 
 ---
 
-## Fase 6 — Validação final
+## Phase 6 — Final validation
 
-> **Emit:** `▶ [6/6] Validação`
+> **Emit:** `▶ [6/6] Validation`
 
 ```bash
-rtk npm test                    # 100% dos testes passando
-rtk docker compose up -d        # todos os serviços sobem
+rtk npm test                    # 100% of tests passing
+rtk docker compose up -d        # all services start
 ```
 
 ```
-/qa-loop (escopo: sistema completo, dimensões: qa-code + qa-backend + qa-security)
+/qa-loop (scope: full system, dimensions: qa-code + qa-backend + qa-security)
 ```
 
-Se houver UI: `/browser-qa <url>` — verificar que nenhum fluxo quebrou.
+If there is UI: `/browser-qa <url>` — verify that no flow broke.
 
-### Output final
+### Final output
 
 ```
 MODERNIZE COMPLETE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Target:          [hexagonal | modular | microservices]
-Estratégia:      Strangler Fig
+Strategy:        Strangler Fig
 
-Antes:
-  Arquitetura:   Monolito não estruturado
-  Cobertura:     [X]%
-  Bounded contexts misturados: [N]
+Before:
+  Architecture:  Unstructured monolith
+  Coverage:      [X]%
+  Mixed bounded contexts: [N]
 
-Depois:
-  Arquitetura:   [target] com [N] contexts isolados
-  Cobertura:     [Y]% (+[Z]%)
-  Código legado removido: [N] arquivos
+After:
+  Architecture:  [target] with [N] isolated contexts
+  Coverage:      [Y]% (+[Z]%)
+  Legacy code removed: [N] files
 
-[Se microservices:]
-Serviços criados:
-  ├─ [service-1]  → porta [N]  (responsabilidade: [X])
-  ├─ [service-2]  → porta [N]
-  └─ [service-N]  → porta [N]
+[If microservices:]
+Services created:
+  ├─ [service-1]  → port [N]  (responsibility: [X])
+  ├─ [service-2]  → port [N]
+  └─ [service-N]  → port [N]
 
-Testes:          ✅ PASS (sem regressões)
-Arquitetura:     ✅ architecture.json atualizado
-Sistema:         ✅ rtk docker compose up -d funcional
+Tests:           ✅ PASS (no regressions)
+Architecture:    ✅ architecture.json updated
+System:          ✅ rtk docker compose up -d functional
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 ---
 
-## Regras
+## Rules
 
-1. **Nunca big bang** — migração incremental com Strangler Fig; se não for possível, Branch by Abstraction; big bang só como último recurso explicitamente aprovado
-2. **Sistema funcional em todo momento** — após cada context migrado, o sistema deve funcionar em produção
-3. **Safety net primeiro** — cobertura de testes estabelecida antes de qualquer modificação
-4. **Testes não regridem** — um teste que passa antes da migração não pode falhar depois
-5. **Microserviços são o último passo** — nunca extrair serviços antes de ter fronteiras claras (hexagonal ou modular primeiro)
-6. **Um context por vez** — nunca migrar dois contexts em paralelo (conflitos de refatoração)
-7. **`architecture.json` atualizado** — ao final, reflete a nova estrutura para que hooks e skills funcionem corretamente
+1. **Never big bang** — incremental migration with Strangler Fig; if not possible, Branch by Abstraction; big bang only as last resort explicitly approved
+2. **System functional at all times** — after each context migrated, the system must work in production
+3. **Safety net first** — test coverage established before any modification
+4. **Tests don't regress** — a test that passes before migration cannot fail after
+5. **Microservices are the last step** — never extract services before having clear boundaries (hexagonal or modular first)
+6. **One context at a time** — never migrate two contexts in parallel (refactoring conflicts)
+7. **`architecture.json` updated** — at the end, reflects the new structure so that hooks and skills work correctly

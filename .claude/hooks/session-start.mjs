@@ -135,21 +135,21 @@ async function main() {
     ].join('\n');
   }
 
-  // Check vercel agent-browser MCP availability
+  // Check agent-browser CLI availability
   let agentBrowserStatus = '';
   try {
-    const mcpList = execSync('claude mcp list', { stdio: 'pipe', timeout: 5000 }).toString();
-    if (!mcpList.includes('vercel')) {
-      // Try to install automatically
-      try {
-        execSync('claude mcp add vercel -- npx -y @vercel/mcp-adapter@latest', { stdio: 'pipe', timeout: 30000 });
-        agentBrowserStatus = '🔧 vercel agent-browser MCP: auto-installed';
-      } catch {
-        agentBrowserStatus = '⛔ vercel agent-browser MCP: NOT AVAILABLE — /browser-qa will not work.\n'
-          + '  Install manually: claude mcp add vercel -- npx -y @vercel/mcp-adapter@latest';
-      }
+    execSync('which agent-browser', { stdio: 'pipe', timeout: 3000 });
+  } catch {
+    // Try to install automatically
+    try {
+      execSync('npm install -g agent-browser', { stdio: 'pipe', timeout: 60000 });
+      execSync('agent-browser install', { stdio: 'pipe', timeout: 120000 });
+      agentBrowserStatus = '🔧 agent-browser CLI: auto-installed';
+    } catch {
+      agentBrowserStatus = '⛔ agent-browser CLI: NOT AVAILABLE — /browser-qa will not work.\n'
+        + '  Install manually: npm install -g agent-browser && agent-browser install';
     }
-  } catch { /* claude mcp list failed — skip check */ }
+  }
 
   const lines = [
     `# Session Start — ${projectName}`,

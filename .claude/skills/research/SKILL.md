@@ -10,470 +10,470 @@ argument-hint: <topic or feature to research>
 Deep, multi-source research before any planning or code is written.
 Real agents. Real searches. Real output.
 
-> A pesquisa leva tempo mas é o que garante qualidade real no output final.
+> The research takes time but it is what ensures real quality in the final output.
 
 ---
 
 ## How it works
 
 ```
-/research <tópico>
+/research <topic>
     │
-    ├─ Phase 0: Entender o tópico (Claude, sem agentes)
+    ├─ Phase 0: Understand the topic (Claude, no agents)
     │
-    ├─ Phase 1: Wave de pesquisa paralela (até 4 agentes simultâneos)
-    │           ├─ Agente Business/Market     (se feature de produto com usuários ou mercado identificável)
-    │           ├─ Agente API/Docs            (se há integração com serviço externo ou API)
-    │           ├─ Agente Architecture/Backend (se há lógica de servidor, BD, cache ou fila)
-    │           ├─ Agente Domain/Rules        (se domínio especializado ou regras de negócio complexas)
-    │           ├─ Agente Implementações      (sempre)
-    │           └─ Agente YouTube             (se tópico tem probabilidade de tutoriais técnicos relevantes)
+    ├─ Phase 1: Parallel research wave (up to 4 simultaneous agents)
+    │           ├─ Business/Market Agent       (if product feature with users or identifiable market)
+    │           ├─ API/Docs Agent              (if there is integration with external service or API)
+    │           ├─ Architecture/Backend Agent   (if there is server logic, DB, cache, or queue)
+    │           ├─ Domain/Rules Agent           (if specialized domain or complex business rules)
+    │           ├─ Implementations Agent        (always)
+    │           └─ YouTube Agent               (if topic likely has relevant technical tutorials)
     │
-    ├─ Phase 2: Agregação → RESEARCH.md gerado no projeto
+    ├─ Phase 2: Aggregation → RESEARCH.md generated in the project
     │
-    ├─ Resumo de 5–10 linhas dos principais achados
+    ├─ 5-10 line summary of key findings
     │
-    └─ 3–5 perguntas de clarificação → aguarda resposta antes de indicar pronto para /build (planning phase)
+    └─ 3-5 clarification questions → waits for response before indicating ready for /build (planning phase)
 ```
 
 ---
 
-## Phase 0 — Entender o tópico
+## Phase 0 — Understand the topic
 
-> **Emit:** `▶ [1/3] Entendendo o tópico`
+> **Emit:** `▶ [1/3] Understanding the topic`
 
-Antes de lançar qualquer agente, analise o tópico recebido e determine:
+Before launching any agent, analyze the received topic and determine:
 
-1. **Categoria:** É uma feature de produto? Uma integração com API externa? Um serviço ou backend? Um domínio regulado ou especializado? Um conceito arquitetural?
-2. **Objetivo principal:** O que o usuário quer construir ou entender? Qual o resultado esperado?
-3. **Dimensões de pesquisa relevantes:** Com base no tópico, decida quais agentes lançar usando as 6 dimensões abaixo. **Máximo 4 agentes por wave.** Se 5 ou mais dimensões forem relevantes, priorize os 4 mais impactantes para o tópico.
+1. **Category:** Is it a product feature? An integration with an external API? A service or backend? A regulated or specialized domain? An architectural concept?
+2. **Main objective:** What does the user want to build or understand? What is the expected outcome?
+3. **Relevant research dimensions:** Based on the topic, decide which agents to launch using the 6 dimensions below. **Maximum 4 agents per wave.** If 5 or more dimensions are relevant, prioritize the 4 most impactful for the topic.
 
-**Critérios de seleção:**
-
-```
-Lança Business/Market quando:
-  - Feature de produto com usuários finais
-  - Há concorrentes claros no mercado
-  - Feature tem impacto em conversão, retenção ou monetização
-
-Lança API/Docs quando:
-  - Feature integra com serviço externo (Stripe, SendGrid, Twilio, etc.)
-  - Há uma API de terceiro mencionada ou implícita
-  - Feature consome ou expõe uma API REST/GraphQL/gRPC
-
-Lança Architecture/Backend quando:
-  - Feature tem lógica de servidor, banco de dados, cache ou fila
-  - Decisões de escalabilidade são relevantes
-  - Feature é um serviço, worker ou job
-
-Lança Domain/Rules quando:
-  - Feature opera em domínio especializado (fintech, healthtech, e-commerce, etc.)
-  - Há regras de negócio não-óbvias envolvidas
-  - O vocabulário do domínio precisa ser entendido antes de implementar
-
-Lança Implementações: sempre
-
-Lança YouTube: quando há probabilidade de tutoriais técnicos relevantes
-```
-
-Emita uma linha de contexto antes de iniciar a wave:
+**Selection criteria:**
 
 ```
-Tópico:    [tópico identificado]
-Categoria: [Product Feature | API Integration | Backend Service | Domain/Rules | Architecture | Other]
-Agentes:   [lista dos agentes que serão lançados e por quê — máximo 4]
+Launch Business/Market when:
+  - Product feature with end users
+  - There are clear competitors in the market
+  - Feature impacts conversion, retention, or monetization
+
+Launch API/Docs when:
+  - Feature integrates with an external service (Stripe, SendGrid, Twilio, etc.)
+  - There is a third-party API mentioned or implied
+  - Feature consumes or exposes a REST/GraphQL/gRPC API
+
+Launch Architecture/Backend when:
+  - Feature has server logic, database, cache, or queue
+  - Scalability decisions are relevant
+  - Feature is a service, worker, or job
+
+Launch Domain/Rules when:
+  - Feature operates in a specialized domain (fintech, healthtech, e-commerce, etc.)
+  - There are non-obvious business rules involved
+  - The domain vocabulary needs to be understood before implementing
+
+Launch Implementations: always
+
+Launch YouTube: when there is a likelihood of relevant technical tutorials
+```
+
+Emit a context line before starting the wave:
+
+```
+Topic:     [identified topic]
+Category:  [Product Feature | API Integration | Backend Service | Domain/Rules | Architecture | Other]
+Agents:    [list of agents to be launched and why — maximum 4]
 ```
 
 ---
 
-## Phase 1 — Wave de pesquisa paralela
+## Phase 1 — Parallel research wave
 
-> **Emit:** `▶ [2/3] Pesquisa paralela em andamento`
+> **Emit:** `▶ [2/3] Parallel research in progress`
 
-Lance os agentes selecionados **em paralelo** usando o Agent tool com:
+Launch the selected agents **in parallel** using the Agent tool with:
 - `subagent_type: "general-purpose"`
 - `run_in_background: false`
-- Todos os agentes recebem o mesmo contexto de entrada (tópico + categoria)
+- All agents receive the same input context (topic + category)
 
-Aguarde todos completarem antes de prosseguir para Phase 2.
-
----
-
-### Agente Business/Market
-
-**Lançar quando:** Qualquer feature de produto com usuários finais, quando há concorrentes claros no mercado, ou quando a feature tem impacto em conversão, retenção ou monetização.
-
-**Prompt para o agente:**
-
-```
-Você é um pesquisador especializado em análise de mercado e produto.
-
-Tópico de pesquisa: [TÓPICO]
-Categoria: [CATEGORIA]
-
-Sua tarefa é entender como o mercado resolve este problema: concorrentes, demandas dos usuários,
-modelos de negócio e tendências relevantes.
-Use WebSearch e WebFetch para buscar conteúdo atualizado — não invente resultados.
-
-Fontes para pesquisar (tente pelo menos 3-4 buscas antes de desistir de uma fonte):
-- Product Hunt: WebSearch "site:producthunt.com [tópico]" → WebFetch nas páginas mais relevantes
-- G2: WebSearch "site:g2.com [tópico] reviews" → WebFetch nas páginas de categoria
-- App Store / Google Play: WebSearch "[tópico] app reviews site:apps.apple.com OR site:play.google.com"
-- Hacker News: WebSearch "site:news.ycombinator.com [tópico]" → WebFetch nas threads relevantes
-- Reddit: WebSearch "site:reddit.com [tópico] [setor]" → WebFetch nos posts mais votados
-- LinkedIn / blogs do setor: WebSearch "[tópico] [setor] trends 2024 2025"
-- Fallback: WebSearch "[tópico] competitors comparison market 2024 2025"
-
-Para cada referência encontrada, extraia:
-1. URL da fonte
-2. Como o produto ou empresa aborda o problema
-3. O que os usuários elogiam e reclamam (se reviews)
-4. Modelo de negócio ou pricing identificado (se aplicável)
-5. Gaps ou oportunidades identificados em relação ao tópico
-
-Retorne no máximo 2000 tokens com:
-- 3 a 5 referências concretas com URLs reais
-- Resumo de como o mercado aborda o problema hoje
-- Funcionalidades mais pedidas / mais reclamadas pelos usuários
-- Gaps identificados nos concorrentes
-- Tendências do mercado para o tipo de feature
-
-Se uma fonte não retornar resultados relevantes após 3 tentativas, passe para a próxima.
-```
+Wait for all to complete before proceeding to Phase 2.
 
 ---
 
-### Agente API/Docs
+### Business/Market Agent
 
-**Lançar quando:** A feature envolve integração com serviço externo, API de terceiro mencionada ou implícita, ou feature que consome ou expõe uma API REST/GraphQL/gRPC.
+**Launch when:** Any product feature with end users, when there are clear competitors in the market, or when the feature impacts conversion, retention, or monetization.
 
-**Prompt para o agente:**
+**Prompt for the agent:**
 
 ```
-Você é um pesquisador especializado em documentação de APIs e integrações técnicas.
+You are a researcher specialized in market and product analysis.
 
-Tópico de pesquisa: [TÓPICO]
-Categoria: [CATEGORIA]
+Research topic: [TOPIC]
+Category: [CATEGORY]
 
-Sua tarefa é mapear os endpoints, autenticação, SDKs e limitações da API ou serviço externo
-relevante para este tópico.
-Use WebSearch e WebFetch para buscar conteúdo atualizado — não invente resultados.
+Your task is to understand how the market solves this problem: competitors, user demands,
+business models, and relevant trends.
+Use WebSearch and WebFetch to find updated content — do not invent results.
 
-Fontes para pesquisar (tente pelo menos 3-4 buscas antes de desistir de uma fonte):
-- Documentação oficial da API mencionada: WebFetch na URL docs oficial + WebSearch "[api] documentation [versão]"
-- Changelog oficial: WebSearch "[api] changelog release notes" → WebFetch para identificar versão atual
-- Status page: WebSearch "[api] status page uptime" → WebFetch para histórico de incidentes
-- GitHub da API: WebSearch "site:github.com [api provider] sdk" → WebFetch no README e issues abertos
-- RapidAPI: WebSearch "site:rapidapi.com [tópico]" → WebFetch nas páginas relevantes
-- Postman Collections públicas: WebSearch "[api] postman collection" → WebFetch se disponível
+Sources to research (try at least 3-4 searches before giving up on a source):
+- Product Hunt: WebSearch "site:producthunt.com [topic]" → WebFetch on the most relevant pages
+- G2: WebSearch "site:g2.com [topic] reviews" → WebFetch on category pages
+- App Store / Google Play: WebSearch "[topic] app reviews site:apps.apple.com OR site:play.google.com"
+- Hacker News: WebSearch "site:news.ycombinator.com [topic]" → WebFetch on relevant threads
+- Reddit: WebSearch "site:reddit.com [topic] [sector]" → WebFetch on the most upvoted posts
+- LinkedIn / industry blogs: WebSearch "[topic] [sector] trends 2024 2025"
+- Fallback: WebSearch "[topic] competitors comparison market 2024 2025"
+
+For each reference found, extract:
+1. Source URL
+2. How the product or company approaches the problem
+3. What users praise and complain about (if reviews)
+4. Business model or pricing identified (if applicable)
+5. Gaps or opportunities identified relative to the topic
+
+Return at most 2000 tokens with:
+- 3 to 5 concrete references with real URLs
+- Summary of how the market approaches the problem today
+- Most requested / most complained about features by users
+- Gaps identified in competitors
+- Market trends for this type of feature
+
+If a source does not return relevant results after 3 attempts, move to the next one.
+```
+
+---
+
+### API/Docs Agent
+
+**Launch when:** The feature involves integration with an external service, a third-party API mentioned or implied, or a feature that consumes or exposes a REST/GraphQL/gRPC API.
+
+**Prompt for the agent:**
+
+```
+You are a researcher specialized in API documentation and technical integrations.
+
+Research topic: [TOPIC]
+Category: [CATEGORY]
+
+Your task is to map the endpoints, authentication, SDKs, and limitations of the API or external service
+relevant to this topic.
+Use WebSearch and WebFetch to find updated content — do not invent results.
+
+Sources to research (try at least 3-4 searches before giving up on a source):
+- Official API documentation: WebFetch on the official docs URL + WebSearch "[api] documentation [version]"
+- Official changelog: WebSearch "[api] changelog release notes" → WebFetch to identify current version
+- Status page: WebSearch "[api] status page uptime" → WebFetch for incident history
+- API GitHub: WebSearch "site:github.com [api provider] sdk" → WebFetch on README and open issues
+- RapidAPI: WebSearch "site:rapidapi.com [topic]" → WebFetch on relevant pages
+- Public Postman Collections: WebSearch "[api] postman collection" → WebFetch if available
 - Fallback: WebSearch "[api] rate limits authentication endpoints 2024 2025"
 
-Para cada API ou serviço encontrado, extraia:
-1. URL da documentação oficial
-2. Endpoints relevantes com estrutura de request/response (se disponível)
-3. Método de autenticação (API key, OAuth, JWT, etc.)
-4. Rate limits e limites do plano gratuito vs. pago
-5. Versão atual da API (está deprecada? há v2 ou versão nova?)
-6. SDKs oficiais disponíveis e linguagens suportadas
-7. Erros comuns documentados ou issues abertos no GitHub
+For each API or service found, extract:
+1. Official documentation URL
+2. Relevant endpoints with request/response structure (if available)
+3. Authentication method (API key, OAuth, JWT, etc.)
+4. Rate limits and free vs. paid plan limits
+5. Current API version (is it deprecated? is there a v2 or new version?)
+6. Official SDKs available and supported languages
+7. Common documented errors or open issues on GitHub
 
-Retorne no máximo 2000 tokens com:
-- Endpoints mais relevantes com estrutura resumida
-- Autenticação necessária e como configurá-la
-- SDKs oficiais disponíveis (com links)
-- Rate limits e limitações conhecidas
-- Versão atual e status de deprecação
-- Issues ou erros comuns reportados
+Return at most 2000 tokens with:
+- Most relevant endpoints with summarized structure
+- Required authentication and how to configure it
+- Official SDKs available (with links)
+- Rate limits and known limitations
+- Current version and deprecation status
+- Common reported issues or errors
 
-Se uma fonte não retornar resultados relevantes após 3 tentativas, passe para a próxima.
+If a source does not return relevant results after 3 attempts, move to the next one.
 ```
 
 ---
 
-### Agente Architecture/Backend
+### Architecture/Backend Agent
 
-**Lançar quando:** Features de backend, services, APIs, banco de dados, queue, cache; quando decisões de escalabilidade são relevantes; ou quando a feature é um serviço, worker ou job.
+**Launch when:** Backend features, services, APIs, databases, queues, caches; when scalability decisions are relevant; or when the feature is a service, worker, or job.
 
-**Prompt para o agente:**
-
-```
-Você é um pesquisador especializado em arquitetura de software e sistemas backend.
-
-Tópico de pesquisa: [TÓPICO]
-Categoria: [CATEGORIA]
-
-Sua tarefa é encontrar padrões de design, trade-offs documentados e referências de arquitetura
-em produção para este tipo de problema.
-Use WebSearch e WebFetch para buscar conteúdo atualizado — não invente resultados.
-
-Fontes para pesquisar (tente pelo menos 3-4 buscas antes de desistir de uma fonte):
-- Martin Fowler's blog: WebSearch "site:martinfowler.com [tópico]" → WebFetch nos artigos encontrados
-- AWS Architecture Blog: WebSearch "site:aws.amazon.com/blogs/architecture [tópico]"
-- Google Cloud Blog: WebSearch "site:cloud.google.com/blog [tópico]"
-- High Scalability: WebSearch "site:highscalability.com [tópico]" → WebFetch nos posts relevantes
-- InfoQ: WebSearch "site:infoq.com [tópico] architecture" → WebFetch nos artigos relevantes
-- GitHub (projetos de referência): WebSearch "site:github.com [tópico] architecture example production"
-- Fallback: WebSearch "[tópico] design patterns scalability trade-offs production 2024 2025"
-
-Para cada referência encontrada, extraia:
-1. URL da fonte
-2. Padrão de design ou abordagem arquitetural descrita (CQRS, Event Sourcing, Saga, etc.)
-3. Trade-offs documentados entre abordagens
-4. Schema de banco de dados ou modelo de dados para entidades similares (se disponível)
-5. Estratégias de cache e performance para o caso de uso
-6. Escala reportada (se menciona volume, RPS, latência, etc.)
-
-Retorne no máximo 2000 tokens com:
-- Padrões recomendados para o tipo de problema com justificativa
-- Trade-offs por abordagem (simplicidade vs. escalabilidade, consistência vs. disponibilidade, etc.)
-- Schemas ou modelos de dados relevantes encontrados
-- Referências de implementação em produção com métricas quando disponíveis
-- 1-2 recomendações diretas com base nas referências
-
-Se uma fonte não retornar resultados relevantes após 3 tentativas, passe para a próxima.
-```
-
----
-
-### Agente Domain/Rules
-
-**Lançar quando:** Features com regras de negócio complexas, domínios regulados (financeiro, saúde, jurídico), ou quando o domínio tem terminologia específica que precisa ser entendida antes de implementar.
-
-**Prompt para o agente:**
+**Prompt for the agent:**
 
 ```
-Você é um pesquisador especializado em regras de negócio e domínios especializados.
+You are a researcher specialized in software architecture and backend systems.
 
-Tópico de pesquisa: [TÓPICO]
-Categoria: [CATEGORIA]
+Research topic: [TOPIC]
+Category: [CATEGORY]
 
-Sua tarefa é mapear a terminologia do domínio, regras de negócio consolidadas, regulações
-aplicáveis e edge cases conhecidos para este tipo de feature.
-Use WebSearch e WebFetch para buscar conteúdo atualizado — não invente resultados.
+Your task is to find design patterns, documented trade-offs, and production architecture references
+for this type of problem.
+Use WebSearch and WebFetch to find updated content — do not invent results.
 
-Fontes para pesquisar (tente pelo menos 3-4 buscas antes de desistir de uma fonte):
-- Documentação oficial do setor: WebSearch "[setor/domínio] official documentation standards"
-- RFCs relevantes: WebSearch "RFC [tópico]" → WebFetch nos documentos encontrados
-- Wikipedia (conceitos do domínio): WebFetch "https://en.wikipedia.org/wiki/[conceito]" para definições
-- Legislação aplicável: WebSearch "[tópico] regulation compliance law [país/região]" se relevante
-- Documentação de ERP/sistemas consolidados: WebSearch "SAP [tópico] OR Salesforce [tópico] model"
-- Fallback: WebSearch "[domínio] business rules terminology glossary best practices"
+Sources to research (try at least 3-4 searches before giving up on a source):
+- Martin Fowler's blog: WebSearch "site:martinfowler.com [topic]" → WebFetch on found articles
+- AWS Architecture Blog: WebSearch "site:aws.amazon.com/blogs/architecture [topic]"
+- Google Cloud Blog: WebSearch "site:cloud.google.com/blog [topic]"
+- High Scalability: WebSearch "site:highscalability.com [topic]" → WebFetch on relevant posts
+- InfoQ: WebSearch "site:infoq.com [topic] architecture" → WebFetch on relevant articles
+- GitHub (reference projects): WebSearch "site:github.com [topic] architecture example production"
+- Fallback: WebSearch "[topic] design patterns scalability trade-offs production 2024 2025"
 
-Para cada referência encontrada, extraia:
-1. URL da fonte
-2. Definições e terminologia do domínio relevante para o tópico
-3. Regras de negócio consolidadas no setor
-4. Regulações ou requisitos de compliance aplicáveis
-5. Edge cases conhecidos ou situações excepcionais documentadas
-6. Como sistemas consolidados modelam entidades similares
+For each reference found, extract:
+1. Source URL
+2. Design pattern or architectural approach described (CQRS, Event Sourcing, Saga, etc.)
+3. Documented trade-offs between approaches
+4. Database schema or data model for similar entities (if available)
+5. Cache and performance strategies for the use case
+6. Reported scale (if it mentions volume, RPS, latency, etc.)
 
-Retorne no máximo 2000 tokens com:
-- Glossário compacto dos termos mais relevantes (máximo 10 termos com definição de 1-2 linhas cada)
-- Regras de negócio identificadas que impactam a implementação
-- Edge cases do domínio que precisam ser tratados
-- Referências normativas ou regulatórias aplicáveis (se houver)
-- Como sistemas de referência do mercado (SAP, Salesforce, etc.) abordam entidades similares
+Return at most 2000 tokens with:
+- Recommended patterns for this type of problem with justification
+- Trade-offs per approach (simplicity vs. scalability, consistency vs. availability, etc.)
+- Relevant schemas or data models found
+- Production implementation references with metrics when available
+- 1-2 direct recommendations based on the references
 
-Se uma fonte não retornar resultados relevantes após 3 tentativas, passe para a próxima.
+If a source does not return relevant results after 3 attempts, move to the next one.
 ```
 
 ---
 
-### Agente Implementações de Referência
+### Domain/Rules Agent
 
-**Lançar quando:** Sempre. Este agente é lançado para todos os tópicos.
+**Launch when:** Features with complex business rules, regulated domains (financial, health, legal), or when the domain has specific terminology that needs to be understood before implementing.
 
-**Prompt para o agente:**
+**Prompt for the agent:**
 
 ```
-Você é um pesquisador especializado em implementações de código open source e artigos técnicos.
+You are a researcher specialized in business rules and specialized domains.
 
-Tópico de pesquisa: [TÓPICO]
-Categoria: [CATEGORIA]
+Research topic: [TOPIC]
+Category: [CATEGORY]
 
-Sua tarefa é encontrar implementações reais e artigos técnicos relevantes para este tópico.
-Use WebSearch e WebFetch para buscar conteúdo atualizado — não invente resultados.
+Your task is to map the domain terminology, consolidated business rules, applicable regulations,
+and known edge cases for this type of feature.
+Use WebSearch and WebFetch to find updated content — do not invent results.
 
-Fontes para pesquisar (tente pelo menos 3-4 buscas antes de desistir de uma fonte):
-- GitHub: WebSearch "site:github.com [tópico] implementation" e "site:github.com [tópico] example"
-- Stack Overflow: WebSearch "site:stackoverflow.com [tópico]" → WebFetch nas respostas mais votadas
-- Dev.to: WebSearch "site:dev.to [tópico]" → WebFetch nos artigos mais relevantes
-- CSS-Tricks (para frontend): WebSearch "site:css-tricks.com [tópico]" → WebFetch nos artigos encontrados
-- AWS Docs / PostgreSQL Docs / Redis Docs (para backend): WebSearch "site:docs.aws.amazon.com [tópico]" OR "site:postgresql.org/docs [tópico]" OR "site:redis.io/docs [tópico]"
-- Medium/Hashnode: WebSearch "[tópico] implementation medium.com OR hashnode.dev"
-- Fallback: WebSearch "[tópico] open source example implementation 2024 2025"
+Sources to research (try at least 3-4 searches before giving up on a source):
+- Official industry documentation: WebSearch "[sector/domain] official documentation standards"
+- Relevant RFCs: WebSearch "RFC [topic]" → WebFetch on found documents
+- Wikipedia (domain concepts): WebFetch "https://en.wikipedia.org/wiki/[concept]" for definitions
+- Applicable legislation: WebSearch "[topic] regulation compliance law [country/region]" if relevant
+- ERP/consolidated systems documentation: WebSearch "SAP [topic] OR Salesforce [topic] model"
+- Fallback: WebSearch "[domain] business rules terminology glossary best practices"
 
-Para cada implementação ou artigo encontrado, extraia:
-1. URL da fonte
-2. Abordagem técnica utilizada (padrão de design, algoritmos, estrutura de dados)
-3. Pontos técnicos notáveis (performance, segurança, reutilização, testabilidade)
-4. Trechos de código relevantes (se disponíveis)
-5. Relevância e qualidade da implementação
+For each reference found, extract:
+1. Source URL
+2. Domain definitions and terminology relevant to the topic
+3. Consolidated business rules in the industry
+4. Applicable regulations or compliance requirements
+5. Known edge cases or documented exceptional situations
+6. How consolidated systems model similar entities
 
-Retorne no máximo 2000 tokens com:
-- 3 a 5 implementações ou artigos com URLs reais
-- Resumo das abordagens técnicas mais comuns ou mais eficazes
-- Padrões de código recorrentes encontrados
-- Recomendações técnicas baseadas nas referências encontradas
+Return at most 2000 tokens with:
+- Compact glossary of the most relevant terms (maximum 10 terms with 1-2 line definitions each)
+- Identified business rules that impact implementation
+- Domain edge cases that need to be handled
+- Applicable normative or regulatory references (if any)
+- How market reference systems (SAP, Salesforce, etc.) approach similar entities
 
-Se uma fonte não retornar resultados relevantes após 3 tentativas, passe para a próxima.
+If a source does not return relevant results after 3 attempts, move to the next one.
 ```
 
 ---
 
-### Agente YouTube
+### Reference Implementations Agent
 
-**Lançar quando:** O tópico provavelmente tem tutoriais técnicos em vídeo disponíveis (features conhecidas, bibliotecas populares, patterns documentados, integrações comuns). Omitir apenas se o tópico for muito específico, proprietário ou improvável de ter cobertura em vídeo.
+**Launch when:** Always. This agent is launched for all topics.
 
-**Prompt para o agente:**
+**Prompt for the agent:**
 
 ```
-Você é um pesquisador especializado em conteúdo educativo em vídeo.
+You are a researcher specialized in open source code implementations and technical articles.
 
-Tópico de pesquisa: [TÓPICO]
-Categoria: [CATEGORIA]
+Research topic: [TOPIC]
+Category: [CATEGORY]
 
-Sua tarefa é encontrar vídeos tutoriais relevantes e extrair os conceitos técnicos apresentados.
-Use WebSearch e WebFetch para buscar conteúdo atualizado — não invente resultados.
+Your task is to find real implementations and relevant technical articles for this topic.
+Use WebSearch and WebFetch to find updated content — do not invent results.
 
-Processo (execute nesta ordem):
+Sources to research (try at least 3-4 searches before giving up on a source):
+- GitHub: WebSearch "site:github.com [topic] implementation" and "site:github.com [topic] example"
+- Stack Overflow: WebSearch "site:stackoverflow.com [topic]" → WebFetch on the most upvoted answers
+- Dev.to: WebSearch "site:dev.to [topic]" → WebFetch on the most relevant articles
+- CSS-Tricks (for frontend): WebSearch "site:css-tricks.com [topic]" → WebFetch on found articles
+- AWS Docs / PostgreSQL Docs / Redis Docs (for backend): WebSearch "site:docs.aws.amazon.com [topic]" OR "site:postgresql.org/docs [topic]" OR "site:redis.io/docs [topic]"
+- Medium/Hashnode: WebSearch "[topic] implementation medium.com OR hashnode.dev"
+- Fallback: WebSearch "[topic] open source example implementation 2024 2025"
 
-PASSO 1 — Encontrar vídeos relevantes:
-  WebSearch: site:youtube.com "[tópico]" tutorial 2024 OR 2025
-  WebSearch: site:youtube.com "[tópico]" implementation walkthrough
-  WebSearch: site:youtube.com "[tópico]" from scratch
+For each implementation or article found, extract:
+1. Source URL
+2. Technical approach used (design pattern, algorithms, data structures)
+3. Notable technical points (performance, security, reusability, testability)
+4. Relevant code snippets (if available)
+5. Relevance and quality of the implementation
 
-  Selecione os 2-3 vídeos mais relevantes (mais recentes, mais visualizações, mais técnicos).
+Return at most 2000 tokens with:
+- 3 to 5 implementations or articles with real URLs
+- Summary of the most common or most effective technical approaches
+- Recurring code patterns found
+- Technical recommendations based on the references found
 
-PASSO 2 — Para cada vídeo selecionado, tente extrair transcrição:
-  Tente via Bash:
+If a source does not return relevant results after 3 attempts, move to the next one.
+```
+
+---
+
+### YouTube Agent
+
+**Launch when:** The topic likely has technical video tutorials available (well-known features, popular libraries, documented patterns, common integrations). Omit only if the topic is very specific, proprietary, or unlikely to have video coverage.
+
+**Prompt for the agent:**
+
+```
+You are a researcher specialized in educational video content.
+
+Research topic: [TOPIC]
+Category: [CATEGORY]
+
+Your task is to find relevant tutorial videos and extract the technical concepts presented.
+Use WebSearch and WebFetch to find updated content — do not invent results.
+
+Process (execute in this order):
+
+STEP 1 — Find relevant videos:
+  WebSearch: site:youtube.com "[topic]" tutorial 2024 OR 2025
+  WebSearch: site:youtube.com "[topic]" implementation walkthrough
+  WebSearch: site:youtube.com "[topic]" from scratch
+
+  Select the 2-3 most relevant videos (most recent, most views, most technical).
+
+STEP 2 — For each selected video, try to extract the transcript:
+  Try via Bash:
     yt-dlp --write-subs --write-auto-subs --sub-lang en --skip-download \
-      --output '/tmp/yt_%(id)s' "URL_DO_VIDEO" 2>/dev/null \
+      --output '/tmp/yt_%(id)s' "VIDEO_URL" 2>/dev/null \
       && cat /tmp/yt_*.vtt 2>/dev/null | head -300
 
-  Se yt-dlp não disponível ou falhar: use WebFetch na URL do vídeo para capturar
-  título, descrição completa, capítulos (se disponíveis) e comentários fixados.
+  If yt-dlp is not available or fails: use WebFetch on the video URL to capture
+  title, full description, chapters (if available), and pinned comments.
 
-PASSO 3 — Analise o conteúdo capturado:
-  Extraia os conceitos e técnicas mais importantes mencionados.
-  Identifique abordagens de implementação específicas apresentadas.
-  Note bibliotecas, ferramentas ou padrões citados.
+STEP 3 — Analyze the captured content:
+  Extract the most important concepts and techniques mentioned.
+  Identify specific implementation approaches presented.
+  Note libraries, tools, or patterns cited.
 
-Retorne no máximo 2000 tokens com:
-- URLs dos vídeos encontrados + título + canal + data aproximada
-- Resumo dos conceitos técnicos principais de cada vídeo
-- Bibliotecas, ferramentas e padrões mencionados
-- Abordagens de implementação identificadas
-- Uma linha indicando qual vídeo tem a melhor explicação técnica e por quê
+Return at most 2000 tokens with:
+- URLs of found videos + title + channel + approximate date
+- Summary of the main technical concepts from each video
+- Libraries, tools, and patterns mentioned
+- Implementation approaches identified
+- One line indicating which video has the best technical explanation and why
 
-Se não encontrar vídeos relevantes após 3 tentativas de busca, retorne o que foi encontrado
-com uma nota indicando a limitação dos resultados.
+If no relevant videos are found after 3 search attempts, return what was found
+with a note indicating the limitation of results.
 ```
 
 ---
 
-## Phase 2 — Agregação e clarificação
+## Phase 2 — Aggregation and clarification
 
-> **Emit:** `▶ [3/3] Agregando resultados e preparando clarificações`
+> **Emit:** `▶ [3/3] Aggregating results and preparing clarifications`
 
-### 2.1 — Gerar RESEARCH.md
+### 2.1 — Generate RESEARCH.md
 
-Agregue os resultados de todos os agentes em `RESEARCH.md` na raiz do projeto.
-Se já existir um `RESEARCH.md`, sobrescreva-o — este é sempre o resultado da pesquisa mais recente.
+Aggregate the results from all agents into `RESEARCH.md` at the project root.
+If a `RESEARCH.md` already exists, overwrite it — this is always the result of the most recent research.
 
-Formato do arquivo:
+File format:
 
 ```markdown
-# RESEARCH.md — [Tópico]
-_Gerado em: [data e hora atual]_
+# RESEARCH.md — [Topic]
+_Generated on: [current date and time]_
 
 ## Business & Market Analysis
-[resultados do Agente Business/Market, ou "— N/A —" se não lançado]
+[results from Business/Market Agent, or "— N/A —" if not launched]
 
 ## API & Integration Docs
-[resultados do Agente API/Docs, ou "— N/A —" se não lançado]
+[results from API/Docs Agent, or "— N/A —" if not launched]
 
 ## Architecture & Backend Patterns
-[resultados do Agente Architecture/Backend, ou "— N/A —" se não lançado]
+[results from Architecture/Backend Agent, or "— N/A —" if not launched]
 
 ## Domain Rules & Terminology
-[resultados do Agente Domain/Rules, ou "— N/A —" se não lançado]
+[results from Domain/Rules Agent, or "— N/A —" if not launched]
 
 ## Implementation References
-[resultados do Agente Implementações]
+[results from Implementations Agent]
 
 ## Video Insights
-[resultados do Agente YouTube, ou "— N/A —" se não lançado]
+[results from YouTube Agent, or "— N/A —" if not launched]
 
 ## Key Insights
-[3 a 5 bullet points com os achados mais importantes cruzando todas as fontes]
-[Priorize: padrões recorrentes, consenso entre fontes, decisões técnicas ou de produto que se destacaram]
+[3 to 5 bullet points with the most important findings across all sources]
+[Prioritize: recurring patterns, consensus among sources, notable technical or product decisions]
 ```
 
-### 2.2 — Apresentar resumo
+### 2.2 — Present summary
 
-Apresente ao usuário um resumo direto de **5 a 10 linhas** cobrindo:
-- O que foi encontrado de mais relevante
-- Padrões técnicos, arquiteturais ou de produto que se destacaram
-- Regras de domínio ou limitações de API identificadas
-- Qualquer achado surpreendente ou contra-intuitivo
+Present to the user a direct summary of **5 to 10 lines** covering:
+- What was found most relevant
+- Technical, architectural, or product patterns that stood out
+- Domain rules or API limitations identified
+- Any surprising or counter-intuitive finding
 
-Formato:
+Format:
 
 ```
-RESEARCH COMPLETO: [Tópico]
+RESEARCH COMPLETE: [Topic]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[resumo em 5–10 linhas]
+[summary in 5-10 lines]
 
-Arquivo gerado: RESEARCH.md
+Generated file: RESEARCH.md
 ```
 
-### 2.3 — Perguntas de clarificação
+### 2.3 — Clarification questions
 
-Com base no que foi pesquisado, faça **3 a 5 perguntas de clarificação** que:
-- Endereçam gaps identificados na pesquisa (algo que as fontes não cobriram com clareza)
-- Forçam decisões técnicas ou de produto que o usuário precisa tomar (ex: qual API usar? qual estratégia de cache?)
-- Expõem trade-offs encontrados que dependem das prioridades do usuário (ex: consistência vs. performance? simplicidade vs. escalabilidade?)
-- Ajudam a refinar o escopo antes do `/build` (planning phase) (ex: a feature é um MVP ou precisa estar pronta para produção desde o início?)
+Based on what was researched, ask **3 to 5 clarification questions** that:
+- Address gaps identified in the research (something the sources did not cover clearly)
+- Force technical or product decisions the user needs to make (e.g.: which API to use? which cache strategy?)
+- Expose trade-offs found that depend on the user's priorities (e.g.: consistency vs. performance? simplicity vs. scalability?)
+- Help refine the scope before `/build` (planning phase) (e.g.: is the feature an MVP or does it need to be production-ready from the start?)
 
-Apresente as perguntas numeradas e aguarde a resposta do usuário.
+Present the questions numbered and wait for the user's response.
 
-**Após receber as respostas**, emita:
+**After receiving the responses**, emit:
 
 ```
-Pronto para /build [tópico].
-Use os achados do RESEARCH.md como contexto para o planejamento (Phase 2 de /build).
+Ready for /build [topic].
+Use the findings from RESEARCH.md as context for planning (Phase 2 of /build).
 ```
 
 ---
 
-## Notas de comportamento
+## Behavior notes
 
-- **Agentes lançam buscas reais.** Cada agente usa WebSearch e WebFetch para encontrar conteúdo atualizado. Não substitua com conhecimento interno do modelo — o objetivo é trazer informação externa e recente.
-- **Cada agente tenta 3-4 buscas por fonte** antes de desistir e passar para a próxima. Persistência é parte do processo.
-- **Resultados não encontrados são reportados honestamente.** Se uma fonte não retornou nada útil, o agente registra isso em vez de inventar conteúdo.
-- **Máximo 4 agentes por wave.** Se 5 ou mais dimensões forem relevantes, o orquestrador prioriza os 4 mais impactantes para o tópico antes de lançar a wave.
-- **O RESEARCH.md é o artefato principal.** Ele deve ser útil como referência durante o `/build` (planning phase) e o `/feature-dev` — não um dump bruto, mas um documento editado e sintetizado.
-- **As perguntas de clarificação encerram o fluxo.** Não prossiga para `/build` automaticamente — aguarde o usuário responder antes de indicar que está pronto.
+- **Agents launch real searches.** Each agent uses WebSearch and WebFetch to find updated content. Do not substitute with the model's internal knowledge — the goal is to bring external and recent information.
+- **Each agent tries 3-4 searches per source** before giving up and moving to the next one. Persistence is part of the process.
+- **Results not found are reported honestly.** If a source returned nothing useful, the agent records this instead of inventing content.
+- **Maximum 4 agents per wave.** If 5 or more dimensions are relevant, the orchestrator prioritizes the 4 most impactful for the topic before launching the wave.
+- **RESEARCH.md is the main artifact.** It should be useful as a reference during `/build` (planning phase) and `/feature-dev` — not a raw dump, but an edited and synthesized document.
+- **The clarification questions end the flow.** Do not proceed to `/build` automatically — wait for the user to respond before indicating readiness.
 
 ---
 
 ## Context Budget
 
-Este skill lança múltiplos agentes de pesquisa em paralelo — cada wave consome ~8-12k tokens.
+This skill launches multiple research agents in parallel — each wave consumes ~8-12k tokens.
 
 **Checkpoint triggers:**
-- Após Phase 1 (wave completa): escrever `.claude/checkpoint.md` com agentes lançados, resultados parciais, e próximo passo
-- Se contexto estimado atingir ~60k tokens durante agregação: escrever checkpoint com achados parciais e emitir:
-  `↺ Contexto ~60k — checkpoint escrito. Recomendo /compact. Use /resume para continuar a agregação do RESEARCH.md.`
+- After Phase 1 (complete wave): write `.claude/checkpoint.md` with launched agents, partial results, and next step
+- If estimated context reaches ~60k tokens during aggregation: write checkpoint with partial findings and emit:
+  `↺ Context ~60k — checkpoint written. Recommend /compact. Use /resume to continue RESEARCH.md aggregation.`
 
-**Formato do checkpoint:**
+**Checkpoint format:**
 ```
 skill: /research
-fase: [phase_0 | wave_em_progresso | agregacao | qa_gate]
-topico: [tópico pesquisado]
-agentes_completados: [lista]
-agentes_pendentes: [lista]
-achados_parciais: [resumo dos achados já coletados]
-proximo: [próximo passo exato]
+phase: [phase_0 | wave_in_progress | aggregation | qa_gate]
+topic: [researched topic]
+completed_agents: [list]
+pending_agents: [list]
+partial_findings: [summary of findings already collected]
+next: [exact next step]
 ```

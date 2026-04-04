@@ -7,82 +7,82 @@ argument-hint: [scope: scaffold | social | rbac | reset | audit]
 
 # /auth — Authentication & Authorization
 
-> Auth é a primeira feature de qualquer projeto. Sem auth funcional, nada avança.
-> Esta skill detecta o stack e aplica a estratégia correta. Nunca reinventa o que já existe.
+> Auth is the first feature of any project. Without functional auth, nothing progresses.
+> This skill detects the stack and applies the correct strategy. Never reinvents what already exists.
 
 ---
 
-## Detecção de Stack (automática)
+## Stack Detection (automatic)
 
-Antes de qualquer implementação, detectar:
+Before any implementation, detect:
 
 ```
-Stack detectado:
-  □ Next.js           → Auth.js (next-auth v5) — padrão
+Detected stack:
+  □ Next.js           → Auth.js (next-auth v5) — default
   □ Node/Express      → JWT custom (jsonwebtoken + bcrypt)
   □ Node/Fastify      → @fastify/jwt + @fastify/cookie
   □ React Native      → JWT custom (backend) + SecureStore (mobile)
   □ Django            → dj-rest-auth + djangorestframework-simplejwt
   □ Rails             → devise + devise-jwt
-  □ Supabase          → @supabase/auth-helpers — padrão se Supabase detectado
-  □ Firebase          → firebase/auth — padrão se Firebase detectado
+  □ Supabase          → @supabase/auth-helpers — default if Supabase detected
+  □ Firebase          → firebase/auth — default if Firebase detected
 ```
 
-Se stack ambíguo → perguntar antes de implementar.
+If stack is ambiguous → ask before implementing.
 
 ---
 
-## Estratégias disponíveis
+## Available strategies
 
-| Scope | Uso | Comando |
-|-------|-----|---------|
-| `scaffold` | Auth completa do zero (register, login, logout, refresh) | `/auth scaffold` |
-| `social` | OAuth2 / login social (Google, GitHub, Apple) | `/auth social` |
-| `rbac` | Role-Based Access Control (roles + permissões) | `/auth rbac` |
-| `reset` | Recuperação de senha (email + token) | `/auth reset` |
-| `audit` | Auditoria de segurança da auth existente | `/auth audit` |
+| Scope | Usage | Command |
+|-------|-------|---------|
+| `scaffold` | Complete auth from scratch (register, login, logout, refresh) | `/auth scaffold` |
+| `social` | OAuth2 / social login (Google, GitHub, Apple) | `/auth social` |
+| `rbac` | Role-Based Access Control (roles + permissions) | `/auth rbac` |
+| `reset` | Password recovery (email + token) | `/auth reset` |
+| `audit` | Security audit of existing auth | `/auth audit` |
 
 ---
 
 ## Scope: scaffold
 
-> Implementar autenticação completa do zero.
+> Implement complete authentication from scratch.
 
-### Fase 0 — Auth Methods (perguntar antes de implementar)
+### Phase 0 — Auth Methods (ask before implementing)
 
 > **Emit:** `▶ [0/7] Auth Methods`
 
-Antes de qualquer código, confirmar quais métodos este projeto precisa:
+Before any code, confirm which methods this project needs:
 
 ```
-Métodos de autenticação:
-  □ Email + senha              (sempre incluído)
-  □ Magic link (passwordless)  (recomendado — pergunta obrigatória)
+Authentication methods:
+  □ Email + password           (always included)
+  □ Magic link (passwordless)  (recommended — mandatory question)
   □ Google OAuth2
   □ GitHub OAuth2
-  □ Apple Sign In              (OBRIGATÓRIO se iOS + qualquer outro social)
-  □ Microsoft / Azure AD       (projetos enterprise)
-  □ SSO SAML                   (projetos enterprise)
+  □ Apple Sign In              (REQUIRED if iOS + any other social)
+  □ Microsoft / Azure AD       (enterprise projects)
+  □ SSO SAML                   (enterprise projects)
 ```
 
-Se o usuário não especificou → perguntar explicitamente:
-*"Este projeto terá login social ou magic link? (recomendado: sim para ambos)"*
+If user did not specify → ask explicitly:
+*"Will this project have social login or magic link? (recommended: yes for both)"*
 
-**Magic link é recomendado por padrão** para qualquer app que vá para o mercado:
-- Remove atrito de lembrar senha
-- Reduz suporte ("esqueci minha senha")
-- Seguro por design (token one-use, TTL curto)
-- Implementar junto com email+senha, não depois
+**Magic link is recommended by default** for any app going to market:
+- Removes friction of remembering passwords
+- Reduces support ("forgot my password")
+- Secure by design (one-use token, short TTL)
+- Implement alongside email+password, not after
 
-Se magic link confirmado → implementar em paralelo com scaffold (ver scope `social`).
+If magic link confirmed → implement in parallel with scaffold (see scope `social`).
 
 ---
 
-### Fase 1 — BDD Scenarios
+### Phase 1 — BDD Scenarios
 
 > **Emit:** `▶ [1/7] BDD Scenarios`
 
-Escrever em `tests/bdd/features/auth.feature` antes de qualquer código:
+Write in `tests/bdd/features/auth.feature` before any code:
 
 ```gherkin
 Feature: Authentication
@@ -129,28 +129,28 @@ Feature: Authentication
     Then my account should be locked for 15 minutes
 ```
 
-> **Checkpoint:** Escreve `.claude/checkpoint.md`:
+> **Checkpoint:** Writes `.claude/checkpoint.md`:
 > ```
 > skill: auth
-> fase: bdd-scenarios-written
-> arquivos_modificados: [list]
-> proximo: architecture
+> phase: bdd-scenarios-written
+> modified_files: [list]
+> next: architecture
 > ```
-> Se contexto atingir ~60k tokens → escreve checkpoint e emite:
-> `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+> If context reaches ~60k tokens → writes checkpoint and emits:
+> `↺ Context ~60k. Recommend /compact. Use /resume to continue.`
 
 ---
 
-### Fase 2 — Arquitetura Hexagonal
+### Phase 2 — Hexagonal Architecture
 
-> **Emit:** `▶ [2/7] Arquitetura`
+> **Emit:** `▶ [2/7] Architecture`
 
 ```
 src/domain/auth/
-  User.ts                  Entidade User (id, email, passwordHash, role, lockedUntil)
-  Token.ts                 Value object Token (accessToken, refreshToken, expiresAt)
-  AuthError.ts             Erros de domínio (InvalidCredentials, AccountLocked, TokenExpired)
-  AuthPolicy.ts            Regras: senha mínima, tentativas máximas, duração de token
+  User.ts                  User entity (id, email, passwordHash, role, lockedUntil)
+  Token.ts                 Token value object (accessToken, refreshToken, expiresAt)
+  AuthError.ts             Domain errors (InvalidCredentials, AccountLocked, TokenExpired)
+  AuthPolicy.ts            Rules: minimum password, max attempts, token duration
 
 src/ports/
   AuthPort.ts              IAuthService (login, register, logout, refresh, validateToken)
@@ -180,7 +180,7 @@ src/infrastructure/
 
 ---
 
-### Fase 3 — Domain RED → GREEN
+### Phase 3 — Domain RED → GREEN
 
 > **Emit:** `▶ [3/7] Domain TDD`
 
@@ -215,11 +215,11 @@ describe('LoginUseCase', () => {
 });
 ```
 
-Implementar entidades e use cases até todos os testes passarem (GREEN).
+Implement entities and use cases until all tests pass (GREEN).
 
 ---
 
-### Fase 4 — Infrastructure
+### Phase 4 — Infrastructure
 
 > **Emit:** `▶ [4/7] Infrastructure`
 
@@ -264,14 +264,14 @@ export class RefreshTokenUseCase {
   async execute(refreshToken: string) {
     const payload = this.jwtAdapter.verifyRefreshToken(refreshToken);
 
-    // 1. Verificar se token existe e não foi revogado
+    // 1. Check if token exists and has not been revoked
     const stored = await this.tokenStore.findRefreshToken(payload.tokenId);
     if (!stored) throw new AuthError.TokenRevoked();
 
-    // 2. REVOGAR o token antigo (rotation)
+    // 2. REVOKE the old token (rotation)
     await this.tokenStore.revokeToken(payload.tokenId);
 
-    // 3. Emitir novo par
+    // 3. Issue new pair
     const user = await this.userRepo.findById(payload.userId);
     const newTokenId = crypto.randomUUID();
     const newAccessToken = this.jwtAdapter.signAccessToken({ userId: user.id, role: user.role });
@@ -291,7 +291,7 @@ export class RefreshTokenUseCase {
 import bcrypt from 'bcrypt';
 
 export class BcryptAdapter implements PasswordHasher {
-  private readonly COST_FACTOR = 12; // nunca < 10
+  private readonly COST_FACTOR = 12; // never < 10
 
   async hash(value: string): Promise<string> {
     return bcrypt.hash(value, this.COST_FACTOR);
@@ -329,7 +329,7 @@ export const authenticate = async (req, res, next) => {
 
 ---
 
-### Fase 5 — Endpoints / Routes
+### Phase 5 — Endpoints / Routes
 
 > **Emit:** `▶ [5/7] Routes`
 
@@ -340,25 +340,25 @@ POST /auth/logout          → LogoutUseCase (revoke refresh token)
 POST /auth/refresh         → RefreshTokenUseCase → { accessToken, refreshToken }
 POST /auth/forgot-password → ForgotPasswordUseCase → sends email
 POST /auth/reset-password  → ResetPasswordUseCase (token + new value)
-GET  /auth/me              → [protected] retorna user atual
+GET  /auth/me              → [protected] returns current user
 ```
 
-**Armazenamento de tokens (por plataforma):**
+**Token storage (per platform):**
 
-| Plataforma | Access Token | Refresh Token |
-|------------|-------------|---------------|
+| Platform | Access Token | Refresh Token |
+|----------|-------------|---------------|
 | Web SPA | Memory (React state/Zustand) | HttpOnly cookie (SameSite=Strict) |
 | Next.js SSR | Cookie HttpOnly (server-set) | Cookie HttpOnly |
 | React Native | Memory (Zustand) | expo-secure-store |
-| CLI/server | Env var / keychain | Arquivo seguro |
+| CLI/server | Env var / keychain | Secure file |
 
-> **NUNCA** armazenar access token em localStorage ou AsyncStorage.
+> **NEVER** store access token in localStorage or AsyncStorage.
 
 ---
 
-### Fase 6 — Next.js: Auth.js (next-auth v5)
+### Phase 6 — Next.js: Auth.js (next-auth v5)
 
-> **Emit:** `▶ [6/7] Next.js Auth.js` *(pular se não for Next.js)*
+> **Emit:** `▶ [6/7] Next.js Auth.js` *(skip if not Next.js)*
 
 ```bash
 rtk npm install next-auth@beta
@@ -406,7 +406,7 @@ export const config = { matcher: ['/dashboard/:path*', '/api/protected/:path*'] 
 
 ---
 
-### Fase 7 — E2E + Gate
+### Phase 7 — E2E + Gate
 
 > **Emit:** `▶ [7/7] E2E + Gate`
 
@@ -442,34 +442,34 @@ describe('Auth flow', () => {
   □ Access token: 15min, HttpOnly cookie ou memory only
   □ Refresh token: 30 dias, rotation implementada
   □ Bcrypt cost factor ≥ 10
-  □ Sem credenciais em código (security-scan passa sem warnings)
+  □ No credentials in code (security-scan passes without warnings)
 
-  Se qualquer item falhar → build PARA. Auth é pré-requisito de tudo.
+  If any item fails → build STOPS. Auth is a prerequisite for everything.
 ```
 
 ---
 
 ## Scope: social
 
-> Adicionar OAuth2 / login social e/ou magic link.
-> Implementar junto com scaffold, não depois.
+> Add OAuth2 / social login and/or magic link.
+> Implement alongside scaffold, not after.
 
 ### Magic Link (passwordless)
 
-Fluxo seguro:
+Secure flow:
 ```
 1. POST /auth/magic-link { email }
-   → SEMPRE retornar 200 (evita user enumeration)
-   → Gerar token: crypto.randomUUID(), TTL 15min
-   → Armazenar hash do token (não plaintext)
-   → Enviar email com link: /auth/verify?token=<token>&email=<email>
+   → ALWAYS return 200 (prevents user enumeration)
+   → Generate token: crypto.randomUUID(), TTL 15min
+   → Store hash of token (not plaintext)
+   → Send email with link: /auth/verify?token=<token>&email=<email>
 
 2. GET /auth/verify?token=<token>&email=<email>
-   → Validar token (hash match + não expirado + one-use)
-   → Se usuário não existe → criar conta automaticamente
-   → Emitir access token + refresh token
-   → Redirecionar para dashboard
-   → INVALIDAR token imediatamente após uso
+   → Validate token (hash match + not expired + one-use)
+   → If user does not exist → create account automatically
+   → Issue access token + refresh token
+   → Redirect to dashboard
+   → INVALIDATE token immediately after use
 ```
 
 ```typescript
@@ -506,7 +506,7 @@ import Resend from 'next-auth/providers/resend'; // ou Nodemailer
 Resend({ from: 'noreply@yourapp.com' })
 ```
 
-### Provedores OAuth2 suportados
+### Supported OAuth2 providers
 
 ```typescript
 // Next.js com Auth.js
@@ -519,7 +519,7 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GitHubStrategy } from 'passport-github2';
 ```
 
-### Variáveis de ambiente necessárias
+### Required environment variables
 
 ```env
 # Google
@@ -530,29 +530,29 @@ GOOGLE_CLIENT_SECRET=your-client-secret
 GITHUB_CLIENT_ID=your-client-id
 GITHUB_CLIENT_SECRET=your-client-secret
 
-# Apple (Sign in with Apple — obrigatório para iOS)
+# Apple (Sign in with Apple — required for iOS)
 APPLE_CLIENT_ID=your-bundle-id
 APPLE_TEAM_ID=your-team-id
 APPLE_KEY_ID=your-key-id
 ```
 
-> Apple Sign In é **obrigatório** para apps iOS que oferecem qualquer outro login social (App Store guideline 4.8).
+> Apple Sign In is **required** for iOS apps that offer any other social login (App Store guideline 4.8).
 
-### Fluxo de merge (account linking)
+### Merge flow (account linking)
 
-Quando usuário social usa o mesmo email de uma conta existente:
-1. Verificar se email já existe no banco
-2. Se sim → vincular provider ao account existente (não criar duplicata)
-3. Se não → criar novo account com dados do provider
-4. Sempre confirmar que email está verificado no provider antes de vincular
+When social user uses the same email as an existing account:
+1. Check if email already exists in database
+2. If yes → link provider to existing account (do not create duplicate)
+3. If no → create new account with provider data
+4. Always confirm email is verified at the provider before linking
 
 ---
 
 ## Scope: rbac
 
-> Role-Based Access Control — roles e permissões.
+> Role-Based Access Control — roles and permissions.
 
-### Modelo de domínio
+### Domain model
 
 ```typescript
 // src/domain/auth/Permission.ts
@@ -586,11 +586,11 @@ export const requirePermission = (permission: Permission) =>
     next();
   };
 
-// Uso:
+// Usage:
 router.delete('/users/:id', authenticate, requirePermission('delete:users'), deleteUserHandler);
 ```
 
-### React: proteção de UI
+### React: UI protection
 
 ```typescript
 // src/hooks/usePermission.ts
@@ -599,13 +599,13 @@ export function usePermission(permission: Permission): boolean {
   return user ? hasPermission(user.role, permission) : false;
 }
 
-// Componente guard
+// Guard component
 export function CanDo({ permission, children, fallback = null }) {
   return usePermission(permission) ? children : fallback;
 }
 
-// Uso:
-<CanDo permission="delete:users" fallback={<span>Sem permissão</span>}>
+// Usage:
+<CanDo permission="delete:users" fallback={<span>No permission</span>}>
   <DeleteButton />
 </CanDo>
 ```
@@ -614,93 +614,93 @@ export function CanDo({ permission, children, fallback = null }) {
 
 ## Scope: reset
 
-> Recuperação de senha via email.
+> Password recovery via email.
 
-### Fluxo seguro
+### Secure flow
 
 ```
 1. POST /auth/forgot-password { email }
-   → SEMPRE retornar 200 (mesmo que email não exista — evita user enumeration)
-   → Se email existe: gerar token UUID (crypto.randomUUID()), TTL 1h
-   → Armazenar HASH do token (nunca o token em plaintext)
-   → Enviar email com link: /reset-password?token=<token>
+   → ALWAYS return 200 (even if email does not exist — prevents user enumeration)
+   → If email exists: generate UUID token (crypto.randomUUID()), TTL 1h
+   → Store HASH of token (never the token in plaintext)
+   → Send email with link: /reset-password?token=<token>
 
 2. GET /reset-password?token=<token>
-   → Validar token existe e não expirou (comparar hash)
-   → Exibir form de novo valor
+   → Validate token exists and is not expired (compare hash)
+   → Display form for new value
 
 3. POST /auth/reset-password { token, newValue }
-   → Validar token
-   → Hash novo valor
-   → Salvar
-   → INVALIDAR token (one-use only)
-   → Revogar TODOS os refresh tokens do usuário (força re-login em todos os dispositivos)
+   → Validate token
+   → Hash new value
+   → Save
+   → INVALIDATE token (one-use only)
+   → Revoke ALL user's refresh tokens (forces re-login on all devices)
 ```
 
-> **Armazenar hash do reset token, não o token em si.** Se DB vazar, tokens não funcionam.
+> **Store hash of reset token, not the token itself.** If DB leaks, tokens do not work.
 
 ---
 
 ## Scope: audit
 
-> Auditoria de segurança da autenticação existente.
+> Security audit of existing authentication.
 
-### Checklist de auditoria
+### Audit checklist
 
 ```
 Tokens:
   □ Access token TTL ≤ 30 min (ideal: 15 min)
-  □ Refresh token tem rotation implementada?
-  □ Refresh tokens revogados no logout?
-  □ Tokens armazenados em HttpOnly cookie ou SecureStore? (não localStorage)
-  □ JWT_SECRET tem ≥ 256 bits de entropia? (não string curta ou óbvia)
-  □ Dois secrets distintos: ACCESS_SECRET ≠ REFRESH_SECRET
+  □ Refresh token has rotation implemented?
+  □ Refresh tokens revoked on logout?
+  □ Tokens stored in HttpOnly cookie or SecureStore? (not localStorage)
+  □ JWT_SECRET has ≥ 256 bits of entropy? (not short or obvious string)
+  □ Two distinct secrets: ACCESS_SECRET ≠ REFRESH_SECRET
 
 Hashing:
   □ Bcrypt cost factor ≥ 10 (ideal: 12)?
-  □ Validação de força no backend (não só frontend)?
-  □ Rate limiting no endpoint de login?
-  □ Account lockout após N tentativas?
+  □ Strength validation on backend (not just frontend)?
+  □ Rate limiting on login endpoint?
+  □ Account lockout after N attempts?
 
-Segredos:
-  □ Nenhuma credencial em código (security-scan)
-  □ Variáveis em .env e .env em .gitignore
+Secrets:
+  □ No credentials in code (security-scan)
+  □ Variables in .env and .env in .gitignore
 
-Transporte:
-  □ HTTPS obrigatório em produção
-  □ HSTS header configurado
-  □ Cookie com Secure flag em produção
+Transport:
+  □ HTTPS required in production
+  □ HSTS header configured
+  □ Cookie with Secure flag in production
 
 Endpoints:
-  □ /auth/register tem rate limiting?
-  □ /auth/login tem rate limiting?
-  □ /auth/forgot-password retorna 200 mesmo para email inválido?
-  □ Reset tokens são one-use?
-  □ Reset token armazena hash (não plaintext)?
+  □ /auth/register has rate limiting?
+  □ /auth/login has rate limiting?
+  □ /auth/forgot-password returns 200 even for invalid email?
+  □ Reset tokens are one-use?
+  □ Reset token stores hash (not plaintext)?
 
 RBAC:
-  □ Cada endpoint protegido tem guard explícito?
-  □ Default é negar (deny by default)?
-  □ Roles validadas no backend, não só no frontend?
+  □ Each protected endpoint has explicit guard?
+  □ Default is deny (deny by default)?
+  □ Roles validated on backend, not just frontend?
 ```
 
-Para cada item ❌: gerar issue com severidade (Critical/High/Medium) e fix recomendado.
+For each ❌ item: generate issue with severity (Critical/High/Medium) and recommended fix.
 
 ---
 
-## Security Baseline — não negociável
+## Security Baseline — non-negotiable
 
 ```
-Estas regras se aplicam independente do scope:
+These rules apply regardless of scope:
 
-1. NUNCA armazenar valores sensíveis em plaintext — somente bcrypt hash (cost ≥ 10)
-2. NUNCA armazenar access token em localStorage / AsyncStorage
-3. NUNCA retornar mensagens que revelem se email existe ou não
-4. NUNCA usar Math.random() para gerar tokens — usar crypto.randomUUID() ou crypto.randomBytes()
-5. SEMPRE dois secrets distintos: ACCESS_SECRET e REFRESH_SECRET
-6. SEMPRE revogar todos os refresh tokens no reset
-7. SEMPRE revogar o refresh token na rotação (não emitir novo sem revogar o antigo)
-8. Rate limiting em: /login, /register, /forgot-password
-9. Account lockout: ≥ 5 tentativas → bloquear por ≥ 15 minutos
-10. Tokens de reset: one-use, TTL ≤ 1h, armazenar somente hash
+1. NEVER store sensitive values in plaintext — only bcrypt hash (cost ≥ 10)
+2. NEVER store access token in localStorage / AsyncStorage
+3. NEVER return messages that reveal whether email exists or not
+4. NEVER use Math.random() to generate tokens — use crypto.randomUUID() or crypto.randomBytes()
+5. ALWAYS two distinct secrets: ACCESS_SECRET and REFRESH_SECRET
+6. ALWAYS revoke all refresh tokens on reset
+7. ALWAYS revoke the refresh token on rotation (do not issue new without revoking old)
+8. Rate limiting on: /login, /register, /forgot-password
+9. Account lockout: ≥ 5 attempts → lock for ≥ 15 minutes
+10. Reset tokens: one-use, TTL ≤ 1h, store only hash
 ```

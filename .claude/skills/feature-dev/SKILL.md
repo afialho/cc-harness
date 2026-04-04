@@ -43,9 +43,15 @@ Task: Map existing architecture layers, identify patterns, trace execution paths
       3. Existing test patterns (unit, integration, BDD) and their locations
       4. Conventions used (naming, error handling, dependency injection)
       5. Any existing code this feature will interact with
+      6. Schema impact: does this feature require new entities, tables, or schema changes?
 ```
 
 Output: context handoff with architecture map and conventions summary.
+
+**Schema change detection:** If the exploration reveals new entities, tables, or schema changes are needed:
+- Run `/dba design` BEFORE proceeding to Phase 4 (Architecture Design)
+- `/dba` returns the approved schema (entities, relationships, indexes, migrations)
+- The approved schema feeds Phase 4 and Phase 5 as a constraint
 
 ### Phase 3 — Clarifying Questions
 > **Emit:** `▶ [3/7] Clarifying Questions`
@@ -100,8 +106,8 @@ Task: Propose 2–3 implementation approaches for this feature using the archite
 
 Present the options to the user. Get approval on the chosen approach before implementing.
 
-> **Checkpoint:** Se o contexto estimado atingir ~60k tokens neste ponto, escreva `.claude/checkpoint.md` com: skill=feature-dev, phase=4/7, feature name, approach aprovado, BDD scenarios, arquivos planejados, proximo=Phase 5.
-> Emita: `↺ Contexto ~60k — checkpoint escrito. Recomendo /compact.`
+> **Checkpoint:** If estimated context reaches ~60k tokens at this point, write `.claude/checkpoint.md` with: skill=feature-dev, phase=4/7, feature name, approved approach, BDD scenarios, planned files, next=Phase 5.
+> Emit: `↺ Context ~60k — checkpoint written. Recommend /compact.`
 
 **Architecture constraints (read from `.claude/architecture.json`):**
 - Hexagonal: domain layer zero external deps; application depends only on domain + ports; external deps behind port interfaces
@@ -132,15 +138,15 @@ GREEN:    Write the minimum code to make it pass
 REFACTOR: Improve readability, remove duplication, apply SOLID
 ```
 
-**Leia `.claude/architecture.json` para determinar o padrão. Sequência por padrão:**
+**Read `.claude/architecture.json` to determine the pattern. Sequence per pattern:**
 
-*hexagonal (ou projeto novo):* BDD → Domain entities → Ports → Use Cases → Adapters → Composition root → Cucumber → Cypress → k6
+*hexagonal (or new project):* BDD → Domain entities → Ports → Use Cases → Adapters → Composition root → Cucumber → Cypress → k6
 *mvc-rails:* BDD → Model + spec → Service + spec → Controller + request tests → Cucumber → Cypress
 *mvc-express/nestjs:* BDD → DTO/Model → Service + tests → Controller + tests → Routes → Integration tests → Cucumber → Cypress → k6
 *nextjs-app-router:* BDD → lib/ functions + tests → Server Actions → API Routes → Server Components → Client Components → Cucumber → Cypress → k6
 *feature-based:* BDD → Business logic + tests → UI components → API integration → Integration tests → Cucumber → Cypress
 
-Se `architecture.json` nao existir, assume hexagonal. Cypress e k6 sao condicionais (ver Phase 6).
+If `architecture.json` does not exist, assume hexagonal. Cypress and k6 are conditional (see Phase 6).
 
 **At each Write/Edit the `architecture-guard` hook fires:**
 - Checks the file's layer
@@ -164,7 +170,7 @@ Wave 5: [code-reviewer]                                   — quality gate
 ### Phase 6 — Quality Review
 > **Emit:** `▶ [6/7] Quality Review`
 
-Run tests until all pass, then execute the QA Loop:
+Follow the **Quality Gate Pipeline** (see CLAUDE.md) in canonical order:
 
 **Step 1 — Tests:**
 ```
@@ -183,17 +189,30 @@ rtk k6 run tests/load/[feature].js
 # Required: p95 < 200ms, error rate < 1%
 ```
 
-**Step 4 — QA Loop (dimensões baseadas no tipo de feature):**
+**Step 4 — Code Review (BEFORE QA Loop):**
 ```
-/qa-loop (escopo: [feature name], dimensões: conforme tipo)
+/code-review
+```
+- Architecture compliance, SOLID, test coverage, security
+- If FAIL → fix → re-run /code-review until PASS
+
+**Step 5 — QA Loop (dimensions based on feature type):**
+```
+/qa-loop (scope: [feature name], dimensions: based on type)
   UI only      → qa-design + qa-ux + qa-a11y + qa-e2e
   Backend only → qa-code + qa-backend + qa-security
   Full-stack   → qa-code + qa-design + qa-ux + qa-a11y + qa-backend + qa-security + qa-e2e
 ```
 
-O QA Loop roda agentes independentes, agrega o QA Report e faz fix loop automático (máx 3 iterações) antes de retornar PASS ou escalar para o usuário.
+The QA Loop runs independent agents, aggregates the QA Report, and runs an automatic fix loop (max 3 iterations) before returning PASS or escalating to the user.
 
-**Gate**: `/qa-loop` PASS obrigatório antes de Phase 7.
+**Step 6 — Browser QA (if UI involved, final gate):**
+```
+/browser-qa http://localhost:[port]
+```
+Exhaustive navigation of all feature screens and components.
+
+**Gate**: All steps PASS required before Phase 7.
 
 ### Phase 7 — Summary
 > **Emit:** `▶ [7/7] Summary & Commit`
@@ -240,16 +259,16 @@ rtk k6 run tests/load/[feature].js             # load test
 
 ---
 
-## Tratamento de falhas
+## Failure Handling
 
-| Situacao | Comportamento |
-|----------|---------------|
-| Requisito impossivel descoberto | Reporta ao usuario com evidencia, aguarda decisao antes de continuar |
-| Contradicao de arquitetura | Corrige a violacao, documenta a decisao no commit |
-| Teste nao passa apos 3 tentativas | Documenta o bloqueio, marca como PARTIAL, continua demais itens |
-| Dependencia faltando | Instala via Docker, documenta no handoff |
-| Pergunta de clarificacao revela mudanca de escopo | Para a implementacao, volta para Phase 1 (Discovery) com o novo escopo |
-| Contexto proximo de 80k tokens | Escreve checkpoint, emite recomendacao de /compact |
+| Situation | Behavior |
+|-----------|----------|
+| Impossible requirement discovered | Report to the user with evidence, wait for decision before continuing |
+| Architecture contradiction | Fix the violation, document the decision in the commit |
+| Test does not pass after 3 attempts | Document the blocker, mark as PARTIAL, continue remaining items |
+| Missing dependency | Install via Docker, document in the handoff |
+| Clarification question reveals scope change | Stop implementation, return to Phase 1 (Discovery) with the new scope |
+| Context near 80k tokens | Write checkpoint, emit /compact recommendation |
 
 ---
 

@@ -248,19 +248,7 @@ if command -v claude &>/dev/null; then
   install_plugin "code-review"       "code-review@claude-plugins-official"
   install_plugin "code-simplifier"   "code-simplifier@claude-plugins-official"
 
-  # vercel:agent-browser MCP (browser QA — required)
-  if claude mcp list 2>/dev/null | grep -q "vercel"; then
-    ok "vercel:agent-browser MCP already installed"
-  else
-    echo "    Installing vercel:agent-browser MCP..."
-    if claude mcp add vercel npx -y @vercel/mcp-adapter@latest 2>/dev/null; then
-      ok "vercel:agent-browser MCP installed"
-    else
-      warn "Could not auto-install vercel:agent-browser"
-      info "Install manually: claude mcp add vercel npx -y @vercel/mcp-adapter@latest"
-      track_error "vercel:agent-browser MCP not installed"
-    fi
-  fi
+  # agent-browser CLI is installed in step 5 — no MCP needed
 
   # EAS CLI (React Native / Expo builds) — instalar se projeto Expo detectado
   if [ -f "package.json" ] && grep -qE '"expo"|"react-native"' package.json 2>/dev/null; then

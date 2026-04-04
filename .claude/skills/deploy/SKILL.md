@@ -5,61 +5,61 @@ disable-model-invocation: true
 argument-hint: [target? e.g. vercel, fly.io, aws-ecs]
 ---
 
-# /deploy — Deploy para Produção
+# /deploy — Deploy to Production
 
-> Orquestrador de deploy com 8 fases: detecção de target → auditoria de ambiente → security gate → Docker de produção → IaC → secrets → checklist pré-deploy → validação pós-deploy.
-> Sempre lê `.claude/architecture.json` para adaptar a estratégia de deploy ao padrão arquitetural do projeto.
+> Deploy orchestrator with 8 phases: target detection → environment audit → security gate → production Docker → IaC → secrets → pre-deploy checklist → post-deploy validation.
+> Always reads `.claude/architecture.json` to adapt the deploy strategy to the project's architectural pattern.
 
 ---
 
-## Visão geral do pipeline
+## Pipeline Overview
 
 ```
 /deploy [target?]
     │
     ├─ [1/8] Deployment Target Detection
-    │         └─ detecta ou pergunta o cloud target
+    │         └─ detect or ask for the cloud target
     │
     ├─ [2/8] Environment Audit
-    │         ├─ analisa docker-compose.yml
-    │         ├─ verifica env vars + secrets
-    │         └─ valida health check endpoints
+    │         ├─ analyze docker-compose.yml
+    │         ├─ check env vars + secrets
+    │         └─ validate health check endpoints
     │
     ├─ [3/8] Security Gate
     │         └─ /security-hardening audit → BLOCK|CONDITIONAL|PASS
     │
     ├─ [4/8] Production Docker
-    │         └─ gera/atualiza docker-compose.prod.yml
+    │         └─ generate/update docker-compose.prod.yml
     │
     ├─ [5/8] Infrastructure-as-Code
-    │         └─ gera config mínima específica do target
+    │         └─ generate minimal target-specific config
     │
     ├─ [6/8] Secrets Strategy
-    │         └─ guia de gestão de secrets por cloud target
+    │         └─ secrets management guide per cloud target
     │
     ├─ [7/8] Deploy Checklist
     │         └─ migrations, smoke tests, rollback, monitoring
     │
     └─ [8/8] Post-Deploy Validation
-              ├─ smoke tests nos endpoints críticos
-              └─ /qa-loop (dimensão: qa-smoke)
+              ├─ smoke tests on critical endpoints
+              └─ /qa-loop (dimension: qa-smoke)
 ```
 
 ---
 
 ## Phase 1 — Deployment Target Detection
 
-> **Emitir:** `▶ [1/8] Deployment Target Detection`
+> **Emit:** `▶ [1/8] Deployment Target Detection`
 
-### 1.1 — Leitura do contexto arquitetural
+### 1.1 — Architectural context reading
 
-Antes de detectar o target, ler `.claude/architecture.json` se existir:
-- `pattern` → informa se é hexagonal, MVC, Next.js, feature-based
-- `deployTarget` → se já definido no arquivo, usar como padrão e confirmar com o usuário
+Before detecting the target, read `.claude/architecture.json` if it exists:
+- `pattern` → indicates whether it is hexagonal, MVC, Next.js, feature-based
+- `deployTarget` → if already defined in the file, use as default and confirm with the user
 
-### 1.2 — Detecção automática
+### 1.2 — Automatic detection
 
-Inspecionar o repositório em busca de artefatos de infra existentes:
+Inspect the repository for existing infrastructure artifacts:
 
 ```
 Agent: code-explorer
@@ -73,9 +73,9 @@ Task: Scan repository root and .claude/ for deployment artifacts. Report:
       5. Contents of .claude/architecture.json if it exists
 ```
 
-### 1.3 — Targets suportados
+### 1.3 — Supported targets
 
-| Target | Arquivo detectado | Comando de deploy |
+| Target | Detected file | Deploy command |
 |--------|-------------------|-------------------|
 | **Vercel** | `vercel.json` | `vercel --prod` |
 | **Fly.io** | `fly.toml` | `flyctl deploy` |
@@ -85,33 +85,33 @@ Task: Scan repository root and .claude/ for deployment artifacts. Report:
 | **DigitalOcean App Platform** | `.do/app.yaml` | `doctl apps update` |
 | **Self-hosted VPS** | `docker-compose.prod.yml` / `Makefile` | `docker compose -f docker-compose.prod.yml up -d` |
 
-### 1.4 — Pausa se target não detectado
+### 1.4 — Pause if target not detected
 
-Se nenhum artefato for encontrado, perguntar ao usuário:
+If no artifact is found, ask the user:
 
 ```
-DEPLOY TARGET não detectado. Qual é o target?
+DEPLOY TARGET not detected. What is the target?
 
-  1. Vercel (apps Next.js, static sites, serverless)
-  2. Fly.io (apps containerizadas, latência global)
-  3. Railway (simplicidade, full-stack, PostgreSQL integrado)
-  4. AWS ECS/Fargate (enterprise, alta escala)
+  1. Vercel (Next.js apps, static sites, serverless)
+  2. Fly.io (containerized apps, global latency)
+  3. Railway (simplicity, full-stack, integrated PostgreSQL)
+  4. AWS ECS/Fargate (enterprise, high scale)
   5. GCP Cloud Run (serverless containers, GCP ecosystem)
-  6. DigitalOcean App Platform (simplicidade, custo previsível)
-  7. Self-hosted VPS (controle total, Docker Compose)
+  6. DigitalOcean App Platform (simplicity, predictable cost)
+  7. Self-hosted VPS (full control, Docker Compose)
 
-Responda com o número ou o nome do target.
+Reply with the number or the target name.
 ```
 
-Aguardar resposta antes de avançar.
+Wait for a response before proceeding.
 
-Se o argumento for passado diretamente (`/deploy vercel`), usar sem perguntar.
+If the argument is passed directly (`/deploy vercel`), use it without asking.
 
 ---
 
 ## Phase 2 — Environment Audit
 
-> **Emitir:** `▶ [2/8] Environment Audit`
+> **Emit:** `▶ [2/8] Environment Audit`
 
 ```
 Agent: code-explorer
@@ -129,40 +129,40 @@ Task: Perform a full environment audit for production readiness. Report:
          Knex, ActiveRecord, Prisma migrate, golang-migrate) and migration files
 ```
 
-### Relatório de auditoria
+### Audit report
 
-Apresentar ao usuário um relatório estruturado antes de avançar:
+Present a structured report to the user before proceeding:
 
 ```
 ENVIRONMENT AUDIT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Serviços detectados:  [lista com portas]
-Env vars documentadas: [N] em .env.example
-Env vars faltando:    [lista ou "nenhuma"]
-Health check:         [presente/ausente em cada serviço]
-Readiness probes:     [presente/ausente]
-Secrets expostos:     [lista de riscos ou "nenhum"]
-Migration tooling:    [detectado ou "nenhum"]
+Detected services:    [list with ports]
+Documented env vars:  [N] in .env.example
+Missing env vars:     [list or "none"]
+Health check:         [present/absent per service]
+Readiness probes:     [present/absent]
+Exposed secrets:      [risk list or "none"]
+Migration tooling:    [detected or "none"]
 ```
 
-Se houver **secrets expostos** → bloquear imediatamente:
+If **exposed secrets** are found → block immediately:
 ```
-⛔ BLOQUEIO: secrets hardcoded detectados. Corrija antes de prosseguir.
-[lista dos arquivos e linhas com o problema]
+⛔ BLOCKED: hardcoded secrets detected. Fix before proceeding.
+[list of files and lines with the issue]
 ```
 
-Se houver **env vars faltando** → gerar lista de ação antes de avançar:
+If **missing env vars** are found → generate action list before proceeding:
 ```
-⚠ Env vars não documentadas detectadas. Adicionar ao .env.example:
-[lista de vars]
-Continuando após documentação...
+⚠ Undocumented env vars detected. Add to .env.example:
+[list of vars]
+Continuing after documentation...
 ```
 
 ---
 
 ## Phase 3 — Security Gate
 
-> **Emitir:** `▶ [3/8] Security Gate`
+> **Emit:** `▶ [3/8] Security Gate`
 
 Run `/security-hardening full app` as a mandatory prerequisite before generating any infrastructure.
 
@@ -179,33 +179,33 @@ Interpret the deploy decision from its final report:
   ```
   ⚠ SECURITY GATE: [N] HIGH findings detected (0 CRITICAL).
   Review the /security-hardening report above.
-  Continue deploy? (sim/não)
+  Continue deploy? (yes/no)
   ```
-  Aguardar confirmação do usuário. Se "não" → halt deploy.
+  Wait for user confirmation. If "no" → halt deploy.
 
 - **PASS** — Emit `✅ Security gate: PASS` and proceed to Phase 4.
 
-> **Checkpoint:** Escreve `.claude/checkpoint.md`:
+> **Checkpoint:** Write `.claude/checkpoint.md`:
 > ```
 > skill: deploy
-> fase: security-gate-passed
-> arquivos_modificados: [list]
-> proximo: production-docker
+> phase: security-gate-passed
+> modified_files: [list]
+> next: production-docker
 > ```
-> Se contexto atingir ~60k tokens → escreve checkpoint e emite:
-> `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+> If context reaches ~60k tokens → write checkpoint and emit:
+> `↺ Context ~60k. Recommend /compact. Use /resume to continue.`
 
 ---
 
 ## Phase 4 — Production Docker
 
-> **Emitir:** `▶ [4/8] Production Docker`
+> **Emit:** `▶ [4/8] Production Docker`
 
-Gerar ou atualizar `docker-compose.prod.yml` com configuração de produção. **Nunca modificar `docker-compose.yml`** — o arquivo de dev permanece intacto.
+Generate or update `docker-compose.prod.yml` with production configuration. **Never modify `docker-compose.yml`** — the dev file remains untouched.
 
-### Regras para docker-compose.prod.yml
+### Rules for docker-compose.prod.yml
 
-**Resource limits** — todos os serviços devem ter limites:
+**Resource limits** — all services must have limits:
 ```yaml
 deploy:
   resources:
@@ -217,29 +217,29 @@ deploy:
       memory: 128M
 ```
 
-**Restart policies** — todos os serviços:
+**Restart policies** — all services:
 ```yaml
 restart: unless-stopped
 ```
 
-**Sem volumes de desenvolvimento** — remover hot-reload, source mounts, node_modules volumes:
+**No development volumes** — remove hot-reload, source mounts, node_modules volumes:
 ```yaml
-# REMOVER em prod:
+# REMOVE in prod:
 # volumes:
 #   - ./src:/app/src
 #   - /app/node_modules
 ```
 
-**Production env vars** — usar variáveis de ambiente sem defaults hardcoded:
+**Production env vars** — use environment variables without hardcoded defaults:
 ```yaml
 environment:
   NODE_ENV: production
   DATABASE_URL: ${DATABASE_URL}
   JWT_SECRET: ${JWT_SECRET}
-  # nunca: DATABASE_URL: postgres://user:pass@localhost/db
+  # never hardcode credentials here
 ```
 
-**Health checks obrigatórios** — todo serviço exposto deve ter:
+**Required health checks** — every exposed service must have:
 ```yaml
 healthcheck:
   test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
@@ -249,14 +249,14 @@ healthcheck:
   start_period: 40s
 ```
 
-**Networks isoladas** — sem `network_mode: host`:
+**Isolated networks** — no `network_mode: host`:
 ```yaml
 networks:
   app-network:
     driver: bridge
 ```
 
-**Logging configurado** — para facilitar observabilidade:
+**Logging configured** — for observability:
 ```yaml
 logging:
   driver: "json-file"
@@ -265,21 +265,21 @@ logging:
     max-file: "3"
 ```
 
-### Template base
+### Base template
 
-Gerar `docker-compose.prod.yml` completo baseado nos serviços detectados na auditoria (Phase 2), aplicando todas as regras acima. Adaptar conforme `pattern` em `.claude/architecture.json`:
+Generate a complete `docker-compose.prod.yml` based on services detected in the audit (Phase 2), applying all rules above. Adapt according to `pattern` in `.claude/architecture.json`:
 
-- **hexagonal / MVC / feature-based**: API container + DB container + cache container (se detectado)
-- **nextjs-app-router**: web container (Next.js) + API container (se separado) + DB + cache
-- **self-hosted VPS**: incluir reverse proxy (nginx ou Caddy) como serviço adicional
+- **hexagonal / MVC / feature-based**: API container + DB container + cache container (if detected)
+- **nextjs-app-router**: web container (Next.js) + API container (if separate) + DB + cache
+- **self-hosted VPS**: include reverse proxy (nginx or Caddy) as an additional service
 
 ---
 
 ## Phase 5 — Infrastructure-as-Code
 
-> **Emitir:** `▶ [5/8] Infrastructure-as-Code`
+> **Emit:** `▶ [5/8] Infrastructure-as-Code`
 
-Gerar configuração mínima específica para o target detectado na Phase 1.
+Generate minimal configuration specific to the target detected in Phase 1.
 
 ### Vercel — `vercel.json`
 
@@ -306,7 +306,7 @@ Gerar configuração mínima específica para o target detectado na Phase 1.
 }
 ```
 
-Adaptar `framework` conforme stack detectada. Para APIs (não Next.js), usar `"framework": null` com `routes`.
+Adapt `framework` according to the detected stack. For APIs (not Next.js), use `"framework": null` with `routes`.
 
 ### Fly.io — `fly.toml`
 
@@ -358,17 +358,17 @@ primary_region = "gru"
 }
 ```
 
-### AWS ECS/Fargate — Terraform mínimo
+### AWS ECS/Fargate — Minimal Terraform
 
-Gerar `infra/main.tf` com:
+Generate `infra/main.tf` with:
 - `aws_ecs_cluster`
-- `aws_ecs_task_definition` (referenciando variáveis de ECR image)
-- `aws_ecs_service` com `desired_count = 1`
+- `aws_ecs_task_definition` (referencing ECR image variables)
+- `aws_ecs_service` with `desired_count = 1`
 - `aws_lb` + `aws_lb_target_group` + `aws_lb_listener`
-- `variables.tf` com: `aws_region`, `ecr_image_uri`, `container_cpu`, `container_memory`
-- `outputs.tf` com: `load_balancer_dns`, `ecs_cluster_name`
+- `variables.tf` with: `aws_region`, `ecr_image_uri`, `container_cpu`, `container_memory`
+- `outputs.tf` with: `load_balancer_dns`, `ecs_cluster_name`
 
-Usar módulos conservadores, sem over-engineering. O objetivo é infraestrutura funcional mínima.
+Use conservative modules, no over-engineering. The goal is minimal functional infrastructure.
 
 ### GCP Cloud Run — `cloudbuild.yaml` + gcloud commands
 
@@ -413,9 +413,9 @@ services:
         type: SECRET
 ```
 
-### Self-hosted VPS — `Makefile` de deploy
+### Self-hosted VPS — Deploy `Makefile`
 
-Gerar `Makefile` com targets:
+Generate `Makefile` with targets:
 ```makefile
 deploy:
 	ssh $(VPS_HOST) 'cd $(APP_DIR) && git pull && docker compose -f docker-compose.prod.yml up -d --build'
@@ -431,13 +431,13 @@ logs:
 
 ## Phase 6 — Secrets Strategy
 
-> **Emitir:** `▶ [6/8] Secrets Strategy`
+> **Emit:** `▶ [6/8] Secrets Strategy`
 
-Documentar a estratégia de gestão de secrets adequada ao target e ao porte do projeto.
+Document the secrets management strategy appropriate for the target and project scale.
 
-### Regra absoluta
+### Absolute rule
 
-**Nunca** commitar secrets em repositório. Verificar `.gitignore` e garantir que inclui:
+**Never** commit secrets to the repository. Check `.gitignore` and ensure it includes:
 ```
 .env
 .env.local
@@ -448,44 +448,44 @@ Documentar a estratégia de gestão de secrets adequada ao target e ao porte do 
 secrets/
 ```
 
-Se `.gitignore` estiver incompleto, gerar as entradas faltantes imediatamente.
+If `.gitignore` is incomplete, generate the missing entries immediately.
 
-### Estratégia por target
+### Strategy per target
 
 **Vercel:**
 ```
-Secrets em: Vercel Dashboard → Settings → Environment Variables
-Ambientes separados: Development / Preview / Production
-Acesso via CLI:
+Secrets in: Vercel Dashboard → Settings → Environment Variables
+Separate environments: Development / Preview / Production
+Access via CLI:
   rtk vercel env add SECRET_NAME production
   rtk vercel env ls
-Não usar: vercel.json para secrets (arquivo é public no repo)
+Do not use: vercel.json for secrets (file is public in repo)
 ```
 
 **Fly.io:**
 ```
-Secrets em: Fly Secrets (criptografados em repouso)
-Comandos:
+Secrets in: Fly Secrets (encrypted at rest)
+Commands:
   rtk flyctl secrets set DATABASE_URL="postgres://..."
   rtk flyctl secrets list
   rtk flyctl secrets unset SECRET_NAME
-Automaticamente injetados como env vars no container
+Automatically injected as env vars in the container
 ```
 
 **Railway:**
 ```
-Secrets em: Railway Dashboard → Service → Variables
-Ou via CLI:
+Secrets in: Railway Dashboard → Service → Variables
+Or via CLI:
   rtk railway variables set DATABASE_URL="postgres://..."
-Service Variables são injetadas automaticamente
+Service Variables are automatically injected
 ```
 
 **AWS ECS/Fargate:**
 ```
-Recomendado: AWS Secrets Manager
+Recommended: AWS Secrets Manager
   aws secretsmanager create-secret --name /app/prod/db-password --secret-string "value"
   
-No task-definition.json, referenciar via secrets:
+In task-definition.json, reference via secrets:
   "secrets": [
     {
       "name": "DATABASE_PASSWORD",
@@ -493,63 +493,63 @@ No task-definition.json, referenciar via secrets:
     }
   ]
 
-Alternativa mais simples: AWS Systems Manager Parameter Store (SSM)
-Para segredos não-críticos: Task Definition environment variables via CI/CD
+Simpler alternative: AWS Systems Manager Parameter Store (SSM)
+For non-critical secrets: Task Definition environment variables via CI/CD
 ```
 
 **GCP Cloud Run:**
 ```
-Recomendado: GCP Secret Manager
+Recommended: GCP Secret Manager
   gcloud secrets create db-password --replication-policy="automatic"
   echo -n "value" | gcloud secrets versions add db-password --data-file=-
 
-No Cloud Run, referenciar via:
+In Cloud Run, reference via:
   gcloud run services update [app] --update-secrets=DB_PASSWORD=db-password:latest
 ```
 
 **DigitalOcean App Platform:**
 ```
-Secrets em: App → Settings → App-Level Environment Variables → Type: Secret
+Secrets in: App → Settings → App-Level Environment Variables → Type: Secret
 Via CLI:
   doctl apps update [app-id] --spec .do/app.yaml
-Secrets ficam criptografados e não aparecem em logs
+Secrets are encrypted and do not appear in logs
 ```
 
 **Self-hosted VPS:**
 ```
-Opções (em ordem de recomendação):
-  1. Doppler: doppler run -- docker compose up (injeta env vars automaticamente)
+Options (in order of recommendation):
+  1. Doppler: doppler run -- docker compose up (injects env vars automatically)
   2. 1Password CLI: op run --env-file=.env.template -- docker compose up
-  3. .env file no servidor (fora do repo, permissões 600, owner root)
+  3. .env file on the server (outside the repo, permissions 600, owner root)
      scp .env user@vps:/app/.env
      chmod 600 /app/.env
 
-Para CI/CD em VPS:
-  - Armazenar secrets como GitHub Actions Secrets
-  - No workflow: echo "$ENV_FILE" > .env (onde ENV_FILE é o secret com o conteúdo completo)
+For CI/CD on VPS:
+  - Store secrets as GitHub Actions Secrets
+  - In workflow: echo "$ENV_FILE" > .env (where ENV_FILE is the secret with the full content)
 ```
 
-> **Checkpoint:** Escreve `.claude/checkpoint.md`:
+> **Checkpoint:** Write `.claude/checkpoint.md`:
 > ```
 > skill: deploy
-> fase: secrets-strategy-done
-> arquivos_modificados: [list]
-> proximo: deploy-checklist
+> phase: secrets-strategy-done
+> modified_files: [list]
+> next: deploy-checklist
 > ```
-> Se contexto atingir ~60k tokens → escreve checkpoint e emite:
-> `↺ Contexto ~60k. Recomendo /compact. Use /resume para continuar.`
+> If context reaches ~60k tokens → write checkpoint and emit:
+> `↺ Context ~60k. Recommend /compact. Use /resume to continue.`
 
-### Referência de secrets necessários
+### Required secrets reference
 
-Gerar `docs/secrets.md` (ou seção em README) documentando cada secret necessário:
+Generate `docs/secrets.md` (or README section) documenting each required secret:
 
 ```markdown
-## Secrets necessários para produção
+## Secrets required for production
 
-| Nome | Descrição | Onde configurar | Obrigatório |
-|------|-----------|-----------------|-------------|
-| DATABASE_URL | Connection string completa do banco | [target secret store] | Sim |
-| JWT_SECRET | Chave de assinatura JWT (min 32 chars) | [target secret store] | Sim |
+| Name | Description | Where to configure | Required |
+|------|-------------|-------------------|----------|
+| DATABASE_URL | Full database connection string | [target secret store] | Yes |
+| JWT_SECRET | JWT signing key (min 32 chars) | [target secret store] | Yes |
 | ... | ... | ... | ... |
 ```
 
@@ -557,98 +557,98 @@ Gerar `docs/secrets.md` (ou seção em README) documentando cada secret necessá
 
 ## Phase 7 — Deploy Checklist
 
-> **Emitir:** `▶ [7/8] Deploy Checklist`
+> **Emit:** `▶ [7/8] Deploy Checklist`
 
-Gerar checklist pré-deploy e executar itens automatizáveis.
+Generate pre-deploy checklist and execute automatable items.
 
-### Checklist — executar em ordem
+### Checklist — execute in order
 
 **Migrations:**
 ```bash
-# Verificar se há migrations pendentes antes do deploy
+# Check for pending migrations before deploy
 rtk docker compose exec api npx prisma migrate status     # Prisma
 rtk docker compose exec api python manage.py showmigrations  # Django
 rtk docker compose exec api rails db:migrate:status      # Rails
 rtk docker compose exec api flyway info                  # Flyway
 
-# Se pendentes → executar antes do deploy
-# Estratégia recomendada: migration como initContainer ou pre-deploy hook
+# If pending → execute before deploy
+# Recommended strategy: migration as initContainer or pre-deploy hook
 ```
 
-**Smoke tests locais:**
+**Local smoke tests:**
 ```bash
-# Build da imagem de produção localmente e testar
+# Build production image locally and test
 rtk docker build -t [app]:smoke-test .
 rtk docker compose -f docker-compose.prod.yml up -d
 rtk curl -f http://localhost:[port]/health || exit 1
 rtk docker compose -f docker-compose.prod.yml down
 ```
 
-**Testes automatizados:**
+**Automated tests:**
 ```bash
-rtk npm test              # todos os testes devem passar
+rtk npm test              # all tests must pass
 rtk npx cucumber-js       # BDD green
 ```
 
 **Rollback plan:**
 
-Documentar o plano de rollback específico para o target:
+Document the rollback plan specific to the target:
 
 | Target | Rollback |
 |--------|----------|
-| Vercel | `vercel rollback` — reverte para o deployment anterior instantaneamente |
+| Vercel | `vercel rollback` — reverts to the previous deployment instantly |
 | Fly.io | `flyctl releases list` + `flyctl deploy --image [previous-image]` |
-| Railway | Dashboard → Deployments → Redeploy versão anterior |
+| Railway | Dashboard → Deployments → Redeploy previous version |
 | AWS ECS | `aws ecs update-service --task-definition [previous-revision]` |
 | GCP Cloud Run | `gcloud run services update-traffic --to-revisions=[rev]=100` |
 | DigitalOcean | Dashboard → App → Activity → Rollback |
 | VPS | `make rollback` (git checkout HEAD~1 + recompose) |
 
-**Monitoring configurado:**
+**Monitoring configured:**
 
-Verificar se há ao menos um mecanismo de observabilidade:
-- Health check endpoint ativo e respondendo
-- Logs estruturados (JSON) configurados
-- Alertas de uptime (UptimeRobot, Better Uptime, ou nativo do provider)
+Check that at least one observability mechanism exists:
+- Health check endpoint active and responding
+- Structured logs (JSON) configured
+- Uptime alerts (UptimeRobot, Better Uptime, or provider-native)
 
-Se não houver monitoring, emitir aviso:
+If no monitoring exists, emit warning:
 ```
-⚠ Monitoring não detectado. Recomendado antes do deploy:
-  - UptimeRobot (gratuito): https://uptimerobot.com
-  - Configurar alert no health check endpoint: [url]/health
+⚠ Monitoring not detected. Recommended before deploy:
+  - UptimeRobot (free): https://uptimerobot.com
+  - Configure alert on health check endpoint: [url]/health
 ```
 
-### Apresentar checklist ao usuário
+### Present checklist to user
 
 ```
 PRE-DEPLOY CHECKLIST
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ✅ Security gate: PASS
-  ✅ Smoke test local: PASS
-  ✅ Testes automatizados: PASS
-  ✅ Migrations: [N pendentes / nenhuma]
-  ✅ Secrets documentados: docs/secrets.md
-  ✅ docker-compose.prod.yml: gerado
-  ✅ IaC config: gerado ([arquivo])
-  ✅ .gitignore: contém .env*
+  ✅ Local smoke test: PASS
+  ✅ Automated tests: PASS
+  ✅ Migrations: [N pending / none]
+  ✅ Secrets documented: docs/secrets.md
+  ✅ docker-compose.prod.yml: generated
+  ✅ IaC config: generated ([file])
+  ✅ .gitignore: contains .env*
   ⚠  Monitoring: [status]
-  ✅ Rollback plan: documentado
+  ✅ Rollback plan: documented
 
-Pronto para deploy em [target]?
-Responda "sim" para executar ou "não" para revisar antes.
+Ready to deploy to [target]?
+Reply "yes" to execute or "no" to review first.
 ```
 
-Aguardar confirmação do usuário antes de Phase 8.
+Wait for user confirmation before Phase 8.
 
 ---
 
 ## Phase 8 — Post-Deploy Validation
 
-> **Emitir:** `▶ [8/8] Post-Deploy Validation`
+> **Emit:** `▶ [8/8] Post-Deploy Validation`
 
 ### 8.1 — Deploy execution
 
-Executar o comando de deploy adequado ao target:
+Execute the deploy command appropriate for the target:
 
 ```bash
 # Vercel
@@ -660,8 +660,8 @@ rtk flyctl deploy
 # Railway
 rtk railway up
 
-# AWS ECS (via CI/CD pipeline — não executar direto)
-# Instrução: push para main dispara o pipeline CI/CD
+# AWS ECS (via CI/CD pipeline — do not execute directly)
+# Instruction: push to main triggers the CI/CD pipeline
 
 # GCP Cloud Run
 rtk gcloud run deploy [app-name] --image gcr.io/[project]/[app]:latest --region southamerica-east1
@@ -673,9 +673,9 @@ rtk doctl apps create-deployment [app-id]
 rtk make deploy
 ```
 
-### 8.2 — Smoke tests pós-deploy
+### 8.2 — Post-deploy smoke tests
 
-Após o deploy completar, testar os endpoints críticos:
+After deploy completes, test critical endpoints:
 
 ```bash
 BASE_URL=[production-url]
@@ -683,83 +683,83 @@ BASE_URL=[production-url]
 # Health check
 rtk curl -sf "$BASE_URL/health" | rtk jq '.status'
 
-# Readiness check (se disponível)
+# Readiness check (if available)
 rtk curl -sf "$BASE_URL/ready" || echo "No readiness endpoint"
 
-# Auth endpoint (se aplicável)
+# Auth endpoint (if applicable)
 rtk curl -sf -o /dev/null -w "%{http_code}" "$BASE_URL/api/auth/status"
 
-# Homepage / root (para apps com UI)
+# Homepage / root (for apps with UI)
 rtk curl -sf -o /dev/null -w "%{http_code}" "$BASE_URL/"
 ```
 
-Critério de sucesso: todos os endpoints críticos retornam 2xx.
+Success criteria: all critical endpoints return 2xx.
 
-Se qualquer endpoint retornar erro:
-1. Verificar logs: `rtk [provider] logs` (ex: `rtk flyctl logs`, `rtk vercel logs`)
-2. Executar rollback imediato se serviço indisponível
-3. Reportar ao usuário com detalhes do erro
+If any endpoint returns an error:
+1. Check logs: `rtk [provider] logs` (e.g.: `rtk flyctl logs`, `rtk vercel logs`)
+2. Execute immediate rollback if service is unavailable
+3. Report to user with error details
 
-### 8.3 — QA Gate pós-deploy
+### 8.3 — Post-deploy QA Gate
 
 ```
-/qa-loop (escopo: [production-url], dimensões: qa-smoke)
+/qa-loop (scope: [production-url], dimensions: qa-smoke)
 ```
 
-O `qa-smoke` verifica:
-- Endpoints críticos respondem dentro do SLA (< 500ms p95)
-- Nenhum erro 5xx nos primeiros 60 segundos
-- Headers de segurança presentes (X-Content-Type-Options, etc.)
-- Redirecionamentos HTTPS funcionando
+The `qa-smoke` checks:
+- Critical endpoints respond within SLA (< 500ms p95)
+- No 5xx errors in the first 60 seconds
+- Security headers present (X-Content-Type-Options, etc.)
+- HTTPS redirects working
 
-### 8.4 — Summary final
+### 8.4 — Final summary
 
 ```
 DEPLOY COMPLETE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━��━━━━━━━━━━━━━��━━━━━━━━━━
 Target:        [cloud target]
 URL:           [production url]
-Deploy ID:     [id do deploy, se disponível]
+Deploy ID:     [deploy id, if available]
 
-Arquivos gerados:
+Generated files:
   docker-compose.prod.yml
-  [arquivo IaC específico do target]
+  [target-specific IaC file]
   docs/secrets.md
 
-Validação:
+Validation:
   ✅ Health check: [url]/health → 200 OK
   ✅ Smoke tests: PASS
   ✅ QA gate (qa-smoke): PASS
 
-Rollback disponível via: [comando de rollback]
+Rollback available via: [rollback command]
 
-Monitorar em: [URL do dashboard do provider ou UptimeRobot]
+Monitor at: [provider dashboard URL or UptimeRobot]
 ```
 
 ---
 
-## Regras gerais
+## General Rules
 
-1. **Nunca commitar secrets** — bloquear automaticamente se detectados; corrigir antes de qualquer avanço.
-2. **Nunca modificar docker-compose.yml** — o arquivo de desenvolvimento é intocável; gerar sempre `docker-compose.prod.yml`.
-3. **IaC como código** — toda configuração de infraestrutura vai para o repositório (exceto secrets).
-4. **Security gate obrigatório** — `/security-hardening` roda na Phase 3; CRITICAL = hard block, HIGH = user confirmation.
-5. **Gate obrigatório** — Phase 8 só executa após confirmação explícita do usuário na Phase 7.
-6. **Rollback plan first** — documentar rollback antes de executar o deploy, nunca depois.
-7. **Architecture-aware** — sempre ler `.claude/architecture.json` para adaptar config de containers e IaC.
+1. **Never commit secrets** — automatically block if detected; fix before any progress.
+2. **Never modify docker-compose.yml** — the development file is untouchable; always generate `docker-compose.prod.yml`.
+3. **IaC as code** — all infrastructure configuration goes into the repository (except secrets).
+4. **Required security gate** — `/security-hardening` runs in Phase 3; CRITICAL = hard block, HIGH = user confirmation.
+5. **Required gate** — Phase 8 only executes after explicit user confirmation in Phase 7.
+6. **Rollback plan first** — document rollback before executing the deploy, never after.
+7. **Architecture-aware** — always read `.claude/architecture.json` to adapt container and IaC config.
 
 ---
 
-## Tratamento de falhas
+## Failure Handling
 
-| Situação | Comportamento |
-|----------|---------------|
-| Target não detectado | Pergunta ao usuário (Phase 1) |
+| Situation | Behavior |
+|-----------|----------|
+| Target not detected | Ask the user (Phase 1) |
 | Security gate BLOCK DEPLOY | Halt pipeline; fix CRITICAL findings and re-run /deploy |
 | Security gate CONDITIONAL | Warn HIGH findings; require user confirmation to proceed |
-| Secrets hardcoded detectados | Bloqueia com lista de arquivos/linhas; não avança |
-| Health check ausente | Gera endpoint `/health` mínimo antes de continuar |
-| Smoke test local falha | Não executa deploy; reporta erro ao usuário |
-| Deploy falha | Verifica logs, executa rollback se serviço indisponível |
-| QA qa-smoke BLOCKER | Reporta ao usuário com evidências; não marca deploy como PASS |
-| Migration pendente | Documenta no checklist; recomenda executar antes do deploy |
+| Hardcoded secrets detected | Block with file/line list; do not proceed |
+| Health check missing | Generate minimal `/health` endpoint before continuing |
+| Local smoke test fails | Do not execute deploy; report error to user |
+| Deploy fails | Check logs, execute rollback if service is unavailable |
+| QA qa-smoke BLOCKER | Report to user with evidence; do not mark deploy as PASS |
+| Pending migration | Document in checklist; recommend executing before deploy |

@@ -6,28 +6,28 @@
 
 ## Project Scale
 
-O scale é capturado pelo `/ideate` (pergunta obrigatória) ou passado diretamente como argumento: `/build scale=MVP`.
+The scale is captured by `/ideate` (mandatory question) or passed directly as an argument: `/build scale=MVP`.
 
-| Scale | Quando usar | O que inclui |
+| Scale | When to use | What it includes |
 |-------|------------|--------------|
-| **MVP** | POC, validação de ideia, hackathon, protótipo | Auth, core feature, Docker dev, testes unitários básicos |
-| **Product** | App indo a mercado, early stage | MVP + CI/CD (GitHub Actions), rate limiting, structured logging, testes E2E |
-| **Scale** | Produto com tração, time crescendo | Product + OpenTelemetry → Grafana, multi-tenancy, load tests (k6) |
+| **MVP** | POC, idea validation, hackathon, prototype | Auth, core feature, Docker dev, basic unit tests |
+| **Product** | App going to market, early stage | MVP + CI/CD (GitHub Actions), rate limiting, structured logging, E2E tests |
+| **Scale** | Product with traction, growing team | Product + OpenTelemetry → Grafana, multi-tenancy, load tests (k6) |
 
-**Regras em TODOS os scales:** auth gate, security-scan, Docker, Conventional Commits.
-**Só em Product/Scale:** CI/CD, rate limiting, structured logging. **Só em Scale:** observabilidade completa (OTel), load tests (k6).
+**Rules across ALL scales:** auth gate, security-scan, Docker, Conventional Commits.
+**Only in Product/Scale:** CI/CD, rate limiting, structured logging. **Only in Scale:** full observability (OTel), load tests (k6).
 
-### Metodologia por scale
+### Methodology by scale
 
-| Prática | MVP | Product | Scale |
+| Practice | MVP | Product | Scale |
 |---------|-----|---------|-------|
-| TDD | advisory | obrigatório | obrigatório |
-| BDD (Gherkin) | opcional | obrigatório | obrigatório |
-| Hexagonal (camadas) | advisory | obrigatório | obrigatório |
-| E2E (Cypress) | opcional | obrigatório | obrigatório |
-| Load tests (k6) | ❌ | opcional | obrigatório |
-| CI/CD | opcional | obrigatório | obrigatório |
-| Observabilidade | ❌ | structured logging | OTel → Grafana |
+| TDD | advisory | required | required |
+| BDD (Gherkin) | optional | required | required |
+| Hexagonal (layers) | advisory | required | required |
+| E2E (Cypress) | optional | required | required |
+| Load tests (k6) | ❌ | optional | required |
+| CI/CD | optional | required | required |
+| Observability | ❌ | structured logging | OTel → Grafana |
 
 ---
 
@@ -45,7 +45,7 @@ rtk docker compose down       # stop
 **Architecture** — Defined in `.claude/architecture.json`. Default: hexagonal. Supported: `hexagonal`, `mvc-rails`, `mvc-express`, `nextjs-app-router`, `feature-based`, `flat`.
 Session-start hook injects the active pattern at runtime. Respect the layer rules for the detected pattern — see `Rules.md` RULE-ARCH-001.
 
-**TDD / BDD / Hexagonal** — Obrigatoriedade varia por scale (ver tabela acima). Nunca ignorar em Product/Scale.
+**TDD / BDD / Hexagonal** — Requirement level varies by scale (see table above). Never skip in Product/Scale.
 
 **Agents** — Max 5 parallel. Each agent = 1 granular activity. 100k token budget per agent.
 
@@ -74,8 +74,8 @@ System context starts ~18k tokens.
 
 | Threshold | Action |
 |-----------|--------|
-| **60k** | Write `.claude/checkpoint.md` immediately — capture: skill in progress, phase N/N, files modified, exact next step, key decisions. Emit: `↺ Contexto ~60k — checkpoint escrito. Recomendo /compact.` |
-| **80k** | Strongly recommended: run `/compact`. After compact → SessionStart injects checkpoint → `/resume` retoma autonomamente. |
+| **60k** | Write `.claude/checkpoint.md` immediately — capture: skill in progress, phase N/N, files modified, exact next step, key decisions. Emit: `↺ Context ~60k — checkpoint written. Recommend /compact.` |
+| **80k** | Strongly recommended: run `/compact`. After compact → SessionStart injects checkpoint → `/resume` resumes autonomously. |
 | **100k** | Absolute limit — context quality degrades. Always compact before reaching this. |
 
 Token estimates: file read ~1k | agent call ~8k | long response ~2k | phase ~3k
@@ -88,36 +88,61 @@ Before each phase/step: `▶ [N/Total] Phase Name`
 
 ---
 
+## Quality Gate Pipeline
+
+Canonical sequence — always in this order:
+
+```
+1. Tests         → rtk npm test + rtk npx cucumber-js + rtk npx cypress run
+2. Code Review   → /code-review (architecture + SOLID + TDD compliance)
+3. QA Loop       → /qa-loop (multi-dimensional: code, security, backend, design, UX, a11y, e2e, perf)
+4. Perf Audit    → /perf-audit (Scale only, or when endpoints/UI-heavy features exist)
+5. Browser Audit → /browser-qa <url> (exhaustive navigation — final visual gate)
+```
+
+Skip steps that don't apply (e.g., no `/browser-qa` for backend-only, no `/perf-audit` for MVP).
+Never reorder — earlier gates catch issues cheaper than later ones.
+
+---
+
 ## UI Quality Protocol
 
-**Foundation first** — Todo build com UI começa por design system + layout base. Verificar com agent-browser antes de qualquer feature.
+**Foundation first** — Every build with UI starts with the design system + base layout. Verify with agent-browser before any feature.
 
-**Auth first** — Auth (register/login/logout) é sempre a primeira feature. Se auth falha no gate, o build para. Sem exceções.
+**Auth first** — Auth (register/login/logout) is always the first feature. If auth fails the gate, the build stops. No exceptions.
 
-**Phase gates** — Após cada feature com UI:
-1. `rtk npx cypress run --spec tests/e2e/[feature].cy.ts`
-2. `/qa-loop` com dimensões corretas para o tipo de feature
-3. `/browser-qa <url>` — navegação exaustiva de todos os elementos da feature
-4. Avança SOMENTE quando PASS — fix loop automático até lá
+**Phase gates** — After each feature with UI, run the Quality Gate Pipeline (above). Advance ONLY when PASS.
 
-**Verificação final** — `/browser-qa <url>` + `/qa-loop` com todas as dimensões ao final do build.
+**Final verification** — Full Quality Gate Pipeline with all dimensions at the end of the build.
 
 ---
 
 ## Skills
 
 Entry point: **`/build`** — auto-routes based on context:
-- Projeto vazio → `/scaffold`
-- Ideia vaga → `/ideate` → retoma `/build` automaticamente
-- Transformação de UI → `/redesign`
-- Refatoração de código → `/refactor`
-- Mudança de arquitetura → `/modernize`
+- Empty project → `/scaffold`
+- Vague idea → `/ideate` → resumes `/build` automatically
+- UI transformation → `/redesign`
+- Code refactoring → `/refactor`
+- Architecture change → `/modernize`
 
 **Operation modes:** `autonomous` (default — AI as PM, deep research defines feature set) | `guided` (user guides, detailed interview). Pass as argument: `/build guided`.
 
+**Feature routing** — during implementation, `/build` delegates to specialized skills:
+
+| Feature type | Delegate to | When |
+|-------------|------------|------|
+| Authentication | `/auth` | Register, login, logout, OAuth, RBAC |
+| UI-heavy feature | `/ui` | Design system, complex components, accessibility |
+| Schema/data model changes | `/dba design` | New entities, migrations, indexing |
+| API contract validation | `/api-contract` | Breaking changes, versioning, backward compat |
+| Production incident | `/hotfix` | Expedited fix with reduced gates |
+| General feature | `/feature-dev` | Default for all other features |
+| Complex feature (3+ components) | `/agent-teams` | Parallel teams with worktree isolation |
+
 **Anti-stub:** zero placeholders in delivered UI. If a feature isn't implemented, its UI element must not exist. PM Validation checks completeness before every commit (RULE-CODE-011).
 
-QA obrigatório após cada feature: `/qa-loop` + `/browser-qa` (gate final).
+Mandatory QA after each feature: Quality Gate Pipeline (see above).
 
 Full skill catalog: `docs/SKILLS.md`
 
