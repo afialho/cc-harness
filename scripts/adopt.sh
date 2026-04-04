@@ -336,12 +336,12 @@ if command -v claude &>/dev/null; then
     ok "vercel:agent-browser MCP already installed"
     track_skipped "vercel:agent-browser MCP"
   else
-    if claude mcp add vercel npx -y @vercel/mcp-server 2>/dev/null; then
+    if claude mcp add vercel npx -y @vercel/mcp-adapter@latest 2>/dev/null; then
       ok "vercel:agent-browser MCP installed"
       track_installed "vercel:agent-browser MCP"
     else
       warn "Could not auto-install vercel:agent-browser"
-      info "Install manually: claude mcp add vercel npx -y @vercel/mcp-server"
+      info "Install manually: claude mcp add vercel npx -y @vercel/mcp-adapter@latest"
       track_skipped "vercel:agent-browser (manual install needed)"
     fi
   fi
