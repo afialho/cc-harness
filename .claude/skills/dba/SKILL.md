@@ -1,7 +1,6 @@
 ---
 name: dba
 description: Database schema design, data modeling, indexing strategy, and migration planning. ORM-aware (Prisma, TypeORM, Drizzle, Django ORM, ActiveRecord). Use before implementing features that introduce new entities or modify the existing schema.
-disable-model-invocation: true
 argument-hint: [scope: design | index | seed | multi-tenant | review]
 ---
 

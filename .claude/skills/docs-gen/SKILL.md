@@ -1,7 +1,6 @@
 ---
 name: docs-gen
 description: Auto-generate living documentation: OpenAPI/Swagger from routes, C4 architecture diagrams (Mermaid), CHANGELOG from Conventional Commits, and developer runbook.
-disable-model-invocation: true
 argument-hint: [type: openapi | c4 | changelog | runbook | all]
 ---
 

@@ -52,14 +52,16 @@ Each phase has its own context budget and automatic checkpoints.
               ├─ Simple feature → /feature-dev + phase gate → COMMIT per feature
               ├─ Complex feature (3+ components) → /agent-teams + phase gate → COMMIT per wave
               │
-              ├─ [CONCLUSION] Launch + Browser Audit
+              ├─ [CONCLUSION] Launch + Self-Healing Loop
               │   ├─ Complete test suite (unit + BDD + Cypress + k6)
               │   ├─ docker compose up -d → health check → local URL
-              │   ├─ /browser-qa <url> → navigate ALL screens, test ALL elements
-              │   │   └─ Fix loop (max 3 iter) until 0 BLOCKER/MAJOR
-              │   ├─ /qa-loop (qa-code + qa-security + qa-backend + qa-perf)
-              │   ├─ Code review → PASS
-              │   ├─ Scale gates (if Product/Scale)
+              │   ├─ /code-review → PASS
+              │   ├─ /qa-loop (qa-code + qa-security + qa-backend)
+              │   ├─ Capability gates (per .claude/capabilities.json)
+              │   ├─ Self-Healing Loop (MANDATORY):
+              │   │   ├─ Agent(agent-browser) → crawl ALL pages, test ALL elements
+              │   │   ├─ Issues found? → fix → retest (max 5 iterations)
+              │   │   └─ Loop until 0 BLOCKER/MAJOR
               │   ├─ Final commit (only remaining fixes)
               │   └─ BUILD COMPLETE — app running at http://localhost:[port]
               │
@@ -183,18 +185,36 @@ Record the mode for use in subsequent phases.
 
 Receive the concrete idea (or IDEAS.md from /ideate) and:
 
-1. Detect or confirm the project's **scale**:
-   - If IDEAS.md exists and has a Scale field → use it
-   - If called with argument `scale=MVP|Product|Scale` → use it
-   - Otherwise → ask: *"What's the scale? MVP (validate idea) / Product (going to market) / Scale (product with traction)?"*
+1. **Infer capabilities** from context (idea description, codebase, explicit mentions).
+   Do NOT ask "what scale?" — infer and present for confirmation.
 
-   **The scale determines what will be included:**
-   ```
-   MVP:     Auth + core features + basic unit tests
-            WITHOUT: CI/CD, observability, rate limiting, load tests
-   Product: MVP + CI/CD (GitHub Actions) + rate limiting on auth + E2E + structured logging
-   Scale:   Product + full observability + multi-tenancy + load tests (k6 per endpoint)
-   ```
+   **Always ON (non-negotiable):**
+   - Docker (all services containerized)
+   - Auth gate (if app has users)
+   - Security scan (dependency audit)
+   - Conventional Commits
+   - Unit tests
+   - TDD (Red→Green→Refactor)
+   - Agent-browser verification (navigate all screens, test all elements)
+
+   **Inference rules — enable ✅ when context matches:**
+
+   | Capability | Enable when | Tool/Skill |
+   |-----------|------------|-----------|
+   | BDD (Gherkin) | always (default ON) | Cucumber |
+   | E2E tests (Cypress) | UI exists (default ON for web apps) | Cypress |
+   | Hexagonal architecture | new project or detected | architecture-guard |
+   | CI/CD | "production", "deploy", "team", "market" | `/ci-cd` |
+   | Structured logging | backend + "production" or "deploy" | pino / structlog |
+   | Rate limiting | auth + public APIs + "production" | middleware |
+   | Security hardening | "production", "security", "audit" | `/security-hardening` |
+   | API documentation | "API", "public API", "documentation" | `/docs-gen` |
+   | Observability (OTel) | "monitoring", "observability", "tracing", "metrics" | `/observability` |
+   | Load tests (k6) | "performance", "scale", "load", "stress" | k6 |
+   | Multi-tenancy | "multi-tenant", "SaaS", "organizations", "workspaces" | tenant isolation |
+
+   If IDEAS.md exists and has capabilities listed → use those as starting point.
+   If called with explicit capabilities (e.g. `/build with CI/CD and load tests`) → enable those.
 
 2. Reformulate in clear technical language:
    - What will be built
@@ -209,14 +229,35 @@ UNDERSTANDING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Feature:      [short name]
 Mode:         autonomous | guided
-Scale:        MVP | Product | Scale
 Objective:    [one sentence — what the user achieves]
 What it builds: [2-4 technical bullets]
-Input/Output: [what goes in, what comes out]
 Entities:     [domain entities involved]
 Type:         [UI-heavy | Backend | Full-stack | Library]
 References:   [existing products mentioned — "like Jira", "similar to Trello"]
+
+Capabilities (inferred — edit freely):
+  ✅ Auth (register/login/logout)
+  ✅ Unit tests
+  ✅ TDD (Red→Green→Refactor)
+  ✅ BDD (Cucumber/Gherkin)
+  ✅ E2E tests (Cypress)
+  ✅ Docker
+  ✅ Hexagonal architecture
+  ✅ Agent-browser verification
+  ☐ CI/CD (GitHub Actions)
+  ☐ Structured logging
+  ☐ Rate limiting
+  ☐ Security hardening (OWASP)
+  ☐ API documentation (OpenAPI)
+  ☐ Observability (OpenTelemetry → Grafana)
+  ☐ Load tests (k6)
+  ☐ Multi-tenancy
+
+Adjust ✅/☐ and confirm to proceed.
 ```
+
+The ✅/☐ above is an example. Actual defaults are inferred per project.
+Save selected capabilities in `.claude/capabilities.json` for use in Phase 3 gates.
 
 4. Ask: **"Is this understanding correct? Can I proceed to research?"**
 

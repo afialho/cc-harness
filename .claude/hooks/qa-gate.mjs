@@ -349,8 +349,17 @@ async function main() {
     return;
   }
 
-  // Skip if no Cypress specs or Cypress not installed
+  // Check Cypress status
   if (!hasCypressSpecs() || !cypressInstalled()) {
+    // Warn if the project has UI files but no Cypress specs
+    var hasUI = existsSync('src/pages') || existsSync('src/app') || existsSync('app')
+      || existsSync('src/components') || existsSync('pages');
+    if (hasUI && !hasCypressSpecs()) {
+      process.stderr.write(
+        '\n⚠️  [qa-gate] WARNING: UI files detected but no Cypress specs in tests/e2e/.\n'
+        + '   E2E tests are critical for catching broken UI. Generate specs with /feature-dev or /qa-loop.\n\n'
+      );
+    }
     process.stdout.write(JSON.stringify(input));
     return;
   }

@@ -1,7 +1,6 @@
 ---
 name: feature-dev
 description: Implement a feature end-to-end with TDD (Red→Green→Refactor), multi-pattern architecture (hexagonal, MVC, Next.js App Router, feature-based), BDD (Cucumber), load tests (k6), Cypress E2E, and git worktree isolation. 7-phase workflow.
-disable-model-invocation: true
 argument-hint: <feature name>
 ---
 
@@ -178,10 +177,21 @@ run tests → if failures → fix → run tests again
 repeat until: all unit + integration + BDD green
 ```
 
-**Step 2 — Cypress E2E (if UI involved):**
+**Step 2 — Cypress E2E (MANDATORY if UI involved):**
+
+If this feature has any UI (pages, components, forms, buttons), a Cypress spec MUST be created.
+Do NOT skip this step for UI features — missing Cypress specs are the #1 cause of broken apps.
+
 ```bash
+# If tests/e2e/[feature].cy.ts does NOT exist yet → CREATE IT FIRST:
+# - Test the happy path end-to-end (navigate, interact, verify)
+# - Test error cases (invalid input, empty states)
+# - Test auth flows if the feature is protected
+
 rtk npx cypress run --spec tests/e2e/[feature].cy.ts
 ```
+
+**If the spec does not exist and the feature has UI → generate it before running.** Never skip.
 
 **Step 3 — k6 load test (if endpoint added):**
 ```bash
@@ -206,11 +216,18 @@ rtk k6 run tests/load/[feature].js
 
 The QA Loop runs independent agents, aggregates the QA Report, and runs an automatic fix loop (max 3 iterations) before returning PASS or escalating to the user.
 
-**Step 6 — Browser QA (if UI involved, final gate):**
+**Step 6 — Browser Verification (MANDATORY if UI involved, final gate):**
+
+Use Agent tool with agent-browser CLI to verify the feature works in the browser:
 ```
-/browser-qa http://localhost:[port]
+Agent(Browser Verification):
+  1. agent-browser open http://localhost:[port]
+  2. Navigate to the feature's pages
+  3. Test all interactive elements (buttons, forms, links)
+  4. Verify: data persists, no JS errors, no blank screens
+  5. If issues → fix → retest (max 3 iterations)
 ```
-Exhaustive navigation of all feature screens and components.
+This runs via Agent tool with agent-browser CLI — NOT via /browser-qa Skill invocation.
 
 **Gate**: All steps PASS required before Phase 7.
 

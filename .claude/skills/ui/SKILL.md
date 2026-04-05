@@ -1,7 +1,6 @@
 ---
 name: ui
 description: Full UI quality pipeline. Orchestrates design research → contract → TDD → official frontend-design plugin (generation) → enforce standards → accessibility → performance → browser-qa gate. Use this for any component or page that needs production quality.
-disable-model-invocation: true
 argument-hint: <component or page>
 ---
 

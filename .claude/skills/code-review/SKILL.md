@@ -1,7 +1,6 @@
 ---
 name: code-review
 description: Reviews code for bugs, architecture violations, security issues, and test coverage. Extends the official code-review plugin with hexagonal architecture, TDD, SOLID, and project-specific rules from Rules.md.
-disable-model-invocation: true
 argument-hint: <file, PR, or scope — omit for git diff>
 ---
 

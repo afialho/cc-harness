@@ -1,7 +1,6 @@
 ---
 name: redesign
 description: Transform an existing application into a modern one. Analyzes the current app (via browser or codebase), detects whether in-place UI replacement or a full rewrite to a new folder is appropriate, proposes UX improvements (navigation reorganization, design system, animations), gets user approval, then implements with full feature parity guarantee.
-disable-model-invocation: true
 argument-hint: <url or path of existing app>
 ---
 

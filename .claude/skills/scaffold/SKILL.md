@@ -1,7 +1,6 @@
 ---
 name: scaffold
 description: Initialize a new project from scratch. Creates project structure, Docker Compose, testing framework, Git repo, and pushes to GitHub. Called automatically by /build when no project exists yet. For mobile projects, delegates to /mobile scaffold.
-disable-model-invocation: true
 argument-hint: [type: web | api | fullstack | cli]
 ---
 

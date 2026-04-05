@@ -1,7 +1,6 @@
 ---
 name: modernize
 description: Transform a monolith into a structured, maintainable architecture. Analyzes the existing codebase, identifies bounded contexts, proposes target architecture (hexagonal monolith, modular monolith, or microservices), and executes the migration incrementally with zero downtime and full test coverage.
-disable-model-invocation: true
 argument-hint: [target: hexagonal | modular | microservices]
 ---
 

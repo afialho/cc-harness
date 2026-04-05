@@ -1,7 +1,6 @@
 ---
 name: ideate
 description: Collaborative idea refinement. Interviews the user to extract requirements, maps features, defines MVP scope, detects project size, and produces a structured brief ready for /build.
-disable-model-invocation: true
 argument-hint: <raw idea or just a few words>
 ---
 

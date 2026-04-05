@@ -1,7 +1,6 @@
 ---
 name: ci-cd
 description: Generate CI/CD pipeline (GitHub Actions, GitLab CI, etc.) with quality gates, security scans, and deployment automation.
-disable-model-invocation: true
 argument-hint: [platform? e.g. github-actions]
 ---
 

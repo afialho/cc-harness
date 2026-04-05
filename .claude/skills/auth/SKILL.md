@@ -1,7 +1,6 @@
 ---
 name: auth
 description: Authentication and authorization implementation. Stack-aware: detects Next.js, Node/Express/Fastify, React Native, Django, Rails and applies the correct strategy. Covers JWT + refresh rotation, OAuth2/social login, RBAC, security hardening, TDD, BDD, and hexagonal architecture.
-disable-model-invocation: true
 argument-hint: [scope: scaffold | social | rbac | reset | audit]
 ---
 

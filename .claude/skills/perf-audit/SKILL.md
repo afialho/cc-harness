@@ -1,7 +1,6 @@
 ---
 name: perf-audit
 description: Performance audit: bundle analysis, database N+1 detection, caching strategy, Core Web Vitals thresholds, API response time profiling, and regression prevention.
-disable-model-invocation: true
 argument-hint: [scope: frontend | backend | full]
 ---
 

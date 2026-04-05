@@ -63,14 +63,16 @@ PHASE GATE — execute after each public module:
   □ PASS mandatory before next module
 ```
 
-### Scale Gates Library
+### Capability Gates Library
 
-| Skill | MVP | Product | Scale |
-|-------|-----|---------|-------|
-| `/ci-cd` (build + test + publish) | — | **mandatory** | **mandatory** |
-| `/docs-gen` (API docs + README) | — | **mandatory** | **mandatory** |
-| `/security-hardening audit` | — | **mandatory** | **mandatory** |
-| Benchmarks | — | — | **mandatory** |
+Run the corresponding skill for each enabled capability in `.claude/capabilities.json`:
+
+| Capability | Skill |
+|-----------|-------|
+| CI/CD | `/ci-cd` (build + test + publish) |
+| API documentation | `/docs-gen` (API docs + README) |
+| Security hardening | `/security-hardening audit` |
+| Load tests | Benchmarks (k6 or equivalent) |
 
 ---
 
@@ -191,7 +193,7 @@ PHASE GATE — execute after each feature:
       UI only      → qa-design + qa-ux + qa-e2e
       Backend only → qa-backend + qa-security + qa-code
       Full-stack   → qa-design + qa-ux + qa-backend + qa-security + qa-e2e
-  □ [Scale only] If feature has HTTP endpoint → add qa-perf + rtk k6 run tests/load/[feature].js
+  □ [If load-tests capability enabled] If feature has HTTP endpoint → add qa-perf + rtk k6 run tests/load/[feature].js
   □ PASS mandatory before starting the next feature
   □ Automatic fix loop (max 3 iterations) before escalating to user
   □ TECH LEAD VALIDATION — compare implemented feature with PLAN.md:
@@ -334,29 +336,70 @@ After complete implementation of ALL features:
    Only code/architecture dimensions — visual dimensions are covered by `/browser-qa` next.
    Automatic fix loop until PASS.
 
-   **Step 3c — Perf Audit (Scale only):**
+   **Step 3c — Perf Audit (if load-tests or perf capability enabled):**
    ```
    /perf-audit full
    ```
-   Only if scale = Scale (already in Scale Gates below). Skip for MVP/Product.
+   Only if `load-tests` or `perf` capability is enabled in `.claude/capabilities.json`. Skip otherwise.
 
-   **Step 3d — Browser Audit (MANDATORY for apps with UI):**
+   **Step 3d — Self-Healing Loop (MANDATORY for ALL apps with UI):**
 
-   > **Emit:** `▶ [3/3] Browser Audit — exhaustive navigation`
+   > **Emit:** `▶ [3/3] Self-Healing Loop — verify → fix → retest`
 
-   With the application running, execute a complete audit of ALL screens and ALL components:
+   This is the **most critical quality gate**. It ensures the delivered app actually works by navigating it like a real user. This loop runs AUTOMATICALLY — it is NOT optional.
+
+   **The loop uses agent-browser CLI directly via Agent tool — NOT via /browser-qa Skill invocation.** This guarantees browser testing happens regardless of skill invocation mechanics.
 
    ```
-   /browser-qa http://localhost:[port]
+   SELF-HEALING LOOP (max 5 iterations)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   For iteration = 1 to 5:
+
+     ▶ Iteration [N/5] — Browser Verification
+
+     1. Verify app is running:
+        rtk docker compose ps
+        If down → rtk docker compose up -d → wait for health
+
+     2. Run Cypress (if specs exist):
+        rtk npx cypress run
+        Record: passing, failing specs
+
+     3. Launch Agent(Browser Verification):
+        - Use agent-browser CLI to open http://localhost:[port]
+        - Navigate ALL pages (public + protected, login first if auth exists)
+        - Click ALL buttons, links, menu items
+        - Submit ALL forms (empty → validation? valid → success?)
+        - Check: JS errors, console errors, 404s, blank pages, stubs
+        - Screenshot evidence for every issue found
+        - Classify: BLOCKER / MAJOR / MINOR
+
+     4. If 0 BLOCKER ∧ 0 MAJOR ∧ 0 Cypress failures:
+        → PASS — exit loop, proceed to PM Validation
+
+     5. If issues found:
+        → For each BLOCKER/MAJOR:
+           - Identify the file and probable cause
+           - Fix the specific issue (surgical — no refactoring)
+           - If backend error → fix API/service
+           - If frontend error → fix component/page
+        → After all fixes:
+           rtk docker compose restart (if backend changed)
+           → Next iteration
+
+     6. If iteration = 5 and still failing:
+        → ESCALATE to user with full issue history
    ```
 
-   This is the **final visual and functional quality gate**:
-   - Navigate through ALL pages (public + protected)
-   - Test ALL interactive elements (buttons, links, forms, menus, modals)
-   - Classify ALL errors found (BLOCKER / MAJOR / MINOR)
-   - Automatic fix loop (max 3 iterations) until zero BLOCKER/MAJOR
-   - If escalating → present to user before commit
-   - **The application MUST remain running** throughout the audit and after the build
+   **Key rules for the self-healing loop:**
+   - The Agent MUST use `agent-browser` CLI commands (open, click, snapshot, screenshot, etc.)
+   - Every page in the app MUST be visited — not just the homepage
+   - Auth flows MUST be tested: register → login → access protected pages → logout
+   - Forms MUST be tested: empty submit, invalid data, valid submit
+   - The loop does NOT stop at iteration 1 even if only MINOR issues remain — it stops when 0 BLOCKER and 0 MAJOR
+   - **The application MUST remain running** throughout and after the build
+   - After fixing, ALWAYS verify Docker is healthy before next iteration
 
 4. **Fix loop** (if unit/BDD test failures): spawn targeted fix agents. Repeat until all green.
    After each fix round, verify Docker is still healthy: `rtk docker compose ps`
@@ -388,59 +431,42 @@ After complete implementation of ALL features:
    - If STUBS > 0 or PARTIAL features → **mandatory fix loop**: implement end-to-end or remove from UI
    - Feature not implemented in this build → remove UI element completely (never leave a stub)
    - Loop until COMPLETENESS_REPORT shows 100% COMPLETE or elements removed
-   - **Only after PM Validation PASS → advance to Scale Gates**
+   - **Only after PM Validation PASS → advance to Capability Gates**
 
-## Scale Gates — Mandatory Skills by Scale
+## Capability Gates — Skills by Selected Capabilities
 
-Before the commit, check the scale declared in Phase 0 (UNDERSTANDING block) and execute the mandatory skills:
+Before the commit, read `.claude/capabilities.json` (written in Phase 0) and execute the corresponding skills for each enabled capability.
 
-| Skill | MVP | Product | Scale |
-|-------|-----|---------|-------|
-| `/ci-cd` | — | **mandatory** | **mandatory** |
-| `/security-hardening audit` | — | **mandatory** | **mandatory** |
-| `/docs-gen all` | — | **mandatory** | **mandatory** |
-| Rate limiting (auth + public APIs) | — | **mandatory** | **mandatory** |
-| Structured logging (request-id) | — | **mandatory** | **mandatory** |
-| `/observability all` | — | — | **mandatory** |
-| `/perf-audit full` | — | — | **mandatory** |
-| Load tests (`k6 run tests/load/*.js`) | — | — | **mandatory** |
+| Capability | Skill/Action |
+|-----------|-------------|
+| CI/CD | `/ci-cd` → GitHub Actions pipeline (build, test, lint, security-scan) |
+| Security hardening | `/security-hardening audit` → OWASP Top 10, headers, secrets, dependencies |
+| API documentation | `/docs-gen all` → OpenAPI, C4 diagrams, CHANGELOG, runbook |
+| Rate limiting | Check rate limiting on auth + public APIs. If absent → add middleware |
+| Structured logging | Check pino/structlog/slog configured. If absent → configure with request-id |
+| Observability (OTel) | `/observability all` → Structured logging + OpenTelemetry → Grafana |
+| Load tests (k6) | `/perf-audit full` + `rtk k6 run tests/load/*.js`. p95 > threshold → BLOCKER |
+| Multi-tenancy | Verify tenant isolation in DB + API. If absent → implement tenant middleware |
 
 **Execution:**
 
-**If scale = Product:**
 ```
-▶ Scale Gate — Product: executing mandatory skills
+▶ Capability Gates: executing skills for enabled capabilities
 
-1. /ci-cd                    → GitHub Actions pipeline (build, test, lint, security-scan)
-2. /security-hardening audit → OWASP Top 10, headers, secrets audit, dependency scanning
-3. /docs-gen all             → OpenAPI, C4 diagrams, CHANGELOG, developer runbook
-4. Check rate limiting on auth endpoints and public APIs. If not implemented → add rate limiting middleware before commit.
-5. Check structured logging (pino/structlog/slog) is configured. If absent → configure basic logging with request-id before commit.
+For each capability in .claude/capabilities.json where enabled = true:
+  1. Run the corresponding skill/action from the table above
+  2. If skill returns BLOCKER → fix loop before commit
+  3. Continue to next capability
 
-If any skill returns BLOCKER → fix loop before commit.
+If no extra capabilities enabled → proceed directly to commit.
 ```
 
-**If scale = Scale:**
-```
-▶ Scale Gate — Scale: executing mandatory skills (Product + extras)
+**Skip capabilities that are not in `.claude/capabilities.json` or where enabled = false.**
 
-1. /ci-cd                    → GitHub Actions pipeline (build, test, lint, security-scan)
-2. /security-hardening audit → OWASP Top 10, headers, secrets audit, dependency scanning
-3. /docs-gen all             → OpenAPI, C4 diagrams, CHANGELOG, developer runbook
-4. /observability all        → Structured logging + OpenTelemetry → Grafana stack
-5. /perf-audit full          → Bundle analysis, N+1 detection, caching, Core Web Vitals
-6. Check rate limiting on auth endpoints and public APIs. If not implemented → add rate limiting middleware before commit.
-7. Execute complete load test suite: `rtk k6 run tests/load/*.js`. If p95 > threshold → BLOCKER.
-
-If any skill returns BLOCKER → fix loop before commit.
-```
-
-**If scale = MVP:** no additional skills — proceed directly to commit.
-
-4. **Final commit** (only scale gate changes, review fixes and browser audit fixes — features were already committed incrementally):
+4. **Final commit** (only capability gate changes, review fixes and browser audit fixes — features were already committed incrementally):
    ```bash
    rtk git add [specific files — never git add .]
-   rtk git commit -m "chore(build): add scale gates, review fixes, and final QA adjustments
+   rtk git commit -m "chore(build): add capability gates, review fixes, and final QA adjustments
 
    Co-Authored-By: Claude <noreply@anthropic.com>"
    ```
@@ -478,11 +504,12 @@ Tests:
   Load:        p95 Xms @ Y rps (if applicable)
 
 Quality gates:
-  Foundation:    ✅ Design system + layout verified (agent-browser)
-  Auth:          ✅ Register/login/logout verified (agent-browser + Cypress)
-  Per-feature:   ✅ Phase gate passed on each feature
-  Browser Audit: ✅ All screens navigated, all components tested (agent-browser)
-  Static QA:     ✅ Code + Security + Backend + Perf verified
+  Foundation:      ✅ Design system + layout verified (agent-browser)
+  Auth:            ✅ Register/login/logout verified (agent-browser + Cypress)
+  Per-feature:     ✅ Phase gate passed on each feature
+  Self-Healing:    ✅ [N] iterations — all screens navigated, all elements tested (agent-browser CLI)
+  Static QA:       ✅ Code + Security + Backend verified
+  Capabilities:    ✅ [list enabled capability gates that ran]
 
 Protocol:     [feature-dev | agent-teams]
 Review:       PASS
@@ -504,11 +531,11 @@ Next: rtk git checkout main && rtk git merge feature/[name]
 5. **Maximum autonomy within each phase** — architecture, naming, patterns and dependency decisions are made by agents without asking the user.
 6. **Documented decisions** — every non-obvious choice is recorded in the handoff of the agent that made it.
 7. **TDD is non-negotiable** — failing test before any implementation, no exceptions.
-8. **Incremental commits** — commit after each milestone: foundation [3a], auth [3b], each feature (phase gate PASS), and final (scale gates/review). Never accumulate all work in a single commit at the end. Each commit must be atomic and functional (tests passing).
+8. **Incremental commits** — commit after each milestone: foundation [3a], auth [3b], each feature (phase gate PASS), and final (capability gates/review). Never accumulate all work in a single commit at the end. Each commit must be atomic and functional (tests passing).
 9. **Mandatory branch** — all implementation happens in `feature/[name]`, never on `main`. Merge to `main` only after BUILD COMPLETE.
 10. **Docker always running before visual QA** — every visual wave (qa-design, qa-ux, qa-a11y, qa-e2e) and every `/browser-qa` require `docker compose up`. Check with `docker compose ps` before launching visual agents.
 11. **App delivered running** — the build ALWAYS ends with the application accessible via Docker at `http://localhost:[port]`. Docker is NOT shut down after the build. BUILD COMPLETE includes the URL.
-12. **Browser Audit is mandatory** — at the end of the build, `/browser-qa` runs with exhaustive navigation (all screens, all components). It is not optional. Fix loop until zero BLOCKER/MAJOR.
+12. **Self-Healing Loop is mandatory** — at the end of the build, agent-browser CLI crawls ALL screens and tests ALL components via Agent tool. It is not optional. Fix → retest loop (max 5 iterations) until zero BLOCKER/MAJOR. This is the #1 gate that prevents delivering broken apps.
 13. **Zero stubs / placeholders** — no UI element can exist as a stub ("coming soon", "TODO", "Lorem ipsum", button without action, empty page). If the feature will not be implemented in this build, the element MUST NOT exist in the UI. PM Validation checks completeness before commit.
 
 ---

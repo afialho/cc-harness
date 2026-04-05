@@ -1,7 +1,6 @@
 ---
 name: observability
 description: Structured logging and OpenTelemetry instrumentation with Grafana stack by default (Prometheus + Loki + Tempo + Grafana + Alertmanager). Provides docker-compose for local dev and production setup guidance.
-disable-model-invocation: true
 argument-hint: [scope: logging | tracing | metrics | all]
 ---
 

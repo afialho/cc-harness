@@ -1,7 +1,6 @@
 ---
 name: security-hardening
 description: Proactive security hardening: OWASP Top 10 checklist, security headers, secrets management, dependency scanning, rate limiting, and encryption guidance.
-disable-model-invocation: true
 argument-hint: [scope: e.g. "auth endpoints" or "full app"]
 ---
 

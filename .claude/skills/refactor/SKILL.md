@@ -1,7 +1,6 @@
 ---
 name: refactor
 description: Structured refactoring of existing code. Covers module extraction, layer cleanup, dependency untangling, and incremental architecture improvement. Always test-first: establishes coverage before any change. Supports scopes from a single function to an entire layer.
-disable-model-invocation: true
 argument-hint: [scope: simplify | clean | extract | inline | layer | module]
 ---
 

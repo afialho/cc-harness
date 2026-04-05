@@ -4,30 +4,31 @@
 
 ---
 
-## Project Scale
+## Project Capabilities
 
-The scale is captured by `/ideate` (mandatory question) or passed directly as an argument: `/build scale=MVP`.
+Instead of rigid tiers, capabilities are selected per project. `/build` infers defaults from context and presents an editable checklist at the UNDERSTANDING step.
 
-| Scale | When to use | What it includes |
-|-------|------------|--------------|
-| **MVP** | POC, idea validation, hackathon, prototype | Auth, core feature, Docker dev, basic unit tests |
-| **Product** | App going to market, early stage | MVP + CI/CD (GitHub Actions), rate limiting, structured logging, E2E tests |
-| **Scale** | Product with traction, growing team | Product + OpenTelemetry → Grafana, multi-tenancy, load tests (k6) |
+**Always ON (non-negotiable):**
+- Docker, Auth gate (if users exist), Security scan, Conventional Commits
+- Unit tests, TDD, Agent-browser verification (navigate + test all screens)
 
-**Rules across ALL scales:** auth gate, security-scan, Docker, Conventional Commits.
-**Only in Product/Scale:** CI/CD, rate limiting, structured logging. **Only in Scale:** full observability (OTel), load tests (k6).
+**Inferred from context (user can add ✅ or remove ☐ any):**
 
-### Methodology by scale
+| Capability | Default ON when | Skill/Tool |
+|-----------|----------------|-----------|
+| BDD (Gherkin) | always | Cucumber |
+| E2E tests (Cypress) | UI exists | Cypress |
+| Hexagonal architecture | new project or detected | architecture-guard |
+| CI/CD | "production", "deploy", "team" | `/ci-cd` |
+| Structured logging | backend + "production" | pino / structlog |
+| Rate limiting | auth + public APIs | middleware |
+| Security hardening | "production", "security" | `/security-hardening` |
+| API documentation | "API", "public" | `/docs-gen` |
+| Observability (OTel) | "monitoring", "tracing" | `/observability` |
+| Load tests (k6) | "performance", "scale" | k6 |
+| Multi-tenancy | "SaaS", "organizations" | tenant isolation |
 
-| Practice | MVP | Product | Scale |
-|---------|-----|---------|-------|
-| TDD | advisory | required | required |
-| BDD (Gherkin) | optional | required | required |
-| Hexagonal (layers) | advisory | required | required |
-| E2E (Cypress) | optional | required | required |
-| Load tests (k6) | ❌ | optional | required |
-| CI/CD | optional | required | required |
-| Observability | ❌ | structured logging | OTel → Grafana |
+Selected capabilities are saved in `.claude/capabilities.json` and drive which quality gates run in Phase 3.
 
 ---
 
@@ -45,7 +46,7 @@ rtk docker compose down       # stop
 **Architecture** — Defined in `.claude/architecture.json`. Default: hexagonal. Supported: `hexagonal`, `mvc-rails`, `mvc-express`, `nextjs-app-router`, `feature-based`, `flat`.
 Session-start hook injects the active pattern at runtime. Respect the layer rules for the detected pattern — see `Rules.md` RULE-ARCH-001.
 
-**TDD / BDD / Hexagonal** — Requirement level varies by scale (see table above). Never skip in Product/Scale.
+**TDD / BDD / Hexagonal** — ON by default. User can disable per capability at the UNDERSTANDING step.
 
 **Agents** — Max 5 parallel. Each agent = 1 granular activity. 100k token budget per agent.
 
@@ -96,11 +97,11 @@ Canonical sequence — always in this order:
 1. Tests         → rtk npm test + rtk npx cucumber-js + rtk npx cypress run
 2. Code Review   → /code-review (architecture + SOLID + TDD compliance)
 3. QA Loop       → /qa-loop (multi-dimensional: code, security, backend, design, UX, a11y, e2e, perf)
-4. Perf Audit    → /perf-audit (Scale only, or when endpoints/UI-heavy features exist)
-5. Browser Audit → /browser-qa <url> (exhaustive navigation — final visual gate)
+4. Perf Audit    → /perf-audit (if load-tests or perf capability enabled)
+5. Browser Audit → agent-browser crawl (exhaustive navigation — MANDATORY final gate)
 ```
 
-Skip steps that don't apply (e.g., no `/browser-qa` for backend-only, no `/perf-audit` for MVP).
+Skip steps that don't apply (e.g., no browser crawl for backend-only libraries, no `/perf-audit` unless capability enabled).
 Never reorder — earlier gates catch issues cheaper than later ones.
 
 ---

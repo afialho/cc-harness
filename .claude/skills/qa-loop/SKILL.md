@@ -1,7 +1,6 @@
 ---
 name: qa-loop
 description: Agentic QA orchestrator. Runs tiered quality gates (research, design, UX, backend, security, E2E) with automatic fix loops. Called from /build and /feature-dev at all quality gates.
-disable-model-invocation: true
 argument-hint: <scope: what was built>
 ---
 

@@ -1,7 +1,6 @@
 ---
 name: mobile
 description: Mobile-first React Native + Expo development. TDD with React Native Testing Library, Detox E2E, NativeWind styling, EAS Build pipeline. Hexagonal architecture adapted for mobile.
-disable-model-invocation: true
 argument-hint: [scope: scaffold | feature | qa | release]
 ---
 

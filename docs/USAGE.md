@@ -137,38 +137,40 @@ Each feature goes through its own phase gate before the next one starts.
 
 ---
 
-## 4. Scales
+## 4. Capabilities
 
-Scale determines what gets enforced. Set it via `/build scale=Product`, or `/build` asks during Phase 0.
+Instead of rigid tiers, capabilities are selected per project. `/build` infers smart defaults from context and presents an editable checklist.
 
-### What each scale includes
+### Always ON (non-negotiable)
 
-| Capability | MVP | Product | Scale |
-|-----------|-----|---------|-------|
-| Auth gate | yes | yes | yes |
-| Docker | yes | yes | yes |
-| Security scan | yes | yes | yes |
-| Conventional Commits | yes | yes | yes |
-| Unit tests | basic | full | full |
-| TDD | advisory | required | required |
-| BDD (Gherkin) | optional | required | required |
-| Hexagonal layers | advisory | required | required |
-| E2E (Cypress) | optional | required | required |
-| CI/CD (GitHub Actions) | optional | required | required |
-| Rate limiting | -- | required | required |
-| Structured logging | -- | required | required |
-| Docs generation | -- | required | required |
-| Observability (OTel) | -- | -- | required |
-| Load tests (k6) | -- | -- | required |
-| Performance audit | -- | -- | required |
+| Capability | Tool |
+|-----------|------|
+| Auth gate (if users exist) | `/auth` |
+| Docker | docker-compose |
+| Security scan | dependency audit |
+| Conventional Commits | commit-guard hook |
+| Unit tests | Vitest / pytest / RSpec |
+| TDD | Red→Green→Refactor |
+| Agent-browser verification | agent-browser CLI |
 
-### When to use each scale
+### Inferred from context (editable by user)
 
-| Scale | Use case |
-|-------|---------|
-| **MVP** | Proof of concept, hackathon, idea validation |
-| **Product** | Going to market, early-stage product |
-| **Scale** | Product with traction, growing team |
+| Capability | Default ON when | Tool |
+|-----------|----------------|------|
+| BDD (Gherkin) | always | Cucumber |
+| E2E tests (Cypress) | UI exists | Cypress |
+| Hexagonal architecture | new project | architecture-guard |
+| CI/CD | "production", "deploy" | `/ci-cd` |
+| Structured logging | backend + "production" | pino / structlog |
+| Rate limiting | auth + public APIs | middleware |
+| Security hardening | "production", "security" | `/security-hardening` |
+| API documentation | "API", "public" | `/docs-gen` |
+| Observability (OTel) | "monitoring", "tracing" | `/observability` |
+| Load tests (k6) | "performance", "scale" | k6 |
+| Multi-tenancy | "SaaS", "organizations" | tenant isolation |
+
+Selected capabilities are saved in `.claude/capabilities.json` and drive which quality gates run.
+Users can add or remove any capability at the UNDERSTANDING confirmation step.
 
 ---
 

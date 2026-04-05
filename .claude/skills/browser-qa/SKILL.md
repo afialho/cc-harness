@@ -1,7 +1,6 @@
 ---
 name: browser-qa
 description: Exhaustive browser QA using Cypress (programmatic) + agent-browser CLI (visual/exploratory). Crawls all pages, clicks all interactive elements, runs Cypress specs in loop until zero failures and zero BLOCKER/MAJOR. Requires agent-browser CLI + Cypress installed.
-disable-model-invocation: true
 argument-hint: <application url — e.g.: http://localhost:3000>
 ---
 
