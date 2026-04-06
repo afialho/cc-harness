@@ -25,7 +25,8 @@ Each phase has its own context budget and automatic checkpoints.
     │         ├─ Empty project? → /scaffold → continue
     │         ├─ Transformation detected? → /redesign | /refactor | /modernize (full handoff)
     │         ├─ Vague idea? → /ideate → wait for IDEAS.md → resume automatically
-    │         └─ autonomous: proceed immediately | guided: ⏸ PAUSE: confirm understanding
+    │         └─ ⏸ ASK: choose mode (autonomous / semi-guided / guided)
+    │         └─ autonomous: proceed | semi-guided + guided: ⏸ PAUSE: confirm understanding
     │
     ├─ [1/3] Phase 1 — Research
     │         ├─ Parallel agent wave:
@@ -37,13 +38,13 @@ Each phase has its own context budget and automatic checkpoints.
     │         │   └─ YouTube Agent            (if relevant tutorials exist)
     │         ├─ Aggregate into RESEARCH.md
     │         ├─ /qa-loop (qa-research) → GATE: does research have real evidence?
-    │         └─ autonomous: auto-decide + proceed | guided: ⏸ PAUSE: clarification questions
+    │         └─ autonomous + semi-guided: auto-decide | guided: ⏸ PAUSE: clarification questions
     │
     ├─ [2/3] Phase 2 — Planning
     │         ├─ Extract structured data from RESEARCH.md → hexagonal architecture, BDD, test plan
     │         ├─ Generate PLAN.md
     │         ├─ /qa-loop (qa-plan) → GATE: BDD complete? architecture mapped?
-    │         └─ autonomous: auto-approve + proceed | guided: ⏸ PAUSE: wait for approval
+    │         └─ autonomous: auto-approve | semi-guided + guided: ⏸ PAUSE: approve feature set + plan
     │
     └─ [3/3] Phase 3 — Implementation
               ├─ git checkout -b feature/[name]
@@ -171,14 +172,31 @@ After `/ideate` completes, automatically resume `/build` with `IDEAS.md` as inpu
 
 ---
 
-### 0.1 — Detect operation mode
+### 0.1 — Select operation mode
 
-Infer from argument or use default:
+If the user passed a mode flag (`autonomous`, `guided`, `semi-guided`), use it directly.
+
+Otherwise, **ask the user before proceeding:**
+
+```
+How would you like to work?
+
+  (A) Autonomous — I make all decisions. Zero pauses. You get a working app at the end.
+  (B) Semi-guided — I work autonomously but pause for macro decisions:
+      feature set, architecture, and plan approval. Details are on me.
+  (C) Guided — I pause at every phase for your confirmation.
+      You control understanding, research, plan, and implementation decisions.
+
+Choose [A/B/C]:
+```
+
+Wait for the user to choose before proceeding. If the user typed just `/build <idea>` with no mode flag, always ask.
 
 | Mode | Activation | Behavior |
 |------|------------|----------|
-| **autonomous** (default) | no flag, or `autonomous`, `auto` | AI as PM — deep research defines feature set. **Zero pauses** — all decisions made by AI. Only escalates on unrecoverable errors. |
-| **guided** | `guided`, `guide me`, `ask me` | User guides — detailed interview, user defines features. Pauses for confirmation at each phase. |
+| **autonomous** | `autonomous`, `auto`, or user chooses A | AI as PM. **Zero pauses.** All decisions made by AI. Only escalates on unrecoverable errors. |
+| **semi-guided** | `semi-guided`, `semi`, or user chooses B | AI handles details. **Pauses only for macro decisions:** capabilities (UNDERSTANDING), feature set + architecture (PLAN). Skips micro decisions (research clarifications, per-feature choices). |
+| **guided** | `guided`, `guide me`, `ask me`, or user chooses C | User controls. **Pauses at every phase:** understanding, research clarification, plan approval, auth blocker. |
 
 Record the mode for use in subsequent phases.
 
@@ -264,7 +282,7 @@ Save selected capabilities in `.claude/capabilities.json` for use in Phase 3 gat
 
 4. **Autonomous mode:** Display the UNDERSTANDING block, then **proceed immediately to Phase 1** without waiting for confirmation. The AI makes all capability decisions based on context.
 
-   **Guided mode:** Ask: **"Is this understanding correct? Can I proceed to research?"** Wait for confirmation. If the user corrects something, adjust and confirm again.
+   **Semi-guided / Guided mode:** Ask: **"Is this understanding correct? Can I proceed to research?"** Wait for confirmation. If the user corrects something, adjust and confirm again.
 
 ---
 

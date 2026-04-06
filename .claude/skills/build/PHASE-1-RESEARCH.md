@@ -109,7 +109,7 @@ Examples of relevant questions:
 - "APIs A and B cover the same use case. A has better DX, B has better rate limits. Any preference?"
 - "The feature touches authentication — research revealed that the project's pattern uses JWT. Do you confirm we should follow this pattern?"
 
-**Autonomous mode:** Present the Key Insights, then **answer your own clarification questions** using research evidence (choose the approach with strongest evidence or most industry adoption). Log decisions in RESEARCH.md under a `## Autonomous Decisions` section. Proceed immediately to Phase 2.
+**Autonomous / Semi-guided mode:** Present the Key Insights, then **answer your own clarification questions** using research evidence (choose the approach with strongest evidence or most industry adoption). Log decisions in RESEARCH.md under a `## Autonomous Decisions` section. Proceed immediately to Phase 2.
 
 **Guided mode:** Wait for user response before starting Phase 2.
 

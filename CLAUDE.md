@@ -127,11 +127,12 @@ Entry point: **`/build`** — auto-routes based on context:
 - Code refactoring → `/refactor`
 - Architecture change → `/modernize`
 
-**Operation modes:**
-- `autonomous` (default) — AI as PM. Zero pauses. Research defines feature set, AI makes all decisions, proceeds without confirmation. Only escalates on unrecoverable errors (Docker won't start after 3 attempts, auth gate BLOCKER after 3 fix loops).
-- `guided` — User guides. Pauses after each phase for confirmation (understanding, research clarification, plan approval).
+**Operation modes** — `/build` asks the user to choose at the start (or pass as argument):
+- `autonomous` — AI as PM. Zero pauses. AI makes all decisions. Only escalates on unrecoverable errors.
+- `semi-guided` — Pauses only for macro decisions: UNDERSTANDING (capabilities) and PLAN (feature set + architecture). Auto-decides research clarifications, per-feature details, and auth fixes.
+- `guided` — Pauses at every phase for confirmation (understanding, research clarification, plan approval, auth blockers).
 
-Pass as argument: `/build guided`. Default is `autonomous`.
+Pass as argument: `/build autonomous`, `/build semi-guided`, or `/build guided`.
 
 **Feature routing** — during implementation, `/build` delegates to specialized skills:
 

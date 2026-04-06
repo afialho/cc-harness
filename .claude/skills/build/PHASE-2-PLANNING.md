@@ -125,7 +125,7 @@ Present the complete plan (can be inline or reference `PLAN.md` if generated).
 
 **Autonomous mode:** Display the plan summary, then **proceed immediately to Phase 3**. The AI approves its own plan. Log: `Plan auto-approved (autonomous mode)` in checkpoint.
 
-**Guided mode:** Ask: **"Plan approved? Can I start implementation?"** Accepts: "yes", "go", "approved", "implement" or equivalent. If the user requests adjustments: incorporate and present again.
+**Semi-guided / Guided mode:** Present the plan with the feature set and architecture. Ask: **"Plan approved? Can I start implementation?"** Accepts: "yes", "go", "approved", "implement" or equivalent. If the user requests adjustments: incorporate and present again.
 
 > **Checkpoint after Phase 2:**
 > Write `.claude/checkpoint.md`:

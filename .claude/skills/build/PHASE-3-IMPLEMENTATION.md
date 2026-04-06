@@ -155,10 +155,10 @@ rtk git commit -m "chore(scaffold): add design system and base layout"
 
 **If QA returns BLOCKER on auth:**
 
-**Autonomous mode:** Do NOT pause. Attempt automatic fix:
+**Autonomous / Semi-guided mode:** Do NOT pause. Attempt automatic fix:
 1. If <= 2 BLOCKERs → spawn parallel fix agents (categorize by domain) → re-run gate
 2. If > 2 BLOCKERs → replace auth entirely with `/auth complete` → re-run gate
-3. If still failing after 3 fix iterations → escalate to user (this is the ONLY escalation point in autonomous mode)
+3. If still failing after 3 fix iterations → escalate to user
 
 **Guided mode:**
 ```
@@ -540,7 +540,7 @@ Next: rtk git checkout main && rtk git merge feature/[name]
 ## General Rules
 
 1. **Never skip research** — UI features without `RESEARCH.md` result in generic solutions without real grounding.
-2. **Pauses** — In **guided** mode: pause after Phase 1 (clarification) and Phase 2 (plan approval). In **autonomous** mode: zero pauses — AI makes all decisions and only escalates on unrecoverable errors (Docker won't start, auth gate fails after 3 iterations).
+2. **Pauses** — **Autonomous:** zero pauses, AI decides everything, only escalates on unrecoverable errors. **Semi-guided:** pauses for macro decisions (UNDERSTANDING, PLAN approval) but auto-decides micro details (research clarifications, per-feature choices, auth fixes). **Guided:** pauses at every phase for user confirmation.
 3. **Checkpoints** at the end of each phase and whenever estimated ~60k tokens (write checkpoint) / ~80k (compact recommended) consumed.
 4. **Progress markers** at all points (`▶ [N/3] Phase Name`).
 5. **Maximum autonomy within each phase** — architecture, naming, patterns and dependency decisions are made by agents without asking the user.
